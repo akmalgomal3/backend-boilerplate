@@ -1,0 +1,18 @@
+version: "3"
+services:
+  nest-backend:
+    container_name: boilerplate
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "7000:7000"
+    restart: unless-stopped
+    networks:
+      - ntx-net
+
+networks:
+  ntx-net:
+    external: true
