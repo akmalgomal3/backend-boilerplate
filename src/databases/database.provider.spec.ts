@@ -39,7 +39,7 @@ describe('Database Providers', () => {
                                 'DB_PORT': 5432,
                                 'DB_USERNAME': 'test',
                                 'DB_PASSWORD': 'test123',
-                                'DB': 'testdb',
+                                'DB_NAME': 'testdb',
                                 'MONGODB_URL': 'mongodb://localhost:27017',
                                 'MONGODB_DBNAME': 'testmongo'
                             };

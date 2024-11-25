@@ -42,6 +42,7 @@ describe('ResponseInterceptor', () => {
                 .intercept(mockExecutionContext, mockCallHandler)
                 .subscribe((result: ApiResponse<any>) => {
                     expect(result).toEqual({
+                        success:true,
                         statusCode: HttpStatus.CREATED,
                         message: 'Created successfully',
                         data: { id: 1, name: 'Test' },
@@ -64,6 +65,7 @@ describe('ResponseInterceptor', () => {
                 .intercept(mockExecutionContext, mockCallHandler)
                 .subscribe((result: ApiResponse<any>) => {
                     expect(result).toEqual({
+                        success: true,
                         statusCode: HttpStatus.OK,
                         message: 'Success',
                         data: [{ id: 1 }],
@@ -82,6 +84,7 @@ describe('ResponseInterceptor', () => {
                 .intercept(mockExecutionContext, mockCallHandler)
                 .subscribe((result: ApiResponse<any>) => {
                     expect(result).toEqual({
+                        success: true,
                         statusCode: HttpStatus.OK,
                         message: 'Success',
                         data: mockData,
@@ -97,6 +100,7 @@ describe('ResponseInterceptor', () => {
                 .intercept(mockExecutionContext, mockCallHandler)
                 .subscribe((result: ApiResponse<any>) => {
                     expect(result).toEqual({
+                        success: true,
                         statusCode: HttpStatus.OK,
                         message: 'Success',
                         data: null,
@@ -119,6 +123,7 @@ describe('ResponseInterceptor', () => {
                     error: (error: HttpException) => {
                         const response = error.getResponse() as ApiResponse<null>;
                         expect(response).toEqual({
+                            success: false,
                             statusCode: HttpStatus.NOT_FOUND,
                             message: errorMessage,
                             data: null,
@@ -140,6 +145,7 @@ describe('ResponseInterceptor', () => {
                     error: (error: HttpException) => {
                         const response = error.getResponse() as ApiResponse<null>;
                         expect(response).toEqual({
+                            success: false,
                             statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                             message: 'Unknown error',
                             data: null,
@@ -164,6 +170,7 @@ describe('ResponseInterceptor', () => {
                     error: (error: HttpException) => {
                         const response = error.getResponse() as ApiResponse<null>;
                         expect(response).toEqual({
+                            success: false,
                             statusCode: HttpStatus.BAD_REQUEST,
                             message: 'Bad Request Error',
                             data: null,

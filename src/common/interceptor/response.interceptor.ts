@@ -15,30 +15,25 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>
     intercept(context: ExecutionContext, next: CallHandler): Observable<ApiResponse<T>> {
         return next.handle().pipe(
             map(data => {
-                if (data?.statusCode && data?.message) {
-                    return {
-                        statusCode: data.statusCode,
-                        message: data.message,
-                        data: data.result || data.data,
-                        ...(data.meta ? { meta: data.meta } : {})
-                    };
-                }
-
                 const ctx = context.switchToHttp();
                 const response = ctx.getResponse();
-                const statusCode = response.statusCode || HttpStatus.OK;
-
+                const statusCode = data?.statusCode || response.statusCode || HttpStatus.OK;
+            
                 return {
+                    success: true,
                     statusCode,
-                    message: 'Success',
-                    data,
+                    message: data?.message || 'Success',
+                    data: data?.result || data?.data || null,
+                    ...(data?.meta ? { meta: data.meta } : {}),
                 };
+
             }),
             catchError(err => {
                 const ctx = context.switchToHttp();
                 const statusCode = err?.status || HttpStatus.INTERNAL_SERVER_ERROR;
 
                 const errorResponse: ApiResponse<null> = {
+                    success : false,
                     statusCode,
                     message: err.message || 'An unexpected error occurred',
                     data: null,

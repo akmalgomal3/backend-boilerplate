@@ -5,14 +5,19 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    env_file:
-      - .env
     ports:
-      - "7000:7000"
+      - "7xxx:7xxx"
     restart: unless-stopped
-    networks:
-      - ntx-net
-
-networks:
-  ntx-net:
-    external: true
+    environment:
+      VITE_CRYPTO_SECRET_KEY: "xxxxx"  
+      VITE_CRYPTO_IV_KEY: "xxxxx"
+      TOKEN_EXP: "12h"                              
+      TOKEN_SECRET: "xxxxx"                
+      DB_HOST: "xxxxx"
+      DB_PORT: "xxxxx"
+      DB_USERNAME: "xxxxx"
+      DB_NAME: "xxxxx"
+      DB_PASSWORD: "xxxxx"
+      APP_PORT: "xxxxx"
+      MONGODB_URL: "xxxxx"
+      MONGODB_DBNAME: "xxxxx"

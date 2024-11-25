@@ -1,27 +1,29 @@
-# get image
-FROM node:18-alpine
+# Use Debian Slim as base image
+FROM debian:bullseye-slim
 
-# set working directory
+# Avoid prompts from apt
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Set working directory
 WORKDIR /usr/src/app
 
 # Install necessary dependencies, including Chromium
-RUN apk update && \
-    apk add --no-cache chromium udev ttf-freefont fontconfig
-
-# copy package.json and package-lock.json
+RUN apt-get update && \
+    apt-get install -y chromium-driver chromium fonts-liberation libappindicator3-1 libasound2 libatk-bridge2.0-0 libatk1.0-0 libcups2 libdbus-1-3 libgdk-pixbuf2.0-0 libnspr4 libnss3 libx11-xcb1 xdg-utils ttf-freefont fontconfig && \
+    rm -rf /var/lib/apt/lists/*
+    
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
-# install dependencies
+# Install Node.js dependencies
 RUN npm install
 
-# copy source code
+# Copy source code
 COPY . .
 
-# Create Folder
-RUN mkdir -p /usr/src/app/uploads
-
-# build the appilcation
+# Build the application
 RUN npm run build
 
-# define the command to run the application
-ENTRYPOINT [ "/bin/sh", "-c", "npm run start:dev" ]
+# Define the command to run the application
+CMD ["npm", "run", "start:dev"]
+
