@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
@@ -35,11 +35,12 @@ export class UserRepository {
       const query = `SELECT *
                      FROM users
                      WHERE id = $1`;
-      const data = await this.repository.query(query, [userId]);
-      if (!data) {
-        throw new Error('User not found');
+      const data: Users[] = await this.repository.query(query, [userId]);
+
+      if (!data.length) {
+        throw new NotFoundException('User not found');
       }
-      return data;
+      return data[0];
     } catch (error) {
       throw error;
     }

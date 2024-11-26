@@ -1,4 +1,4 @@
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
 
 export const databaseProviders = [
@@ -15,10 +15,6 @@ export const databaseProviders = [
         database: configService.get<string>('DB_NAME'),
         entities: [__dirname + '/../**/*.entity{.ts,.js}'],
         synchronize: true,
-        extra: {
-          timezone: 'Asia/Jakarta',
-        },
-        logging: true,
       });
 
       return dataSource.initialize();

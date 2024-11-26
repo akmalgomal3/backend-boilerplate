@@ -35,14 +35,14 @@ export class Users {
 
   @CreateDateColumn({
     type: 'timestamp',
-    default: (): string => 'CURRENT_TIMESTAMP',
+    default: (): string => 'NOW()',
   })
   created_at: Date;
 
   @UpdateDateColumn({
     type: 'timestamp',
-    default: (): string => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP',
+    default: (): string => 'NOW()',
+    onUpdate: 'NOW()',
   })
   updated_at: Date;
 }
