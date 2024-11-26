@@ -12,21 +12,21 @@ async function bootstrap() {
     const port = configService.get<number>('APP_PORT') ?? 3000;
   
     app.useGlobalInterceptors(new ResponseInterceptor());
-    await app.listen(port);
 
     app.enableCors({
       origin: [`http://localhost:${port}`],
     });
 
     const config = new DocumentBuilder()
-		.setTitle('#')
+		.setTitle('Auth Base Prob')
 		.setVersion('1.0')
 		.addBearerAuth()
 		.build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api', app, document);
 
-    
+    console.log(`App running at http://localhost:${port}`)
+    await app.listen(port);
   } catch (error) {
     console.error('Error during application creation:', error);
   }

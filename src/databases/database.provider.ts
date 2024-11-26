@@ -23,17 +23,17 @@ export const databaseProviders = [
             return dataSource.initialize();
         },
     },
-    {
-        provide: 'DB_MONGODB',
-        inject: [ConfigService],
-        useFactory: async (configService: ConfigService) => {
-            const client = new MongoClient(configService.get<string>('MONGODB_URL'), {
-                connectTimeoutMS: 10000,
-                socketTimeoutMS: 45000,
-            });
+    // {
+    //     provide: 'DB_MONGODB',
+    //     inject: [ConfigService],
+    //     useFactory: async (configService: ConfigService) => {
+    //         const client = new MongoClient(configService.get<string>('MONGODB_URL'), {
+    //             connectTimeoutMS: 10000,
+    //             socketTimeoutMS: 45000,
+    //         });
 
-            await client.connect();
-            return client.db(configService.get<string>('MONGODB_DBNAME'));
-        },
-    },
+    //         await client.connect();
+    //         return client.db(configService.get<string>('MONGODB_DBNAME'));
+    //     },
+    // },
 ];
