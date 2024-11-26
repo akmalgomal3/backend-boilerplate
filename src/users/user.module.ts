@@ -7,7 +7,7 @@ import { databaseProviders } from "src/databases/database.provider";
 @Module({
     imports: [],
     providers: [
-        ...databaseProviders,
+        // ...databaseProviders,
         UserRepository,
         UserService
     ],

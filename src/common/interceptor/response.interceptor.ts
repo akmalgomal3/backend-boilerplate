@@ -24,7 +24,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>
                     statusCode,
                     message: data?.message || 'Success',
                     data: data?.result || data?.data || null,
-                    ...(data?.meta ? { meta: data.meta } : {}),
+                    ...(data?.metadata ? { metadata: data.metadata } : {}),
                 };
 
             }),
