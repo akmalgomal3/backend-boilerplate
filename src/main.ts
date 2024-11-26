@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ResponseInterceptor } from './common/interceptor/response.interceptor';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   try {
@@ -11,6 +12,7 @@ async function bootstrap() {
     const configService = app.get(ConfigService);
     const port = configService.get<number>('APP_PORT') ?? 3000;
   
+    app.useGlobalPipes(new ValidationPipe());
     app.useGlobalInterceptors(new ResponseInterceptor());
 
     app.enableCors({

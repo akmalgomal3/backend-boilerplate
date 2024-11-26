@@ -1,12 +1,16 @@
-import { Controller, Get, Param, Query, UseInterceptors } from "@nestjs/common";
+import { Controller, Get, Param, Query, UseGuards, UseInterceptors } from "@nestjs/common";
 import { ResponseInterceptor } from "src/common/interceptor/response.interceptor";
 import { UserService } from "../services/user.service";
+import { ApiBearerAuth } from "@nestjs/swagger";
+import { JwtAuthGuard } from "src/auth/guard/jwt.guard";
 
+@ApiBearerAuth()
 @Controller()
 @UseInterceptors(ResponseInterceptor)
 export class UserController {
     constructor(private userService: UserService) { }
 
+    @UseGuards(JwtAuthGuard)
     @Get('users')
     async getUsers(
         @Query('page') page: number,
@@ -19,9 +23,10 @@ export class UserController {
         };
     }
 
-    @Get('user/:userId')
-    async getUser(@Param('userId') userId: string) {
-        const result = await this.userService.getUser(userId)
+    @UseGuards(JwtAuthGuard)
+    @Get('user/id')
+    async getUser(@Param('id') id: string) {
+        const result = await this.userService.getUser(id)
         return result
     }
 }

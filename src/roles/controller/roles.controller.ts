@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { RolesService } from '../services/roles.service';
 import { CreateRoleDTO } from '../dto/create-role.dto';
 import { UpdateRoleDTO } from '../dto/update-role.dto';
+import { JwtAuthGuard } from 'src/auth/guard/jwt.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('roles')
 export class RolesController {
@@ -27,6 +29,8 @@ export class RolesController {
         };
     }
 
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
     @Post()
     async createRole(@Body() createRoleDTO: CreateRoleDTO){
         const result = await this.rolesService.createRole(createRoleDTO)
@@ -35,6 +39,8 @@ export class RolesController {
         };
     }
 
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
     @Patch(':id')
     async updateRole(
       @Param('id', ParseUUIDPipe) id: string,
@@ -46,6 +52,8 @@ export class RolesController {
         };
     }
 
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
     @Delete(':id')
     async softDeleteRole(@Param('id') id: string){
         const result = await this.rolesService.softDeleteRole(id);

@@ -38,8 +38,7 @@ export class RolesService {
             if(!result){
                 throw new HttpException("Role not found", HttpStatus.NOT_FOUND)
             }
-            
-            console.log(result, "aku");
+
             return result
         } catch (e) {
             throw e

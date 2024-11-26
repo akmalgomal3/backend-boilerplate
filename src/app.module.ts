@@ -3,6 +3,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from './users/user.module';
 import { DatabaseModule } from './databases/database.module';
 import { RolesModule } from './roles/roles.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { UserActivityService } from './user-activity/services/user-activity.service';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -11,10 +14,11 @@ import { RolesModule } from './roles/roles.module';
     }),
     UsersModule,
     DatabaseModule,
-    RolesModule
+    RolesModule,
+    AuthModule
   ],
 
   controllers: [],
-  providers: [],
+  providers: [UserActivityService],
 })
 export class AppModule { }

@@ -1,39 +1,35 @@
-import { Entity, Column, PrimaryGeneratedColumn, Timestamp } from 'typeorm';
+import { BaseColumn } from 'src/common/base-entity/base.entity';
+import { Roles } from 'src/roles/entity/roles.entity';
+import { Entity, Column, PrimaryGeneratedColumn, Timestamp, ManyToOne } from 'typeorm';
 
 @Entity()
-export class Users {
+export class Users extends BaseColumn {
     @PrimaryGeneratedColumn()
-    user_id: string;
+    id: string;
 
     @Column()
+    role_id: string;
+
+    @Column({ unique: true })
+    email: string;
+  
+    @Column({ unique: true })
     username: string;
 
     @Column()
     password: string;
 
     @Column()
-    email: string;
-
-    @Column()
-    role_id: string;
-
-    @Column()
     full_name: string;
-
-    @Column()
-    active: boolean;
 
     @Column()
     created_by: string;
 
-    @Column()
-    created_at: Date;
+    @Column({ default: false })
+    active: boolean;
 
-    @Column()
-    updated_by: string;
-
-    @Column()
-    updated_at: Date;
+    @Column({ type: 'int', default: 5 })
+    login_attemp: number;
 
     @Column()
     is_dev: boolean;

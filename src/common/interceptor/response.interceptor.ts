@@ -17,8 +17,9 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>
             map(data => {
                 const ctx = context.switchToHttp();
                 const response = ctx.getResponse();
+                
                 const statusCode = data?.statusCode || response.statusCode || HttpStatus.OK;
-            
+               
                 return {
                     success: true,
                     statusCode,
@@ -31,11 +32,12 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>
             catchError(err => {
                 const ctx = context.switchToHttp();
                 const statusCode = err?.status || HttpStatus.INTERNAL_SERVER_ERROR;
+                const message = typeof err?.response?.message === "object" ? err?.response?.message[0] : err.message
 
                 const errorResponse: ApiResponse<null> = {
                     success : false,
                     statusCode,
-                    message: err.message || 'An unexpected error occurred',
+                    message: message || 'An unexpected error occurred',
                     data: null,
                 };
 

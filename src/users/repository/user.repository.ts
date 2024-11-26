@@ -34,18 +34,54 @@ export class UserRepository {
             // const result = await this.repository.findOne({ where: { user_id: userId } })
             
             // contoh raw query
-            const query = `SELECT * FROM users WHERE user_id = $1`
+            const query = `SELECT * FROM users WHERE id = $1 AND deleted_at IS NULL`
             const data = await this.repository.query(query, [userId])
             if (!data) {
                 throw new Error('User not found');
             }
+
             return data
         } catch (error) {
             throw error;
         }
     }
 
-    async createUser(dto: CreateUserDto): Promise<void> { }
+    async getUserByEmailOrUsername(email: string, username: string): Promise<Users | null>{
+        try {
+            const query = `SELECT id, email, username, password FROM users WHERE (email = $1 OR username = $2) AND deleted_at IS NULL`            
+            const data = await this.repository.query(query, [email, username])
+        
+            return data[0]
+        } catch (e) {
+            throw e
+        }
+    }
+
+    async createUser(createUserDTO: CreateUserDto): Promise<Users> { 
+        const { role_id, full_name, email, username, password, is_dev } = createUserDTO;
+
+        try {
+            const active = is_dev
+            const query = `
+                INSERT INTO users (role_id, full_name, email, username, password, active, is_dev)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                RETURNING *;
+            `;
+            const result = await this.dataSource.query(query, [
+                role_id,
+                full_name,
+                email,
+                username,
+                password,
+                active, 
+                is_dev
+            ]);
+    
+          return result[0];
+        } catch (e) {
+          throw e;
+        }
+    }
 
     async updateUser(userId: string, dto: UpdateUserDto): Promise<void> { }
 

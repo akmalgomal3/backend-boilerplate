@@ -5,6 +5,7 @@ import { RolesRepository } from './repository/roles.repository';
 
 @Module({
   controllers: [RolesController],
-  providers: [RolesService, RolesRepository]
+  providers: [RolesService, RolesRepository],
+  exports: [RolesService]
 })
 export class RolesModule {}

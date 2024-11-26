@@ -1,11 +1,19 @@
-import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import { BadRequestException, ConflictException, HttpException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { UserRepository } from "../repository/user.repository";
 import { PaginatedResponseDto, PaginationDto } from "src/common/dto/pagination.dto";
 import { Users } from "../entity/user.entity";
+import { CreateUserDto } from "../dto/create-user.dto";
+import { RolesRepository } from "src/roles/repository/roles.repository";
+import { ConfigService } from "@nestjs/config";
+import { LoginDTO } from "src/users/dto/login.dto";
 
 @Injectable()
 export class UserService {
-    constructor(private userRepository: UserRepository) { }
+    constructor(
+        private userRepository: UserRepository,
+        private roleRepository: RolesRepository,
+       
+    ) { }
 
     async getUsers(dto: PaginationDto): Promise<PaginatedResponseDto<Users>> {
         try {
@@ -29,7 +37,7 @@ export class UserService {
         }
     }
 
-    async getUser(userId: string) {
+    async getUser(userId: string): Promise<Users> {
         try {
             const result = await this.userRepository.getUserById(userId)
             if (!result) {
@@ -40,4 +48,28 @@ export class UserService {
             throw error;
         }
     }
+
+    async getUserByEmailOrUsername(email: string, username: string){
+        try {
+            const result = await this.userRepository.getUserByEmailOrUsername(
+                email,
+                username,
+            );
+
+            return result
+        } catch (e) {
+            throw e
+        }
+    }
+
+    async create(createUserDTO: CreateUserDto): Promise<Users> {
+        try {
+            const user = await this.userRepository.createUser(createUserDTO)
+            return user
+        } catch (e) {
+            throw e
+        }
+    }
+
+    
 }
