@@ -11,7 +11,12 @@ export class AuthController {
   async register(@Body() registerDto: RegisterDto) {
     const result: Users = await this.authService.register(registerDto);
     return {
-      data: result,
+      data: {
+        id: result.id,
+        email: result.email,
+        username: result.username,
+        role: result.role,
+      },
     };
   }
 

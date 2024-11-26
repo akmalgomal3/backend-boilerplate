@@ -3,3 +3,8 @@ export enum UserRoles {
   Executive = 'Executive',
   Operator = 'Operator',
 }
+
+export enum DeviceType {
+  mobile = 'mobile',
+  desktop = 'desktop',
+}

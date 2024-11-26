@@ -4,8 +4,10 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
 import { UserRoles } from '../../common/enums/user.enum';
+import { Sessions } from '../../libs/session/entity/session.entity';
 
 @Entity()
 export class Users {
@@ -45,4 +47,10 @@ export class Users {
     onUpdate: 'NOW()',
   })
   updated_at: Date;
+
+  @OneToMany(
+    (): typeof Sessions => Sessions,
+    (session: Sessions): Users => session.user_id,
+  )
+  sessions: Sessions[];
 }

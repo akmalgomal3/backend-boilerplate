@@ -9,6 +9,9 @@ import * as bcrypt from 'bcrypt';
 @Injectable()
 export class AuthService {
   private secretKey: string;
+  private strongPassword: RegExp = new RegExp(
+    /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,12}$/,
+  );
 
   constructor(
     private readonly userService: UserService,
@@ -34,16 +37,14 @@ export class AuthService {
         throw new BadRequestException('username / email already taken !!');
       }
 
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword: string = await bcrypt.hash(password, 10);
 
-      const user: Users = await this.userService.createUser({
+      return this.userService.createUser({
         email,
         username,
         password: hashedPassword,
         role,
       });
-
-      return user;
     } catch (e) {
       throw e;
     }
@@ -57,6 +58,12 @@ export class AuthService {
       throw new BadRequestException('Password does not match');
     }
 
+    if (!this.strongPassword.test(decryptedPassword)) {
+      throw new BadRequestException(
+        'Password must be 8 to 12 characters long, contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+      );
+    }
+
     return password;
   }
 
@@ -66,10 +73,7 @@ export class AuthService {
     return bytes.toString(CryptoJS.enc.Utf8);
   }
 
-  generateEncryptedPassword(
-    password: string,
-    confirmPassword: string,
-  ): object {
+  generateEncryptedPassword(password: string, confirmPassword: string): object {
     const encryptedPassword: string = this.encrypt(password);
     const encryptedConfirmPassword: string = this.encrypt(confirmPassword);
 
@@ -80,11 +84,6 @@ export class AuthService {
   }
 
   private encrypt(str: string): string {
-    const encryptedPassword: string = CryptoJS.AES.encrypt(
-      str,
-      this.secretKey,
-    ).toString();
-
-    return encryptedPassword;
+    return CryptoJS.AES.encrypt(str, this.secretKey).toString();
   }
 }
