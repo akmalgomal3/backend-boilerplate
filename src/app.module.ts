@@ -6,13 +6,12 @@ import { DatabaseModule } from './databases/database.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true
+      isGlobal: true,
     }),
     UsersModule,
-    DatabaseModule
   ],
 
   controllers: [],
   providers: [],
 })
-export class AppModule { }
+export class AppModule {}

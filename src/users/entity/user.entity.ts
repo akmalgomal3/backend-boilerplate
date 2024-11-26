@@ -1,40 +1,48 @@
-import { Entity, Column, PrimaryGeneratedColumn, Timestamp } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { UserRoles } from '../../common/enums/user.enum';
 
 @Entity()
 export class Users {
-    @PrimaryGeneratedColumn()
-    user_id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @Column()
-    username: string;
+  @Column({ type: 'varchar', unique: true })
+  username: string;
 
-    @Column()
-    password: string;
+  @Column({ type: 'varchar' })
+  email: string;
 
-    @Column()
-    email: string;
+  @Column({ type: 'varchar' })
+  password: string;
 
-    @Column()
-    role_id: string;
+  @Column({ type: 'enum', enum: UserRoles })
+  role: string;
 
-    @Column()
-    full_name: string;
+  @Column({ type: 'int', default: 0 })
+  failed_login_attempts: number;
 
-    @Column()
-    active: boolean;
+  @Column({ type: 'boolean', default: false })
+  is_banned: boolean;
 
-    @Column()
-    created_by: string;
+  @Column({ type: 'text', nullable: true, default: null })
+  ban_reason: string;
 
-    @Column()
-    created_at: Date;
+  @CreateDateColumn({
+    type: 'timestamp',
+    default: (): string => 'CURRENT_TIMESTAMP',
+  })
+  created_at: Date;
 
-    @Column()
-    updated_by: string;
-
-    @Column()
-    updated_at: Date;
-
-    @Column()
-    is_dev: boolean;
+  @UpdateDateColumn({
+    type: 'timestamp',
+    default: (): string => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updated_at: Date;
 }

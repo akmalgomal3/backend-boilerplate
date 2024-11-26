@@ -1,23 +1,48 @@
 version: "3"
+
 services:
-  nest-backend:
-    container_name: boilerplate
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "7xxx:7xxx"
-    restart: unless-stopped
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.15
+    container_name: esprobation01
     environment:
-      VITE_CRYPTO_SECRET_KEY: "xxxxx"  
-      VITE_CRYPTO_IV_KEY: "xxxxx"
-      TOKEN_EXP: "12h"                              
-      TOKEN_SECRET: "xxxxx"                
-      DB_HOST: "xxxxx"
-      DB_PORT: "xxxxx"
-      DB_USERNAME: "xxxxx"
-      DB_NAME: "xxxxx"
-      DB_PASSWORD: "xxxxx"
-      APP_PORT: "xxxxx"
-      MONGODB_URL: "xxxxx"
-      MONGODB_DBNAME: "xxxxx"
+      - node.name=esprobation01
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - ${ELASTICSEARCH_PORT}:9200
+    networks:
+      - elastic
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.15
+    container_name: kibprobation01
+    environment:
+      - ELASTICSEARCH_HOSTS=http://esprobation01:9200
+    ports:
+      - ${KIBANA_PORT}:5601
+    depends_on:
+      - elasticsearch
+    networks:
+      - elastic
+
+  postgres:
+    image: postgres
+    container_name: probation01_postgres
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${DB_PORT}:5432"
+    networks:
+      - elastic
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+
+networks:
+  elastic:
+    driver: bridge
+
+volumes:
+  postgresql_data:
+    driver: local
