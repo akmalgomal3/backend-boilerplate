@@ -5,6 +5,7 @@ import {
   PaginationDto,
 } from 'src/common/dto/pagination.dto';
 import { Users } from '../entity/user.entity';
+import { CreateUserDto } from '../dto/create-user.dto';
 
 @Injectable()
 export class UserService {
@@ -42,6 +43,22 @@ export class UserService {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
       return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getUniqueUser(username: string, email: string): Promise<boolean> {
+    try {
+      return await this.userRepository.isExist(username, email);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async createUser(data: CreateUserDto): Promise<Users> {
+    try {
+      return await this.userRepository.createUser(data);
     } catch (error) {
       throw error;
     }
