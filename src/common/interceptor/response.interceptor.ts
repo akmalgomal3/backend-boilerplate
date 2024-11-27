@@ -34,6 +34,7 @@ export class ResponseInterceptor<T>
         };
       }),
       catchError((exception: HttpException) => {
+        console.log(exception);
         const status: number = exception.getStatus();
         const errorResponse = exception.getResponse() as any;
 

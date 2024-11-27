@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/user.module';
-import { DatabaseModule } from './databases/database.module';
 import { AuthModule } from './auth/auth.module';
 import { SessionModule } from './libs/session/session.module';
+import { UtilsModule } from './common/utils/utils.module';
 
 @Module({
   imports: [
@@ -13,8 +13,8 @@ import { SessionModule } from './libs/session/session.module';
     UsersModule,
     AuthModule,
     SessionModule,
+    UtilsModule,
   ],
-
   controllers: [],
   providers: [],
 })

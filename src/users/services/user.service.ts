@@ -63,4 +63,12 @@ export class UserService {
       throw error;
     }
   }
+
+  async getUserByIdentifier(identifier: string): Promise<Users> {
+    try {
+      return await this.userRepository.getUserByIdentifier(identifier);
+    } catch (error) {
+      throw error;
+    }
+  }
 }

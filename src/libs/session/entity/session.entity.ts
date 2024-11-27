@@ -1,4 +1,10 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Users } from '../../../users/entity/user.entity';
 import { DeviceType } from '../../../common/enums/user.enum';
 
@@ -6,15 +12,6 @@ import { DeviceType } from '../../../common/enums/user.enum';
 export class Sessions {
   @PrimaryGeneratedColumn('uuid')
   id: string;
-
-  @ManyToOne(
-    (): typeof Users => Users,
-    (user: Users): Sessions[] => user.sessions,
-    {
-      onDelete: 'CASCADE',
-    },
-  )
-  user_id: Users;
 
   @Column({ type: 'varchar', nullable: true })
   ip_address: string;
@@ -27,4 +24,14 @@ export class Sessions {
 
   @Column({ type: 'enum', enum: DeviceType })
   device_type: DeviceType;
+
+  @ManyToOne(
+    (): typeof Users => Users,
+    (user: Users): Sessions[] => user.sessions,
+    {
+      onDelete: 'CASCADE',
+    },
+  )
+  @JoinColumn({ name: 'user_id' })
+  user_id: Users;
 }

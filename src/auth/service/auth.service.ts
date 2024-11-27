@@ -1,29 +1,39 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UserService } from '../../users/services/user.service';
-import { ConfigService } from '@nestjs/config';
 import { RegisterDto } from '../dto/register.dto';
-import * as CryptoJS from 'crypto-js';
 import { Users } from '../../users/entity/user.entity';
 import * as bcrypt from 'bcrypt';
+import { LoginDto } from '../dto/login.dto';
+import { UtilsService } from '../../common/utils/services/utils.service';
+import { JwtService } from '@nestjs/jwt';
+import { SessionService } from '../../libs/session/services/session.service';
+import { addHours } from 'date-fns';
+import { JwtPayload } from '../../common/types/jwt-payload.type';
+import { UserRoles } from '../../common/enums/user.enum';
 
 @Injectable()
 export class AuthService {
-  private secretKey: string;
   private strongPassword: RegExp = new RegExp(
     /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,12}$/,
   );
 
   constructor(
     private readonly userService: UserService,
-    private readonly configService: ConfigService,
-  ) {
-    this.secretKey = this.configService.get<string>('SECRET_KEY');
-  }
+    private readonly utils: UtilsService,
+    private readonly jwtService: JwtService,
+    private readonly sessionService: SessionService,
+  ) {}
 
   async register(registerDto: RegisterDto): Promise<Users> {
     try {
       const { email, username, role } = registerDto;
-      const password: string = this.validatePassword(
+      const password: string = this.validateConfirmPassword(
         registerDto.password,
         registerDto.confirmPassword,
       );
@@ -50,9 +60,98 @@ export class AuthService {
     }
   }
 
-  private validatePassword(password: string, confirmPassword: string): string {
-    const decryptedPassword: string = this.decrypt(password);
-    const decryptedConfirmPassword: string = this.decrypt(confirmPassword);
+  async login(loginDto: LoginDto): Promise<{ accessToken: string }> {
+    try {
+      const { identifier, deviceType } = loginDto;
+      const password: string = this.utils.decrypt(loginDto.password);
+
+      const user: Users =
+        await this.userService.getUserByIdentifier(identifier);
+
+      const isPasswordValid = await this.validatePassword(
+        password,
+        user.password,
+      );
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid password');
+      }
+
+      const activeSession = await this.sessionService.getUserActiveSession(
+        user.id,
+        deviceType,
+      );
+
+      if (activeSession) {
+        throw new UnauthorizedException(
+          'There is an active user, please logout first',
+        );
+      }
+
+      const now = new Date();
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const [_, session] = await Promise.all([
+        this.sessionService.deleteUnusedSessions(user.id, deviceType),
+        this.sessionService.createSession({
+          userId: user.id,
+          type: deviceType,
+          lastActivity: now,
+          ipAddress: '192.168.10.1', // TODO: get real IP address
+          expiresAt: addHours(now, 1),
+        }),
+      ]);
+
+      const jwtPayload: JwtPayload = {
+        id: user.id,
+        role: user.role as UserRoles,
+        email: user.email,
+        device_type: deviceType,
+        session_id: session.id,
+      };
+      const accessToken: string = this.jwtService.sign(jwtPayload, {
+        expiresIn: '1h',
+      });
+
+      return {
+        accessToken,
+      };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error when user try to login',
+        e.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  generateEncryptedPassword(password: string, confirmPassword: string): object {
+    const encryptedPassword: string = this.utils.encrypt(password);
+    const encryptedConfirmPassword: string =
+      this.utils.encrypt(confirmPassword);
+
+    return {
+      encryptedPassword,
+      encryptedConfirmPassword,
+    };
+  }
+
+  private async validatePassword(
+    password: string,
+    hashedPassword: string,
+  ): Promise<boolean> {
+    const isPasswordMatch: boolean = await bcrypt.compare(
+      password,
+      hashedPassword,
+    );
+
+    return isPasswordMatch;
+  }
+
+  private validateConfirmPassword(
+    password: string,
+    confirmPassword: string,
+  ): string {
+    const decryptedPassword: string = this.utils.decrypt(password);
+    const decryptedConfirmPassword: string =
+      this.utils.decrypt(confirmPassword);
 
     if (decryptedPassword !== decryptedConfirmPassword) {
       throw new BadRequestException('Password does not match');
@@ -64,26 +163,6 @@ export class AuthService {
       );
     }
 
-    return password;
-  }
-
-  private decrypt(str: string): string {
-    const bytes = CryptoJS.AES.decrypt(str, this.secretKey);
-
-    return bytes.toString(CryptoJS.enc.Utf8);
-  }
-
-  generateEncryptedPassword(password: string, confirmPassword: string): object {
-    const encryptedPassword: string = this.encrypt(password);
-    const encryptedConfirmPassword: string = this.encrypt(confirmPassword);
-
-    return {
-      encryptedPassword,
-      encryptedConfirmPassword,
-    };
-  }
-
-  private encrypt(str: string): string {
-    return CryptoJS.AES.encrypt(str, this.secretKey).toString();
+    return decryptedPassword;
   }
 }

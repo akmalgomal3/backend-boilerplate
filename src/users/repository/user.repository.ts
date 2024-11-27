@@ -1,7 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { CreateUserDto } from '../dto/create-user.dto';
-import { UpdateUserDto } from '../dto/update-user.dto';
 import { Users } from '../entity/user.entity';
 
 @Injectable()
@@ -87,7 +86,23 @@ export class UserRepository {
     }
   }
 
-  async updateUser(userId: string, dto: UpdateUserDto): Promise<void> {}
+  async getUserByIdentifier(identifier: string): Promise<Users> {
+    try {
+      const query = `SELECT *
+                     FROM users
+                     WHERE username = $1
+                        OR email = $1`;
+      const users: Users[] = await this.repository.query(query, [identifier]);
 
-  async deleteUser(userId: string): Promise<void> {}
+      if (!users.length) {
+        throw new NotFoundException('Invalid username / email');
+      }
+
+      return {
+        ...users[0],
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
 }

@@ -6,5 +6,5 @@ export enum UserRoles {
 
 export enum DeviceType {
   mobile = 'mobile',
-  desktop = 'desktop',
+  web = 'web',
 }
