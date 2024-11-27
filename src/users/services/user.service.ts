@@ -14,7 +14,9 @@ import {
 import { SessionService } from '../../libs/session/services/session.service';
 import { LoginUserResponseType } from '../types/login-user-response.type';
 import { UserRoles } from '../../common/enums/user.enum';
-import { interval, Observable, switchMap } from 'rxjs';
+import { interval, Observable, switchMap, throwError } from 'rxjs';
+import { JwtPayload } from '../../common/types/jwt-payload.type';
+import { catchError } from 'rxjs/operators';
 
 @Injectable()
 export class UserService {
@@ -166,7 +168,25 @@ export class UserService {
     }
   }
 
-  subscribeToGetLoggedInUser(): Observable<LoginUserResponseType[]> {
-    return interval(3000).pipe(switchMap(() => this.getLoggedInUser()));
+  subscribeToGetLoggedInUser(
+    user: JwtPayload,
+  ): Observable<LoginUserResponseType[]> {
+    return interval(3000).pipe(
+      switchMap(async (): Promise<LoginUserResponseType[]> => {
+        const activeSession = await this.sessionService.getUserActiveSession(
+          user.id,
+          user.device_type,
+        );
+
+        if (!activeSession) {
+          throw new HttpException('Session Ended', HttpStatus.UNAUTHORIZED);
+        }
+
+        return this.getLoggedInUser();
+      }),
+      catchError((error) =>
+        throwError(() => new HttpException(error.message, error.status)),
+      ),
+    );
   }
 }

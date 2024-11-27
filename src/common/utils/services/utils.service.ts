@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import * as CryptoJS from 'crypto-js';
 import { ConfigService } from '@nestjs/config';
+import axios from 'axios';
+import { IpInfo } from '../../types/ip.type';
 
 @Injectable()
 export class UtilsService {
@@ -18,5 +20,11 @@ export class UtilsService {
 
   encrypt(str: string): string {
     return CryptoJS.AES.encrypt(str, this.secretKey).toString();
+  }
+
+  async getIpInfo(ip: string): Promise<IpInfo> {
+    const { data } = await axios.get(`http://ip-api.com/json/${ip}`);
+
+    return data;
   }
 }

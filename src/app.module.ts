@@ -10,6 +10,7 @@ import { JwtModule } from './libs/jwt/jwt.module';
 import { RolesGuard } from './common/guards/roles.guard';
 import { ResponseInterceptor } from './common/interceptor/response.interceptor';
 import { SessionInterceptor } from './common/interceptor/session/session.interceptor';
+import { ElasticsearchModule } from './libs/elasticsearch/elasticsearch.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { SessionInterceptor } from './common/interceptor/session/session.interce
     SessionModule,
     UtilsModule,
     JwtModule,
+    ElasticsearchModule,
   ],
   controllers: [],
   providers: [

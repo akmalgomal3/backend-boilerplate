@@ -16,6 +16,8 @@ import { SessionService } from '../../libs/session/services/session.service';
 import { addHours } from 'date-fns';
 import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { UserRoles } from '../../common/enums/user.enum';
+import { CreateLogDto } from '../../libs/elasticsearch/dto/create-log.dto';
+import { ElasticsearchService } from '../../libs/elasticsearch/services/elasticsearch.service';
 
 @Injectable()
 export class AuthService {
@@ -28,6 +30,7 @@ export class AuthService {
     private readonly utils: UtilsService,
     private readonly jwtService: JwtService,
     private readonly sessionService: SessionService,
+    private readonly elasticClient: ElasticsearchService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<Users> {
@@ -60,9 +63,12 @@ export class AuthService {
     }
   }
 
-  async login(loginDto: LoginDto): Promise<{ accessToken: string }> {
+  async login(
+    loginDto: LoginDto,
+    logData: CreateLogDto,
+  ): Promise<{ accessToken: string }> {
+    const { identifier, deviceType } = loginDto;
     try {
-      const { identifier, deviceType } = loginDto;
       const password: string = this.utils.decrypt(loginDto.password);
 
       const user: Users =
@@ -111,10 +117,29 @@ export class AuthService {
         accessToken,
       };
     } catch (e) {
+      await this.createFailedLoginLog(
+        logData,
+        `Failed login attempt for ${identifier}, due to ${e.message || 'unknown error'}`,
+      );
       throw new HttpException(
         e.message || 'Error when user try to login',
         e.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  async createFailedLoginLog(
+    logData: CreateLogDto,
+    activity: string,
+  ): Promise<void> {
+    try {
+      await this.elasticClient.createLog({
+        ...logData,
+        status: 'failed',
+        activity,
+      });
+    } catch (e) {
+      throw e;
     }
   }
 

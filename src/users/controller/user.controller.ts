@@ -3,6 +3,7 @@ import {
   Get,
   Param,
   Query,
+  Req,
   Sse,
   UseInterceptors,
 } from '@nestjs/common';
@@ -13,6 +14,7 @@ import { UserRoles } from '../../common/enums/user.enum';
 import { GetBannedUsersDto } from '../dto/get-banned-users.dto';
 import { map } from 'rxjs/operators';
 import { LoginUserResponseType } from '../types/login-user-response.type';
+import { JwtPayload } from '../../common/types/jwt-payload.type';
 
 @Controller()
 @UseInterceptors(ResponseInterceptor)
@@ -41,9 +43,10 @@ export class UserController {
 
   @Roles(UserRoles.Admin, UserRoles.Executive)
   @Sse('users/logged-in')
-  listenToLoggedInUsers() {
+  listenToLoggedInUsers(@Req() req: any) {
+    const user: JwtPayload = req.user;
     return this.userService
-      .subscribeToGetLoggedInUser()
+      .subscribeToGetLoggedInUser(user)
       .pipe(map((data: LoginUserResponseType[]) => ({ data })));
   }
 

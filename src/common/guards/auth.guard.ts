@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  HttpException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -42,6 +43,10 @@ export class AuthGuard implements CanActivate {
         secret: this.configService.get('JWT_SECRET') || 'thisshouldbeasecret',
       });
 
+      if (!payload) {
+        throw new UnauthorizedException('Invalid token');
+      }
+
       const user = await this.userService.getUser(payload.id);
 
       if (!user) {
@@ -49,8 +54,8 @@ export class AuthGuard implements CanActivate {
       }
 
       request['user'] = payload;
-    } catch {
-      throw new UnauthorizedException();
+    } catch (e) {
+      throw new HttpException(e.message || 'Unauthorized', e.status || 401);
     }
     return true;
   }

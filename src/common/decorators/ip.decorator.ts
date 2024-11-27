@@ -5,19 +5,7 @@ export const Ip = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): IpType => {
     const request = ctx.switchToHttp().getRequest();
     const ipPublic = request['ip-public'];
-    let ipPrivate = request['ip-private'];
-
-    if (Array.isArray(ipPrivate)) {
-      ipPrivate = ipPrivate[0];
-    }
-
-    if (ipPrivate === '::1') {
-      ipPrivate = '127.0.0.1';
-    }
-
-    if (ipPrivate.includes('::ffff:')) {
-      ipPrivate = ipPrivate.split('::ffff:')[1];
-    }
+    const ipPrivate = request['ip-private'];
 
     return {
       'ip-private': ipPrivate,
