@@ -71,4 +71,37 @@ export class UserService {
       throw error;
     }
   }
+
+  async addFailedLoginAttempts(userId: string): Promise<void> {
+    try {
+      await this.userRepository.addFailedLoginAttempts(userId);
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to add failed login attempts',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async banUser(userId: string, reason: string): Promise<void> {
+    try {
+      await this.userRepository.banUser(userId, reason);
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to ban user',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async setFailedLoginAttemptsToZero(userId: string): Promise<void> {
+    try {
+      await this.userRepository.setFailedLoginAttemptsToZero(userId);
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to set failed login attempts to zero',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

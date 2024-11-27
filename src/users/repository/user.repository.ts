@@ -67,6 +67,40 @@ export class UserRepository {
     }
   }
 
+  async addFailedLoginAttempts(userId: string): Promise<void> {
+    try {
+      const query = `UPDATE users
+                     SET failed_login_attempts = failed_login_attempts + 1
+                     WHERE id = $1`;
+      await this.repository.query(query, [userId]);
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async banUser(userId: string, reason: string): Promise<void> {
+    try {
+      const query = `UPDATE users
+                     SET is_banned  = true,
+                         ban_reason = $2
+                     WHERE id = $1`;
+      await this.repository.query(query, [userId, reason]);
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async setFailedLoginAttemptsToZero(userId: string): Promise<void> {
+    try {
+      const query = `UPDATE users
+                     SET failed_login_attempts = 0
+                     WHERE id = $1`;
+      await this.repository.query(query, [userId]);
+    } catch (e) {
+      throw e;
+    }
+  }
+
   async createUser(dto: CreateUserDto): Promise<Users> {
     try {
       const { username, email, password, role } = dto;

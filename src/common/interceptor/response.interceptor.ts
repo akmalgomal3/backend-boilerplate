@@ -9,6 +9,7 @@ import {
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { ApiResponse } from '../types/response.type';
+import { HttpArgumentsHost } from '@nestjs/common/interfaces';
 
 @Injectable()
 export class ResponseInterceptor<T>
@@ -20,7 +21,7 @@ export class ResponseInterceptor<T>
   ): Observable<ApiResponse<T>> {
     return next.handle().pipe(
       map((data) => {
-        const ctx = context.switchToHttp();
+        const ctx: HttpArgumentsHost = context.switchToHttp();
         const response = ctx.getResponse();
         const statusCode =
           data?.statusCode || response.statusCode || HttpStatus.OK;

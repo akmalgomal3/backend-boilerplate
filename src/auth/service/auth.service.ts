@@ -68,13 +68,7 @@ export class AuthService {
       const user: Users =
         await this.userService.getUserByIdentifier(identifier);
 
-      const isPasswordValid = await this.validatePassword(
-        password,
-        user.password,
-      );
-      if (!isPasswordValid) {
-        throw new UnauthorizedException('Invalid password');
-      }
+      await this.validateUser(password, user);
 
       const activeSession = await this.sessionService.getUserActiveSession(
         user.id,
@@ -82,6 +76,7 @@ export class AuthService {
       );
 
       if (activeSession) {
+        await this.userService.addFailedLoginAttempts(user.id);
         throw new UnauthorizedException(
           'There is an active user, please logout first',
         );
@@ -89,8 +84,9 @@ export class AuthService {
 
       const now = new Date();
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const [_, session] = await Promise.all([
+      const [_a, _b, session] = await Promise.all([
         this.sessionService.deleteUnusedSessions(user.id, deviceType),
+        this.userService.setFailedLoginAttemptsToZero(user.id),
         this.sessionService.createSession({
           userId: user.id,
           type: deviceType,
@@ -133,16 +129,21 @@ export class AuthService {
     };
   }
 
-  private async validatePassword(
-    password: string,
-    hashedPassword: string,
-  ): Promise<boolean> {
+  private async validateUser(password: string, user: Users): Promise<void> {
     const isPasswordMatch: boolean = await bcrypt.compare(
       password,
-      hashedPassword,
+      user.password,
     );
 
-    return isPasswordMatch;
+    if (user.failed_login_attempts >= 5) {
+      await this.userService.banUser(user.id, 'Too many failed login attempts');
+      throw new UnauthorizedException('User has been banned');
+    }
+
+    if (!isPasswordMatch) {
+      await this.userService.addFailedLoginAttempts(user.id);
+      throw new BadRequestException('Invalid password');
+    }
   }
 
   private validateConfirmPassword(
