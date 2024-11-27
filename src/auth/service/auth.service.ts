@@ -135,6 +135,10 @@ export class AuthService {
       user.password,
     );
 
+    if (user.is_banned) {
+      throw new UnauthorizedException('User has been banned');
+    }
+
     if (user.failed_login_attempts >= 5) {
       await this.userService.banUser(user.id, 'Too many failed login attempts');
       throw new UnauthorizedException('User has been banned');

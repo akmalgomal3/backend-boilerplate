@@ -6,6 +6,7 @@ import {
 } from 'src/common/dto/pagination.dto';
 import { Users } from '../entity/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
+import { GetBannedUsersDto } from '../dto/get-banned-users.dto';
 
 @Injectable()
 export class UserService {
@@ -102,6 +103,36 @@ export class UserService {
         error.message || 'Failed to set failed login attempts to zero',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  async getBannedUsers(
+    dto: GetBannedUsersDto,
+  ): Promise<PaginatedResponseDto<Users>> {
+    try {
+      const { page = 1, limit = 10, orderBy, orderIn, search } = dto;
+      const skip: number = (page - 1) * limit;
+
+      const [data, totalItems] = await this.userRepository.getBannedUsers(
+        skip,
+        limit,
+        orderBy,
+        orderIn,
+        search,
+      );
+      const totalPages: number = Math.ceil(totalItems / limit);
+
+      return {
+        data,
+        metadata: {
+          page: Number(page),
+          limit: Number(limit),
+          totalPages: Number(totalPages),
+          totalItems: Number(totalItems),
+        },
+      };
+    } catch (error) {
+      throw error;
     }
   }
 }

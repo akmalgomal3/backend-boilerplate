@@ -1,5 +1,5 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Like, Raw, Repository } from 'typeorm';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { Users } from '../entity/user.entity';
 
@@ -137,6 +137,30 @@ export class UserRepository {
       };
     } catch (error) {
       throw error;
+    }
+  }
+
+  async getBannedUsers(
+    skip: number,
+    take: number,
+    orderBy: string,
+    orderIn: 'desc' | 'asc',
+    search: string | null,
+  ): Promise<[Users[], number]> {
+    try {
+      return await this.repository.findAndCount({
+        skip,
+        take,
+        where: {
+          is_banned: true,
+          username: search ? Like(`%${search}%`) : undefined,
+          email: search ? Like(`%${search}%`) : undefined,
+        },
+        order: { [orderBy]: orderIn },
+        select: ['id', 'username', 'email', 'role', 'ban_reason'],
+      });
+    } catch (e) {
+      throw e;
     }
   }
 }

@@ -29,9 +29,6 @@ export class AuthGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    console.log('ip public', request['ip-public']);
-    console.log('ip private', request['ip-private']);
-
     if (isPublic) {
       return true;
     }
