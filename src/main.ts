@@ -4,6 +4,7 @@ import { ResponseInterceptor } from './common/interceptor/response.interceptor';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
+import { IpMiddleware } from './common/middlewares/ip.middleware';
 
 async function bootstrap() {
   try {
@@ -13,6 +14,7 @@ async function bootstrap() {
 
     app.useGlobalInterceptors(new ResponseInterceptor());
     app.useGlobalPipes(new ValidationPipe());
+    app.use(new IpMiddleware().use);
     await app.listen(port);
 
     app.enableCors({

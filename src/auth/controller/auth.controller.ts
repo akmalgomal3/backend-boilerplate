@@ -3,11 +3,13 @@ import { AuthService } from '../service/auth.service';
 import { RegisterDto } from '../dto/register.dto';
 import { Users } from '../../users/entity/user.entity';
 import { LoginDto } from '../dto/login.dto';
+import { Public } from '../../common/decorators/public.decorator';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Public()
   @Post('/register')
   async register(@Body() registerDto: RegisterDto) {
     const result: Users = await this.authService.register(registerDto);
@@ -21,6 +23,7 @@ export class AuthController {
     };
   }
 
+  @Public()
   @Post('/login')
   async login(@Body() loginDto: LoginDto) {
     const data = await this.authService.login(loginDto);
@@ -29,6 +32,7 @@ export class AuthController {
     };
   }
 
+  @Public()
   @Post('/generate-password')
   async generatePassword(
     @Body() body: { password: string; confirmPassword: string },

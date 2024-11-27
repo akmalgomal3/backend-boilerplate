@@ -11,15 +11,6 @@ import { SessionModule } from '../libs/session/session.module';
   controllers: [AuthController],
   imports: [
     UsersModule,
-    JwtModule.registerAsync({
-      inject: [ConfigService],
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        global: true,
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '1h' },
-      }),
-    }),
     SessionModule,
   ],
 })

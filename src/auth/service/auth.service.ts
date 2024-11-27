@@ -84,9 +84,7 @@ export class AuthService {
 
       const now = new Date();
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const [_a, _b, session] = await Promise.all([
-        this.sessionService.deleteUnusedSessions(user.id, deviceType),
-        this.userService.setFailedLoginAttemptsToZero(user.id),
+      const [session] = await Promise.all([
         this.sessionService.createSession({
           userId: user.id,
           type: deviceType,
@@ -94,8 +92,11 @@ export class AuthService {
           ipAddress: '192.168.10.1', // TODO: get real IP address
           expiresAt: addHours(now, 1),
         }),
+        this.sessionService.deleteUnusedSessions(user.id, deviceType),
+        this.userService.setFailedLoginAttemptsToZero(user.id),
       ]);
 
+      // construct jwt payload
       const jwtPayload: JwtPayload = {
         id: user.id,
         role: user.role as UserRoles,
@@ -103,7 +104,7 @@ export class AuthService {
         device_type: deviceType,
         session_id: session.id,
       };
-      const accessToken: string = this.jwtService.sign(jwtPayload, {
+      const accessToken: string = await this.jwtService.signAsync(jwtPayload, {
         expiresIn: '1h',
       });
 
