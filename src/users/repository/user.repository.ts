@@ -1,53 +1,136 @@
-import { Inject, Injectable } from "@nestjs/common";
-import { DataSource, Repository } from "typeorm";
-import { CreateUserDto } from "../dto/create-user.dto";
-import { UpdateUserDto } from "../dto/update-user.dto";
-import { Users } from "../entity/user.entity";
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
+import { DataSource, Repository } from 'typeorm';
+import { CreateUserDto } from '../dto/create-user.dto';
+import { Users } from '../entity/user.entity';
 
 @Injectable()
 export class UserRepository {
-    private repository: Repository<Users>;
-    constructor(
-        @Inject('DB_POSTGRES')
-        private dataSource: DataSource
-    ) {
-        this.repository = this.dataSource.getRepository(Users);
-    }
+  private repository: Repository<Users>;
+  constructor(
+    @Inject('DB_POSTGRES')
+    private dataSource: DataSource,
+  ) {
+    this.repository = this.dataSource.getRepository(Users);
+  }
 
-    async getUsers(skip: number, take: number): Promise<[Users[], number]> {
-        try {
-            const result = await this.repository.findAndCount({
-                skip,
-                take,
-                order: {
-                    username: 'DESC'
-                }
-            });
-            return result
-        } catch (error) {
-            throw error;
+  async getUsers(skip: number, take: number): Promise<[Users[], number]> {
+    try {
+      const result = await this.repository.findAndCount({
+        skip,
+        take,
+        order: {
+          username: 'DESC',
+        },
+      });
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getUserById(userId: string): Promise<Users | null> {
+    try {
+      // const result = await this.repository.findOne({ where: { user_id: userId } })
+
+      // contoh raw query
+      const query = `SELECT * FROM users WHERE user_id = $1`;
+      const data = await this.repository.query(query, [userId]);
+      if (!data) {
+        throw new Error('User not found');
+      }
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async createUser(dto: CreateUserDto): Promise<void> {
+    try {
+      await this.dataSource.transaction(async (manager) => {
+        const query = `
+          INSERT INTO users (username, email, password, role_id, full_name)
+          VALUES ($1, $2, $3, $4, $5)
+          RETURNING user_id, username, email, role_id;
+        `;
+
+        const result = await manager.query(query, [
+          dto.username,
+          dto.email,
+          dto.password,
+          dto.role,
+          dto.fullName,
+        ]);
+
+        if (result.length === 0) {
+          throw new Error('Failed to insert user. No rows returned.');
         }
+
+        const createdUser = result[0];
+        console.log('User created successfully:', createdUser);
+        return createdUser;
+      });
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw new InternalServerErrorException('Could not create user.');
     }
+  }
 
-    async getUserById(userId: string): Promise<Users | null> {
-        try {
-            // const result = await this.repository.findOne({ where: { user_id: userId } })
-            
-            // contoh raw query
-            const query = `SELECT * FROM users WHERE user_id = $1`
-            const data = await this.repository.query(query, [userId])
-            if (!data) {
-                throw new Error('User not found');
-            }
-            return data
-        } catch (error) {
-            throw error;
-        }
+  async incrementFailedLoginAttempts(userId: string): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const query = `
+        UPDATE usersSSO
+        SET failed_login_attempts = failed_login_attempts + 1
+        WHERE id = $1;
+      `;
+      await manager.query(query, [userId]);
+    });
+  }
+
+  async resetFailedLoginAttempts(userId: string): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const query = `
+        UPDATE usersSSO
+        SET failed_login_attempts = 0
+        WHERE id = $1;
+      `;
+      await manager.query(query, [userId]);
+    });
+  }
+
+  async banUser(userId: string): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const query = `
+        UPDATE usersSSO
+        SET is_banned = TRUE
+        WHERE id = $1;
+      `;
+      await manager.query(query, [userId]);
+    });
+  }
+
+  async findBannedUsers(): Promise<any[]> {
+    try {
+      const query = `
+      SELECT id, name, email, role, is_banned
+      FROM usersSSO
+      WHERE is_banned = TRUE;
+    `;
+      const data = await this.dataSource.query(query);
+      if (!data) {
+        throw new Error('Cant find banned users');
+      }
+      return data;
+    } catch (error) {
+      throw error;
     }
+  }
 
-    async createUser(dto: CreateUserDto): Promise<void> { }
-
-    async updateUser(userId: string, dto: UpdateUserDto): Promise<void> { }
-
-    async deleteUser(userId: string): Promise<void> { }
+  async findByEmail(email: string): Promise<Users | null> {
+    const result = await this.repository.findOneBy({ email });
+    return result;
+  }
 }

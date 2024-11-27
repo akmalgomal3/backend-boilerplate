@@ -6,11 +6,10 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   try {
-
     const app = await NestFactory.create(AppModule);
     const configService = app.get(ConfigService);
     const port = configService.get<number>('APP_PORT') ?? 3000;
-  
+
     app.useGlobalInterceptors(new ResponseInterceptor());
     await app.listen(port);
 
@@ -19,14 +18,12 @@ async function bootstrap() {
     });
 
     const config = new DocumentBuilder()
-		.setTitle('#')
-		.setVersion('1.0')
-		.addBearerAuth()
-		.build();
+      .setTitle('#')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api', app, document);
-
-    
   } catch (error) {
     console.error('Error during application creation:', error);
   }
