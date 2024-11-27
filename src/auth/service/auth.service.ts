@@ -83,7 +83,6 @@ export class AuthService {
       }
 
       const now = new Date();
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const [session] = await Promise.all([
         this.sessionService.createSession({
           userId: user.id,
@@ -125,8 +124,8 @@ export class AuthService {
       this.utils.encrypt(confirmPassword);
 
     return {
-      encryptedPassword,
-      encryptedConfirmPassword,
+      password: encryptedPassword,
+      confirmPassword: encryptedConfirmPassword,
     };
   }
 

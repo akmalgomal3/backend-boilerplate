@@ -1,6 +1,5 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ResponseInterceptor } from './common/interceptor/response.interceptor';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
@@ -12,7 +11,6 @@ async function bootstrap() {
     const configService = app.get(ConfigService);
     const port: number = configService.get<number>('APP_PORT') ?? 3000;
 
-    app.useGlobalInterceptors(new ResponseInterceptor());
     app.useGlobalPipes(new ValidationPipe());
     app.use(new IpMiddleware().use);
     await app.listen(port);
