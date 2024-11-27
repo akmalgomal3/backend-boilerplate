@@ -34,7 +34,7 @@ export class UserRepository {
             // const result = await this.repository.findOne({ where: { user_id: userId } })
             
             // contoh raw query
-            const query = `SELECT * FROM users WHERE id = $1 AND deleted_at IS NULL`
+            const query = `SELECT u.id as id, u.email as email, u.full_name as full_name, r.role as role FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.id = $1 AND u.deleted_at IS NULL`
             const data = await this.repository.query(query, [userId])
             if (!data) {
                 throw new Error('User not found');
@@ -48,7 +48,7 @@ export class UserRepository {
 
     async getUserByEmailOrUsername(email: string, username: string): Promise<Users | null>{
         try {
-            const query = `SELECT id, email, username, password FROM users WHERE (email = $1 OR username = $2) AND deleted_at IS NULL`            
+            const query = `SELECT u.id, u.email, u.username, u.password, r.role FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE (u.email = $1 OR u.username = $2) AND u.deleted_at IS NULL `            
             const data = await this.repository.query(query, [email, username])
         
             return data[0]

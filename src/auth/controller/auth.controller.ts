@@ -6,6 +6,9 @@ import { EncryptPasswordDTO } from '../../users/dto/encrypt.dto';
 import { LoginDTO } from 'src/users/dto/login.dto';
 import { JwtAuthGuard } from '../guard/jwt.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { RolesGuard } from 'src/roles/guard/roles.guard';
+import { RoleEnum } from 'src/roles/entity/roles.enum';
+import { Roles } from 'src/roles/guard/roles.decorator';
 
 @Controller('/v1/auth')
 export class AuthController {
@@ -33,8 +36,9 @@ export class AuthController {
     }
 
     @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard)
     @Get('/authorize-token')
+    @Roles(RoleEnum.Admin)
     profile(@Request() req: any){
         return {
             data: req.user

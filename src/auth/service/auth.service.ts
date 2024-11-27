@@ -93,7 +93,7 @@ export class AuthService {
         throw new BadRequestException(`password is incorrect`);
       }
 
-      const token = await this.getTokens(user.id, user.username);
+      const token = await this.getTokens(user.id, user.username, user.role);
 
       //TO DO: Add user activity here
       return token;
@@ -102,12 +102,13 @@ export class AuthService {
     }
   }
 
-  async getTokens(userId: string, username: string) {
+  async getTokens(userId: string, username: string, role: string) {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
         {
           sub: userId,
           username,
+          role
         },
         {
           secret: this.jwtSecret,
@@ -118,6 +119,7 @@ export class AuthService {
         {
           sub: userId,
           username,
+          role
         },
         {
           secret: this.jwtSecret,

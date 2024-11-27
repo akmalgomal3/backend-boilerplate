@@ -4,6 +4,9 @@ import { CreateRoleDTO } from '../dto/create-role.dto';
 import { UpdateRoleDTO } from '../dto/update-role.dto';
 import { JwtAuthGuard } from 'src/auth/guard/jwt.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { Roles } from '../guard/roles.decorator';
+import { RoleEnum } from '../entity/roles.enum';
+import { RolesGuard } from '../guard/roles.guard';
 
 @Controller('roles')
 export class RolesController {
@@ -30,8 +33,9 @@ export class RolesController {
     }
 
     @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard)
     @Post()
+    @Roles(RoleEnum.Admin) 
     async createRole(@Body() createRoleDTO: CreateRoleDTO){
         const result = await this.rolesService.createRole(createRoleDTO)
         return {
@@ -40,8 +44,9 @@ export class RolesController {
     }
 
     @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard)
     @Patch(':id')
+    @Roles(RoleEnum.Admin) 
     async updateRole(
       @Param('id', ParseUUIDPipe) id: string,
       @Body() updateRoleDTO: UpdateRoleDTO,
@@ -53,8 +58,9 @@ export class RolesController {
     }
 
     @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard)
     @Delete(':id')
+    @Roles(RoleEnum.Admin) 
     async softDeleteRole(@Param('id') id: string){
         const result = await this.rolesService.softDeleteRole(id);
         return {

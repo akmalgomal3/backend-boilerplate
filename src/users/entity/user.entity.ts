@@ -10,6 +10,9 @@ export class Users extends BaseColumn {
     @Column()
     role_id: string;
 
+    @Column()
+    role: string;
+
     @Column({ unique: true })
     email: string;
   
