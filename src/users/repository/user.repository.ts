@@ -1,7 +1,8 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { DataSource, Like, Raw, Repository } from 'typeorm';
+import { DataSource, Like, MoreThan, Repository } from 'typeorm';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { Users } from '../entity/user.entity';
+import { UserWithSessions } from '../../common/types/user.type';
 
 @Injectable()
 export class UserRepository {
@@ -159,6 +160,24 @@ export class UserRepository {
         order: { [orderBy]: orderIn },
         select: ['id', 'username', 'email', 'role', 'ban_reason'],
       });
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async getLoginUser(): Promise<UserWithSessions[]> {
+    try {
+      const users: Users[] = await this.repository.find({
+        where: {
+          sessions: {
+            expires_at: MoreThan(new Date()),
+            last_activity: MoreThan(new Date(Date.now() - 15 * 60 * 1000)),
+          },
+        },
+        relations: ['sessions'],
+      });
+
+      return users;
     } catch (e) {
       throw e;
     }

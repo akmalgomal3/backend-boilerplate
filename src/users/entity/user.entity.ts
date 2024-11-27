@@ -50,7 +50,7 @@ export class Users {
 
   @OneToMany(
     (): typeof Sessions => Sessions,
-    (session: Sessions): Users => session.user_id,
+    (session: Sessions): Users => session.user,
   )
   sessions: Sessions[];
 }

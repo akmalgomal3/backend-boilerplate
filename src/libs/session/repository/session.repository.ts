@@ -1,8 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, MoreThan, Repository } from 'typeorm';
 import { Sessions } from '../entity/session.entity';
 import { CreateSessionDto } from '../dto/create-session.dto';
 import { DeviceType } from '../../../common/enums/user.enum';
+import { SessionWithUser } from '../../../common/types/user.type';
 
 @Injectable()
 export class SessionRepository {
@@ -94,6 +95,22 @@ export class SessionRepository {
         `,
         [sessionId],
       );
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async getActiveSessions(): Promise<SessionWithUser[]> {
+    try {
+      const sessions: SessionWithUser[] = await this.repository.find({
+        relations: ['user'],
+        where: {
+          expires_at: MoreThan(new Date()),
+          last_activity: MoreThan(new Date(Date.now() - 15 * 60 * 1000)),
+        },
+      });
+
+      return sessions as SessionWithUser[];
     } catch (e) {
       throw e;
     }

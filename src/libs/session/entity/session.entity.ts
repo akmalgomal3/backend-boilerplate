@@ -33,5 +33,5 @@ export class Sessions {
     },
   )
   @JoinColumn({ name: 'user_id' })
-  user_id: Users;
+  user: Users;
 }

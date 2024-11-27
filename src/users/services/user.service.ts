@@ -7,10 +7,21 @@ import {
 import { Users } from '../entity/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { GetBannedUsersDto } from '../dto/get-banned-users.dto';
+import {
+  SessionWithUser,
+  UserWithSessions,
+} from '../../common/types/user.type';
+import { SessionService } from '../../libs/session/services/session.service';
+import { LoginUserResponseType } from '../types/login-user-response.type';
+import { UserRoles } from '../../common/enums/user.enum';
+import { interval, Observable, switchMap } from 'rxjs';
 
 @Injectable()
 export class UserService {
-  constructor(private userRepository: UserRepository) {}
+  constructor(
+    private userRepository: UserRepository,
+    private sessionService: SessionService,
+  ) {}
 
   async getUsers(dto: PaginationDto): Promise<PaginatedResponseDto<Users>> {
     try {
@@ -134,5 +145,28 @@ export class UserService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async getLoggedInUser(): Promise<LoginUserResponseType[]> {
+    try {
+      const sessions: SessionWithUser[] =
+        await this.sessionService.getActiveSessions();
+
+      return sessions.map((session: SessionWithUser) => ({
+        id: session.user.id,
+        email: session.user.email,
+        username: session.user.username,
+        role: session.user.role as UserRoles,
+        deviceType: session.device_type,
+        lastActivity: session.last_activity,
+        expiresAt: session.expires_at,
+      }));
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  subscribeToGetLoggedInUser(): Observable<LoginUserResponseType[]> {
+    return interval(3000).pipe(switchMap(() => this.getLoggedInUser()));
   }
 }

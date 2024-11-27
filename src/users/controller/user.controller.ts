@@ -1,9 +1,18 @@
-import { Controller, Get, Param, Query, UseInterceptors } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  Sse,
+  UseInterceptors,
+} from '@nestjs/common';
 import { ResponseInterceptor } from 'src/common/interceptor/response.interceptor';
 import { UserService } from '../services/user.service';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRoles } from '../../common/enums/user.enum';
 import { GetBannedUsersDto } from '../dto/get-banned-users.dto';
+import { map } from 'rxjs/operators';
+import { LoginUserResponseType } from '../types/login-user-response.type';
 
 @Controller()
 @UseInterceptors(ResponseInterceptor)
@@ -28,6 +37,14 @@ export class UserController {
       data: result.data,
       metadata: result.metadata,
     };
+  }
+
+  @Roles(UserRoles.Admin, UserRoles.Executive)
+  @Sse('users/logged-in')
+  listenToLoggedInUsers() {
+    return this.userService
+      .subscribeToGetLoggedInUser()
+      .pipe(map((data: LoginUserResponseType[]) => ({ data })));
   }
 
   @Get('user/:userId')
