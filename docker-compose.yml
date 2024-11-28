@@ -11,6 +11,16 @@ services:
     - docker.env
     networks:
     - postgres
+  mongodb:
+    container_name: mongodb
+    image: mongo:6.0
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - /data/mongodb_data:/data/mongodb_data
+    environment:
+    - docker.env   
 networks:
   postgres:
     driver: bridge
