@@ -15,8 +15,11 @@ export class AuthController {
 
   @Public()
   @Post('/register')
-  async register(@Body() registerDto: RegisterDto) {
-    const result: Users = await this.authService.register(registerDto);
+  async register(
+    @Body() registerDto: RegisterDto,
+    @LogData() logData: CreateLogDto,
+  ) {
+    const result: Users = await this.authService.register(registerDto, logData);
     return {
       data: {
         id: result.id,

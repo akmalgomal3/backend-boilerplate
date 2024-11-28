@@ -33,7 +33,10 @@ export class AuthService {
     private readonly elasticClient: ElasticsearchService,
   ) {}
 
-  async register(registerDto: RegisterDto): Promise<Users> {
+  async register(
+    registerDto: RegisterDto,
+    logData: CreateLogDto,
+  ): Promise<Users> {
     try {
       const { email, username, role } = registerDto;
       const password: string = this.validateConfirmPassword(
@@ -52,14 +55,37 @@ export class AuthService {
 
       const hashedPassword: string = await bcrypt.hash(password, 10);
 
-      return this.userService.createUser({
-        email,
-        username,
-        password: hashedPassword,
-        role,
-      });
+      const [user] = await Promise.all([
+        this.userService.createUser({
+          email,
+          username,
+          password: hashedPassword,
+          role,
+        }),
+        this.createLog(
+          {
+            ...logData,
+            username,
+          },
+          `User ${username} has been registered successfully`,
+          'success',
+        ),
+      ]);
+
+      return user;
     } catch (e) {
-      throw e;
+      await this.createLog(
+        {
+          ...logData,
+          username: registerDto.username || '',
+        },
+        `Failed to register user, due to ${e.message || 'unknown error'}`,
+        'failed',
+      );
+      throw new HttpException(
+        e.message || 'Error when user try to login',
+        e.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -99,6 +125,14 @@ export class AuthService {
         }),
         this.sessionService.deleteUnusedSessions(user.id, deviceType),
         this.userService.setFailedLoginAttemptsToZero(user.id),
+        this.createLog(
+          {
+            ...logData,
+            username: identifier,
+          },
+          `User ${identifier} has login successfully`,
+          'success',
+        ),
       ]);
 
       // construct jwt payload
@@ -106,6 +140,7 @@ export class AuthService {
         id: user.id,
         role: user.role as UserRoles,
         email: user.email,
+        username: user.username,
         device_type: deviceType,
         session_id: session.id,
       };
@@ -117,9 +152,13 @@ export class AuthService {
         accessToken,
       };
     } catch (e) {
-      await this.createFailedLoginLog(
-        logData,
+      await this.createLog(
+        {
+          ...logData,
+          username: identifier,
+        },
         `Failed login attempt for ${identifier}, due to ${e.message || 'unknown error'}`,
+        'failed',
       );
       throw new HttpException(
         e.message || 'Error when user try to login',
@@ -128,14 +167,15 @@ export class AuthService {
     }
   }
 
-  async createFailedLoginLog(
+  async createLog(
     logData: CreateLogDto,
     activity: string,
+    status: 'failed' | 'success',
   ): Promise<void> {
     try {
       await this.elasticClient.createLog({
         ...logData,
-        status: 'failed',
+        status,
         activity,
       });
     } catch (e) {

@@ -21,7 +21,7 @@ import { JwtPayload } from '../../common/types/jwt-payload.type';
 export class UserController {
   constructor(private userService: UserService) {}
 
-  @Roles(UserRoles.Executive, UserRoles.Admin, UserRoles.Executive)
+  @Roles(UserRoles.Executive, UserRoles.Admin, UserRoles.Operator)
   @Get('users')
   async getUsers(@Query('page') page: number, @Query('limit') limit: number) {
     const result = await this.userService.getUsers({ page, limit });

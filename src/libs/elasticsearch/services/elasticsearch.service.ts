@@ -28,6 +28,7 @@ export class ElasticsearchService {
           properties: {
             user_id: { type: 'text' },
             user_role: { type: 'keyword' },
+            username: { type: 'text' },
             method: { type: 'keyword' },
             path: { type: 'text' },
             log_type: { type: 'keyword' },

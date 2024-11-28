@@ -4,13 +4,14 @@ import { UsersModule } from './users/user.module';
 import { AuthModule } from './auth/auth.module';
 import { SessionModule } from './libs/session/session.module';
 import { UtilsModule } from './common/utils/utils.module';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthGuard } from './common/guards/auth.guard';
 import { JwtModule } from './libs/jwt/jwt.module';
 import { RolesGuard } from './common/guards/roles.guard';
 import { ResponseInterceptor } from './common/interceptor/response.interceptor';
 import { SessionInterceptor } from './common/interceptor/session/session.interceptor';
 import { ElasticsearchModule } from './libs/elasticsearch/elasticsearch.module';
+import { HttpExceptionFilter } from './common/exceptions/http-exceptions.filter';
 
 @Module({
   imports: [
@@ -42,6 +43,10 @@ import { ElasticsearchModule } from './libs/elasticsearch/elasticsearch.module';
     {
       provide: APP_INTERCEPTOR,
       useClass: SessionInterceptor,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
     },
   ],
 })

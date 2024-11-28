@@ -28,7 +28,6 @@ export class SessionInterceptor implements NestInterceptor {
     );
 
     const request = context.switchToHttp().getRequest();
-    console.log(request['log-data']);
 
     if (isPublic) {
       return next.handle();
@@ -49,9 +48,9 @@ export class SessionInterceptor implements NestInterceptor {
         HttpStatus.UNAUTHORIZED,
       );
     }
+
     return next.handle().pipe(
       tap(() => {
-        console.log('ENTER SESSION INTERCEPTOR AFTER');
         this.sessionService.updateSessionLastActivity(activeSession.id);
       }),
     );

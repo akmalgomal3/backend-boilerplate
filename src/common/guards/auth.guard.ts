@@ -12,6 +12,7 @@ import { UserService } from '../../users/services/user.service';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { JwtPayload } from '../types/jwt-payload.type';
 import { Request } from 'express';
+import { UtilsService } from '../utils/services/utils.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -20,6 +21,7 @@ export class AuthGuard implements CanActivate {
     private reflector: Reflector,
     private configService: ConfigService,
     private userService: UserService,
+    private utils: UtilsService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -31,6 +33,7 @@ export class AuthGuard implements CanActivate {
     ]);
 
     if (isPublic) {
+      request['is-public'] = true;
       return true;
     }
 
@@ -54,6 +57,7 @@ export class AuthGuard implements CanActivate {
       }
 
       request['user'] = payload;
+      await this.utils.createLogData(context);
     } catch (e) {
       throw new HttpException(e.message || 'Unauthorized', e.status || 401);
     }

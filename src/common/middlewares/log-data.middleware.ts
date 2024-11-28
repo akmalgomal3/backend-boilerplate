@@ -19,6 +19,7 @@ export class LogDataMiddleware implements NestMiddleware {
       req['log-data'] = {
         user_id: '',
         user_role: '',
+        username: '',
         method: req.method,
         path: req.baseUrl,
         log_type: 'user_auth',

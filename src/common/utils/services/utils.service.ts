@@ -1,14 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import { ExecutionContext, HttpException, Injectable } from '@nestjs/common';
 import * as CryptoJS from 'crypto-js';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { IpInfo } from '../../types/ip.type';
+import { JwtPayload } from '../../types/jwt-payload.type';
+import { getTime } from 'date-fns';
+import { CreateLogDto } from '../../../libs/elasticsearch/dto/create-log.dto';
+import { ElasticsearchService } from '../../../libs/elasticsearch/services/elasticsearch.service';
 
 @Injectable()
 export class UtilsService {
-  private secretKey: string;
+  private readonly secretKey: string;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly elasticClient: ElasticsearchService,
+  ) {
     this.secretKey = this.configService.get<string>('SECRET_KEY');
   }
 
@@ -26,5 +33,49 @@ export class UtilsService {
     const { data } = await axios.get(`http://ip-api.com/json/${ip}`);
 
     return data;
+  }
+
+  async createLogData(context: ExecutionContext): Promise<void> {
+    const request = context.switchToHttp().getRequest();
+    const now = new Date();
+    const user: JwtPayload = request.user;
+    const ipPublic: string = request['ip-public'];
+    const ipPrivate: string = request['ip-private'];
+
+    const ipData: IpInfo = await this.getIpInfo(ipPublic);
+    request['log-data'] = {
+      user_id: user.id,
+      user_role: user.role,
+      username: user.username,
+      method: request?.method,
+      path: request?.url,
+      log_type: 'user_activity',
+      status: 'to be determined',
+      activity: `User ${user.username} has access the ${request.url} route`,
+      timestamp: getTime(now),
+      datetime: now,
+      device_type: user.device_type,
+      ip_private: ipPrivate,
+      ip_public: ipPublic,
+      location: {
+        lat: ipData.lat,
+        lon: ipData.lon,
+      },
+      country: ipData.country,
+      city: ipData.city,
+      postal_code: ipData.zip,
+      timezone: ipData.timezone,
+    };
+  }
+
+  async createUserActivityLog(log: CreateLogDto): Promise<void> {
+    try {
+      await this.elasticClient.createLog(log);
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error creating user activity',
+        e.status || 500,
+      );
+    }
   }
 }
