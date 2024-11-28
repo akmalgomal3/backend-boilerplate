@@ -1,19 +1,22 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { ElasticsearchService as ElasticClient } from '@nestjs/elasticsearch';
-import { IndicesCreateResponse } from '@elastic/elasticsearch/lib/api/types';
+import {
+  IndicesCreateResponse,
+  SearchHit,
+} from '@elastic/elasticsearch/lib/api/types';
 import { CreateLogDto } from '../dto/create-log.dto';
+import { GetAppLogDto } from '../dto/get-app-log.dto';
 
 @Injectable()
 export class ElasticsearchService {
   constructor(private readonly elasticClient: ElasticClient) {
-    this.initIndices();
+    this.initIndices().then((): void => console.log('Indices initialized'));
   }
 
   private logsIndex: string = 'app_logs';
 
   private async initIndices(): Promise<void> {
     await this.createLogIndex();
-    console.log('Indices created');
   }
 
   private async createLogIndex(): Promise<IndicesCreateResponse> {
@@ -55,5 +58,94 @@ export class ElasticsearchService {
       index: this.logsIndex,
       document: logDto,
     });
+  }
+
+  async getLogs(getLogDto: GetAppLogDto) {
+    try {
+      const {
+        logType,
+        status,
+        userRole,
+        dateTo,
+        dateFrom,
+        search,
+        username,
+        limit = 10,
+        page = 1,
+      } = getLogDto;
+      const mustQueries = [];
+      const shouldQueries = [];
+
+      mustQueries.push({ term: { log_type: logType } });
+
+      if (userRole) {
+        mustQueries.push({ term: { user_role: getLogDto.userRole } });
+      }
+
+      if (status) {
+        mustQueries.push({ term: { status: getLogDto.status } });
+      }
+
+      if (username) {
+        mustQueries.push({ term: { username: username } });
+      }
+
+      if (dateFrom || dateTo) {
+        const rangeQuery: any = {
+          range: {
+            datetime: {
+              ...(dateFrom && { gte: dateFrom }),
+              ...(dateTo && { lte: dateTo }),
+            },
+          },
+        };
+
+        mustQueries.push(rangeQuery);
+      }
+
+      if (search) {
+        shouldQueries.push({ match: { activity: search } });
+      }
+
+      const query = {
+        bool: {
+          must: mustQueries,
+          should: shouldQueries.length > 0 ? shouldQueries : undefined,
+        },
+      };
+
+      const from: number = (page - 1) * limit;
+      const size: number = limit;
+      const result = await this.elasticClient.search({
+        index: this.logsIndex,
+        from,
+        size,
+        query,
+      });
+
+      const hits = result.hits.hits.map(
+        (hit: SearchHit<unknown>) => hit._source,
+      );
+
+      const total: number =
+        typeof result.hits.total === 'number'
+          ? result.hits.total
+          : result.hits.total.value;
+
+      const totalPages: number = Math.ceil(total / limit);
+
+      return {
+        hits,
+        total,
+        totalPages,
+        page,
+        limit,
+      };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error when fetching logs',
+        e.status || 500,
+      );
+    }
   }
 }

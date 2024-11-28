@@ -7,22 +7,22 @@ import {
 import { Users } from '../entity/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { GetBannedUsersDto } from '../dto/get-banned-users.dto';
-import {
-  SessionWithUser,
-  UserWithSessions,
-} from '../../common/types/user.type';
+import { SessionWithUser } from '../../common/types/user.type';
 import { SessionService } from '../../libs/session/services/session.service';
 import { LoginUserResponseType } from '../types/login-user-response.type';
 import { UserRoles } from '../../common/enums/user.enum';
 import { interval, Observable, switchMap, throwError } from 'rxjs';
 import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { catchError } from 'rxjs/operators';
+import { GetAppLogDto } from '../../libs/elasticsearch/dto/get-app-log.dto';
+import { ElasticsearchService } from '../../libs/elasticsearch/services/elasticsearch.service';
 
 @Injectable()
 export class UserService {
   constructor(
     private userRepository: UserRepository,
     private sessionService: SessionService,
+    private elasticClient: ElasticsearchService,
   ) {}
 
   async getUsers(dto: PaginationDto): Promise<PaginatedResponseDto<Users>> {
@@ -188,5 +188,16 @@ export class UserService {
         throwError(() => new HttpException(error.message, error.status)),
       ),
     );
+  }
+
+  async getUsersLogs(getLog: GetAppLogDto) {
+    try {
+      return await this.elasticClient.getLogs(getLog);
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error when fetching logs',
+        e.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

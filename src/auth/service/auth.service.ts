@@ -18,6 +18,7 @@ import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { UserRoles } from '../../common/enums/user.enum';
 import { CreateLogDto } from '../../libs/elasticsearch/dto/create-log.dto';
 import { ElasticsearchService } from '../../libs/elasticsearch/services/elasticsearch.service';
+import { IpType } from '../../common/types/ip.type';
 
 @Injectable()
 export class AuthService {
@@ -92,6 +93,7 @@ export class AuthService {
   async login(
     loginDto: LoginDto,
     logData: CreateLogDto,
+    ipData: IpType,
   ): Promise<{ accessToken: string }> {
     const { identifier, deviceType } = loginDto;
     try {
@@ -108,10 +110,14 @@ export class AuthService {
       );
 
       if (activeSession) {
-        await this.userService.addFailedLoginAttempts(user.id);
-        throw new UnauthorizedException(
-          'There is an active user, please logout first',
-        );
+        if (activeSession.ip_address !== ipData['ip-private']) {
+          await this.userService.addFailedLoginAttempts(user.id);
+          throw new UnauthorizedException(
+            'There is an active user, please logout first',
+          );
+        }
+
+        await this.sessionService.deleteSession(activeSession.id);
       }
 
       const now = new Date();
@@ -120,7 +126,7 @@ export class AuthService {
           userId: user.id,
           type: deviceType,
           lastActivity: now,
-          ipAddress: '192.168.10.1', // TODO: get real IP address
+          ipAddress: ipData['ip-private'], // TODO: get real IP address
           expiresAt: addHours(now, 1),
         }),
         this.sessionService.deleteUnusedSessions(user.id, deviceType),

@@ -5,7 +5,7 @@ import { Users } from '../../users/entity/user.entity';
 import { LoginDto } from '../dto/login.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { Ip } from '../../common/decorators/ip.decorator';
-import { IpInfo } from '../../common/types/ip.type';
+import { IpInfo, IpType } from '../../common/types/ip.type';
 import { LogData } from '../../common/decorators/log.decorator';
 import { CreateLogDto } from '../../libs/elasticsearch/dto/create-log.dto';
 
@@ -32,8 +32,12 @@ export class AuthController {
 
   @Public()
   @Post('/login')
-  async login(@Body() loginDto: LoginDto, @LogData() logData: CreateLogDto) {
-    const data = await this.authService.login(loginDto, logData);
+  async login(
+    @Body() loginDto: LoginDto,
+    @LogData() logData: CreateLogDto,
+    @Ip() ipData: IpType,
+  ) {
+    const data = await this.authService.login(loginDto, logData, ipData);
     return {
       data,
     };

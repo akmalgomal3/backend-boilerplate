@@ -3,9 +3,10 @@ import { UserRepository } from './repository/user.repository';
 import { UserService } from './services/user.service';
 import { UserController } from './controller/user.controller';
 import { SessionModule } from '../libs/session/session.module';
+import { ElasticsearchModule } from '../libs/elasticsearch/elasticsearch.module';
 
 @Module({
-  imports: [SessionModule],
+  imports: [SessionModule, ElasticsearchModule],
   providers: [UserRepository, UserService],
   controllers: [UserController],
   exports: [UserService],

@@ -15,6 +15,7 @@ import { GetBannedUsersDto } from '../dto/get-banned-users.dto';
 import { map } from 'rxjs/operators';
 import { LoginUserResponseType } from '../types/login-user-response.type';
 import { JwtPayload } from '../../common/types/jwt-payload.type';
+import { GetAppLogDto } from '../../libs/elasticsearch/dto/get-app-log.dto';
 
 @Controller()
 @UseInterceptors(ResponseInterceptor)
@@ -48,6 +49,21 @@ export class UserController {
     return this.userService
       .subscribeToGetLoggedInUser(user)
       .pipe(map((data: LoginUserResponseType[]) => ({ data })));
+  }
+
+  @Roles(UserRoles.Admin, UserRoles.Executive)
+  @Get('users/logs')
+  async getLogs(@Query() getLogDto: GetAppLogDto) {
+    const result = await this.userService.getUsersLogs(getLogDto);
+    return {
+      data: result.hits,
+      metadata: {
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        totalItems: result.total,
+      },
+    };
   }
 
   @Get('user/:userId')

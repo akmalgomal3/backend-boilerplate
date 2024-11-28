@@ -4,10 +4,9 @@ import {
   ExecutionContext,
   CallHandler,
   HttpStatus,
-  HttpException,
 } from '@nestjs/common';
-import { Observable, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ApiResponse } from '../types/response.type';
 import { HttpArgumentsHost } from '@nestjs/common/interfaces';
 import { UtilsService } from '../utils/services/utils.service';
@@ -25,6 +24,7 @@ export class ResponseInterceptor<T>
   ): Observable<ApiResponse<T>> {
     const request = context.switchToHttp().getRequest();
     const logData: CreateLogDto = request['log-data'];
+    const isPublic: boolean = request['is-public'];
     return next.handle().pipe(
       map((data) => {
         const ctx: HttpArgumentsHost = context.switchToHttp();
@@ -32,12 +32,14 @@ export class ResponseInterceptor<T>
         const statusCode =
           data?.statusCode || response.statusCode || HttpStatus.OK;
 
-        this.utils
-          .createUserActivityLog({
-            ...logData,
-            status: 'success',
-          })
-          .then();
+        if (!isPublic) {
+          this.utils
+            .createUserActivityLog({
+              ...logData,
+              status: 'success',
+            })
+            .then();
+        }
 
         return {
           success: true,
