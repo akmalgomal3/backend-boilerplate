@@ -38,15 +38,15 @@ export class CreateUserDto {
     })
     @IsNotEmpty()
     @IsString()
-    // @MaxLength(12)
-    // @IsStrongPassword({
-    //     minLength: 8,
-    //     minLowercase: 1,
-    //     minNumbers: 1,
-    //     minSymbols: 1,
-    //     minUppercase: 1
-    // })
     password: string; 
+
+    @ApiProperty({
+        description: 'Confirm password user that being encrypted',
+        example: 'U2FsdGVkX189ZmilIHgFCvAyaT1fajaH0zWff3omXxc=',
+    })
+    @IsNotEmpty()
+    @IsString()
+    confirm_password: string; 
 
     @ApiProperty({
         description: 'Is the account is dev',

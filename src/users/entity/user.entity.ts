@@ -36,4 +36,7 @@ export class Users extends BaseColumn {
 
     @Column()
     is_dev: boolean;
+
+    @Column({ default: false })
+    is_banned: boolean;
 }

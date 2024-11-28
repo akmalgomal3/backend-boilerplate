@@ -12,6 +12,7 @@ import { Users } from 'src/users/entity/user.entity';
 import { UserService } from 'src/users/services/user.service';
 import * as CryptoJS from 'crypto-js';
 import * as bcrypt from 'bcrypt';
+import { CheckPasswordRegist } from '../types/checkPasswordRegister.type.ts';
 
 @Injectable()
 export class AuthService {
@@ -29,7 +30,7 @@ export class AuthService {
   }
 
   async register(registerUserDTO: CreateUserDto): Promise<Users> {
-    let { email, username, password, role_id } = registerUserDTO;
+    let { email, username, password, confirm_password, role_id } = registerUserDTO;
     try {
       const role = await this.rolesService.getRoleById(role_id);
       if (!role) {
@@ -38,10 +39,8 @@ export class AuthService {
 
       email = email.toLocaleLowerCase();
       username = username.toLocaleLowerCase();
-      const existingUser = await this.usersService.getUserByEmailOrUsername(
-        email,
-        username,
-      );
+
+      const existingUser = await this.usersService.getUserByEmailOrUsername(email,username,);
       if (existingUser) {
         if (existingUser.username === username) {
           throw new BadRequestException(
@@ -54,11 +53,13 @@ export class AuthService {
         }
       }
 
-      const bytes = CryptoJS.AES.decrypt(password, this.secretKey);
-      const decryptedPassword = bytes.toString(CryptoJS.enc.Utf8);
+      const isPasswordValid = await this.checkRegisterPassword(password, confirm_password)
+      if(!isPasswordValid.isValid){
+        throw new BadRequestException(isPasswordValid?.message)
+      }
 
       const saltOrRounds = 10;
-      const hashedPassword = await bcrypt.hash(decryptedPassword, saltOrRounds);
+      const hashedPassword = await bcrypt.hash(isPasswordValid?.decryptedPassword, saltOrRounds);
 
       const result = await this.usersService.create({
         ...registerUserDTO,
@@ -76,24 +77,33 @@ export class AuthService {
     let { usernameOrEmail, password } = loginDTO;
     try {
       usernameOrEmail = usernameOrEmail.toLocaleLowerCase();
-      const user = await this.usersService.getUserByEmailOrUsername(
-        usernameOrEmail,
-        usernameOrEmail,
-      );
-
+      const user = await this.usersService.getUserByEmailOrUsername(usernameOrEmail,usernameOrEmail);
       if (!user) {
         throw new BadRequestException(`email or username not exist`);
       }
 
-      const bytes = CryptoJS.AES.decrypt(password, this.secretKey);
-      const decryptedPassword = bytes.toString(CryptoJS.enc.Utf8);
-
-      const isPasswordValid = await bcrypt.compare(decryptedPassword,user.password);
-      if (!isPasswordValid) {
-        throw new BadRequestException(`password is incorrect`);
+      if(user.is_banned){
+        throw new BadRequestException(`your account is banned  by system, contact admin for help`);
       }
 
+      const isPasswordValid = await this.validatePassword(password, user.password)
+      if (!isPasswordValid) {
+        let loginAttempUser = user.login_attemp === 0 ? 0 : user.login_attemp - 1
+        await this.usersService.updateLoginAttemp(user.id, loginAttempUser)
+
+        if(loginAttempUser === 0){
+          await this.usersService.updateBannedUser(user.id, true)
+          throw new BadRequestException(`your account is banned by system, contact admin for help`);
+        }
+
+        throw new BadRequestException(`password is incorrect, you had ${loginAttempUser} attemp left`);
+      }
+
+      //TO DO: Validation session user
+
       const token = await this.getTokens(user.id, user.username, user.role);
+
+      // TO DO: Create session
 
       //TO DO: Add user activity here
       return token;
@@ -108,7 +118,7 @@ export class AuthService {
         {
           sub: userId,
           username,
-          role
+          role,
         },
         {
           secret: this.jwtSecret,
@@ -119,7 +129,7 @@ export class AuthService {
         {
           sub: userId,
           username,
-          role
+          role,
         },
         {
           secret: this.jwtSecret,
@@ -134,12 +144,69 @@ export class AuthService {
     };
   }
 
-  async encryptPassword(password: string){
+  async checkRegisterPassword(password: string, confirm_password: string): Promise<CheckPasswordRegist>{
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,12}$/;
+    const isValid = true
     try {
-        const encryptedPassword = CryptoJS.AES.encrypt(password, this.secretKey).toString();
-        return encryptedPassword
+      if (!(password && confirm_password)) {
+        return { 
+          isValid: !isValid, 
+          message: 'password and confirm password is required'
+        }
+      }
+
+      const decryptedPassword = (await this.decryptPassword(password)).toString()
+      const decryptedConfirmPassword =(await this.decryptPassword(confirm_password)).toString()
+
+      if (decryptedPassword.length <= 8 || decryptedPassword.length > 12) {
+        return { isValid: !isValid, message: 'password must contain 8-12 characters'}
+      }
+
+      if (!passwordRegex.test(decryptedPassword)) {
+        return { isValid: false, message: 'password must include numbers, uppercase and lowercase letters, and special characters'}
+      }
+
+      if (!(decryptedPassword === decryptedConfirmPassword)) {
+        return { isValid: false, message: 'password and confirmation password is not equal'}
+      }
+
+      return {isValid, decryptedPassword}
     } catch (e) {
-        throw e
+      throw e
     }
-}
+  }
+
+  async validatePassword(password:string, userPassword: string): Promise<Boolean> {
+    try {
+      const decryptedPassword = await this.decryptPassword(password)
+      const isValid = await bcrypt.compare(decryptedPassword, userPassword);
+      if(!isValid){
+        return isValid
+      }
+
+      return isValid;
+    } catch (e) {
+      throw e
+    }
+  }
+
+  async decryptPassword(encryptPassword: string): Promise<string|Buffer>{
+    try {
+      const bytes = CryptoJS.AES.decrypt(encryptPassword, this.secretKey);
+      const decryptedPassword = bytes.toString(CryptoJS.enc.Utf8);  
+
+      return decryptedPassword
+    } catch (e) {
+      throw e
+    }    
+  }
+
+  async encryptPassword(password: string): Promise<String>{
+    try {
+      const encryptedPassword = CryptoJS.AES.encrypt(password,this.secretKey,).toString();
+      return encryptedPassword;
+    } catch (e) {
+      throw e;
+    }
+  }
 }

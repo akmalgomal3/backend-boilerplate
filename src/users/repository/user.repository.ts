@@ -48,7 +48,7 @@ export class UserRepository {
 
     async getUserByEmailOrUsername(email: string, username: string): Promise<Users | null>{
         try {
-            const query = `SELECT u.id, u.email, u.username, u.password, r.role FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE (u.email = $1 OR u.username = $2) AND u.deleted_at IS NULL `            
+            const query = `SELECT u.id, u.email, u.username, u.password, u.login_attemp, u.is_banned, r.role FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE (u.email = $1 OR u.username = $2) AND u.deleted_at IS NULL `            
             const data = await this.repository.query(query, [email, username])
         
             return data[0]
@@ -80,6 +80,28 @@ export class UserRepository {
           return result[0];
         } catch (e) {
           throw e;
+        }
+    }
+
+    async updateLoginAttempUser(userId: string, loginAttempUpdated: number): Promise<Users>{
+        try {
+            const query = `UPDATE users SET login_attemp = $1, updated_at = NOW()
+                            WHERE id = $2 RETURNING id, username;`;
+            const result = await this.dataSource.query(query, [loginAttempUpdated, userId])
+            return result 
+        } catch (e) {
+            throw e
+        }
+    }
+
+    async updateBannedUser(userId: string, isBanned: boolean): Promise<Users>{
+        try {
+            const query = `UPDATE users SET is_banned = $1, updated_at = NOW()
+                            WHERE id = $2 RETURNING id, username;`;
+            const result = await this.dataSource.query(query, [isBanned, userId])
+            return result 
+        } catch (e) {
+            throw e
         }
     }
 

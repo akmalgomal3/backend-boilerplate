@@ -71,5 +71,23 @@ export class UserService {
         }
     }
 
+    async updateLoginAttemp(userId: string, loginAttemp: number): Promise<Users> {
+        try {
+            const user = await this.userRepository.updateLoginAttempUser(userId, loginAttemp)
+            return user
+        } catch (e) {
+            throw e
+        }
+    }
+
+    async updateBannedUser(userId: string, isBanned: boolean): Promise<Users> {
+        try {
+            const user = await this.userRepository.updateBannedUser(userId, isBanned)
+            return user
+        } catch (e) {
+            throw e
+        }
+    }
+
     
 }
