@@ -7,11 +7,13 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { Roles } from '../guard/roles.decorator';
 import { RoleEnum } from '../entity/roles.enum';
 import { RolesGuard } from '../guard/roles.guard';
+import { Public } from 'src/common/decorator/public.decorator';
 
 @Controller('roles')
 export class RolesController {
     constructor(private rolesService: RolesService) { }
 
+    @Public()
     @Get()
     async getRoles(
         @Query('page') page: number,
@@ -24,6 +26,7 @@ export class RolesController {
         };
     }
 
+    @Public()
     @Get('role/:id')
     async getRoleById(@Param('id', ParseUUIDPipe) id: string){
         const result = await this.rolesService.getRoleById(id)

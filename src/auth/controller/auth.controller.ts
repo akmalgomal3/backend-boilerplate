@@ -9,15 +9,16 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { RolesGuard } from 'src/roles/guard/roles.guard';
 import { RoleEnum } from 'src/roles/entity/roles.enum';
 import { Roles } from 'src/roles/guard/roles.decorator';
+import { Public } from 'src/common/decorator/public.decorator';
 
 @Controller('/v1/auth')
 export class AuthController {
-
     constructor(
         private authService: AuthService,
 
     ){}
 
+    @Public()
     @Post('register')
     async register(@Body() registerDTO: CreateUserDto){
         const result = await this.authService.register(registerDTO)
@@ -26,6 +27,7 @@ export class AuthController {
         }
     }
 
+    @Public()
     @Post('login')
     async login(@Body() loginDTO: LoginDTO){
         const result = await this.authService.login(loginDTO)
@@ -45,6 +47,7 @@ export class AuthController {
         }
     }
 
+    @Public()
     @Post('password/encrypt')
     async encrypt(@Body() encryptPasswordDTO: EncryptPasswordDTO){
         const { password } = encryptPasswordDTO

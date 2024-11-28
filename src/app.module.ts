@@ -23,10 +23,10 @@ import { JwtAuthGuard } from './auth/guard/jwt.guard';
   controllers: [],
   providers: [
     UserActivityService,  
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: JwtAuthGuard,
-    // },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: RolesGuard,

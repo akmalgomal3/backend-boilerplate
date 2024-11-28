@@ -103,7 +103,7 @@ export class AuthService {
 
       const token = await this.getTokens(user.id, user.username, user.role);
 
-      // TO DO: Create session
+      //TO DO: Create session
 
       //TO DO: Add user activity here
       return token;
@@ -158,7 +158,7 @@ export class AuthService {
       const decryptedPassword = (await this.decryptPassword(password)).toString()
       const decryptedConfirmPassword =(await this.decryptPassword(confirm_password)).toString()
 
-      if (decryptedPassword.length <= 8 || decryptedPassword.length > 12) {
+      if (decryptedPassword.length < 8 || decryptedPassword.length > 12) {
         return { isValid: !isValid, message: 'password must contain 8-12 characters'}
       }
 
@@ -204,6 +204,7 @@ export class AuthService {
   async encryptPassword(password: string): Promise<String>{
     try {
       const encryptedPassword = CryptoJS.AES.encrypt(password,this.secretKey,).toString();
+      
       return encryptedPassword;
     } catch (e) {
       throw e;
