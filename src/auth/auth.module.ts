@@ -7,6 +7,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from 'src/users/user.module';
 import { JwtStrategy } from './guard/jwt.strategy';
 import { RolesModule } from 'src/roles/roles.module';
+import { UserSessionsModule } from 'src/user-sessions/user-sessions.module';
 
 @Module({
   imports: [
@@ -20,7 +21,8 @@ import { RolesModule } from 'src/roles/roles.module';
       inject: [ConfigService],
     }), 
     UsersModule, 
-    RolesModule
+    RolesModule, 
+    UserSessionsModule
   ],
   providers: [AuthService, JwtConstants, JwtStrategy],
   controllers: [AuthController]

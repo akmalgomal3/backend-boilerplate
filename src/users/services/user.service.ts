@@ -1,11 +1,11 @@
-import { BadRequestException, ConflictException, HttpException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { HttpException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { UserRepository } from "../repository/user.repository";
 import { PaginatedResponseDto, PaginationDto } from "src/common/dto/pagination.dto";
 import { Users } from "../entity/user.entity";
 import { CreateUserDto } from "../dto/create-user.dto";
 import { RolesRepository } from "src/roles/repository/roles.repository";
-import { ConfigService } from "@nestjs/config";
-import { LoginDTO } from "src/users/dto/login.dto";
+import * as useragent from 'useragent';
+
 
 @Injectable()
 export class UserService {
@@ -57,6 +57,22 @@ export class UserService {
             );
 
             return result
+        } catch (e) {
+            throw e
+        }
+    }
+
+    async getUserDeviceType(req: Request): Promise<string>{
+        try {
+            const userAgent = req.headers['user-agent'];
+            const agent = useragent.parse(userAgent);
+            let deviceType = "desktop";
+
+            if (agent.device.family === 'iPad' || agent.device.family === 'Playbook' || /mobile|iphone|ipod|android|blackberry|iemobile|kindle|silk-accelerated|hpwos|webos|opera mini/i.test(userAgent)) {
+                deviceType = "mobile";
+            }
+
+            return deviceType
         } catch (e) {
             throw e
         }

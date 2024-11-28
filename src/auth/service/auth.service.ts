@@ -13,6 +13,7 @@ import { UserService } from 'src/users/services/user.service';
 import * as CryptoJS from 'crypto-js';
 import * as bcrypt from 'bcrypt';
 import { CheckPasswordRegist } from '../types/checkPasswordRegister.type.ts';
+import { UserSessionsService } from 'src/user-sessions/service/user-sessions.service';
 
 @Injectable()
 export class AuthService {
@@ -24,6 +25,7 @@ export class AuthService {
     private usersService: UserService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private userSessionsService: UserSessionsService
   ) {
     this.jwtSecret = this.configService.get<string>('JWT_SECRET');
     this.secretKey = this.configService.get<string>('SECRET_KEY');
@@ -73,8 +75,8 @@ export class AuthService {
     }
   }
 
-  async login(loginDTO: LoginDTO) {
-    let { usernameOrEmail, password } = loginDTO;
+  async login(req: Request, loginDTO: LoginDTO) {
+    let { device_id, usernameOrEmail, password } = loginDTO;
     try {
       usernameOrEmail = usernameOrEmail.toLocaleLowerCase();
       const user = await this.usersService.getUserByEmailOrUsername(usernameOrEmail,usernameOrEmail);
@@ -99,11 +101,24 @@ export class AuthService {
         throw new BadRequestException(`password is incorrect, you had ${loginAttempUser} attemp left`);
       }
 
+      const deviceType = await this.usersService.getUserDeviceType(req)
+
       //TO DO: Validation session user
+      const existSession = await this.userSessionsService.validateSession(device_id, user.id, deviceType)
+      if(existSession){
+        throw new BadRequestException(`session already running in other device`);
+      }
 
       const token = await this.getTokens(user.id, user.username, user.role);
 
       //TO DO: Create session
+      await this.userSessionsService.createSession({
+        device_id, 
+        user_id: user.id, 
+        device_type: deviceType, 
+        expired_at: new Date(Date.now() + 1 * 60 * 60 * 1000), // Expires in 1 hour
+        last_activity_at: new Date(),
+      })
 
       //TO DO: Add user activity here
       return token;
