@@ -13,6 +13,7 @@ import { Users } from '../entity/user.entity';
 import * as bcrypt from 'bcrypt';
 import * as cryptoJS from 'crypto-js';
 import { CreateUserDto } from '../dto/create-user.dto';
+import { UpdateUserDto } from '../dto/update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -88,7 +89,7 @@ export class UserService {
     if (existingEmail) {
       throw new BadRequestException('Email already exists');
     }
-    const existingUsername = await this.userRepository.findByEmail(
+    const existingUsername = await this.userRepository.findByUsername(
       createUserDto.username,
     );
     if (existingUsername) {
@@ -104,5 +105,25 @@ export class UserService {
       ...createUserDto,
       password: encryptedPassword,
     });
+  }
+
+  async updateUser(userId: string, updateUserDto: UpdateUserDto) {
+    const result = await this.userRepository.getUserById(userId);
+    if (!result) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+    if (updateUserDto.password) {
+      const hashedPassword = await bcrypt.hash(updateUserDto.password, 10);
+      const cryptoSecret = process.env.CRYPTO_SECRET;
+      const encryptedPassword = cryptoJS.AES.encrypt(
+        hashedPassword,
+        cryptoSecret,
+      ).toString();
+      return await this.userRepository.updateUser(userId, {
+        ...updateUserDto,
+        password: encryptedPassword,
+      });
+    }
+    return await this.userRepository.updateUser(userId, updateUserDto);
   }
 }

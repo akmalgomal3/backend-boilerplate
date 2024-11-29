@@ -6,6 +6,7 @@ import {
 import { DataSource, Repository } from 'typeorm';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { Users } from '../entity/user.entity';
+import { UpdateUserDto } from '../dto/update-user.dto';
 
 @Injectable()
 export class UserRepository {
@@ -82,9 +83,9 @@ export class UserRepository {
   async incrementFailedLoginAttempts(userId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
       const query = `
-        UPDATE usersSSO
+        UPDATE users
         SET failed_login_attempts = failed_login_attempts + 1
-        WHERE id = $1;
+        WHERE user_id = $1;
       `;
       await manager.query(query, [userId]);
     });
@@ -93,9 +94,9 @@ export class UserRepository {
   async resetFailedLoginAttempts(userId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
       const query = `
-        UPDATE usersSSO
+        UPDATE users
         SET failed_login_attempts = 0
-        WHERE id = $1;
+        WHERE user_id = $1;
       `;
       await manager.query(query, [userId]);
     });
@@ -104,9 +105,9 @@ export class UserRepository {
   async banUser(userId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
       const query = `
-        UPDATE usersSSO
+        UPDATE users
         SET is_banned = TRUE
-        WHERE id = $1;
+        WHERE user_id = $1;
       `;
       await manager.query(query, [userId]);
     });
@@ -115,8 +116,8 @@ export class UserRepository {
   async findBannedUsers(): Promise<any[]> {
     try {
       const query = `
-      SELECT id, name, email, role, is_banned
-      FROM usersSSO
+      SELECT user_id, username, email, role_id, is_banned
+      FROM users
       WHERE is_banned = TRUE;
     `;
       const data = await this.dataSource.query(query);
@@ -132,5 +133,42 @@ export class UserRepository {
   async findByEmail(email: string): Promise<Users | null> {
     const result = await this.repository.findOneBy({ email });
     return result;
+  }
+
+  async findByUsername(username: string): Promise<Users | null> {
+    const result = await this.repository.findOneBy({ username });
+    return result;
+  }
+
+  async updateUser(
+    userId: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<void> {
+    try {
+      await this.dataSource.transaction(async (manager) => {
+        const query = `
+          UPDATE users
+          SET 
+            username = COALESCE($1, username),
+            email = COALESCE($2, email),
+            password = COALESCE($3, password),
+            updated_at = NOW() AT TIME ZONE 'UTC' + interval '7 hours'
+          WHERE user_id = $4
+        `;
+
+        const result = await manager.query(query, [
+          updateUserDto.username,
+          updateUserDto.email,
+          updateUserDto.password,
+          userId,
+        ]);
+
+        if (result.rowCount === 0) {
+          throw new Error('User not found or no fields to update');
+        }
+      });
+    } catch (error) {
+      throw error;
+    }
   }
 }

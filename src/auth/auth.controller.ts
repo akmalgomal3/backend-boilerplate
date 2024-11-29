@@ -25,12 +25,14 @@ export class AuthController {
       throw new UnauthorizedException('Invalid credentials');
     }
     const clientIp =
-      req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress;
+      req.headers['x-forwarded-for'] ||
+      req.ip ||
+      req.connection.remoteAddress ||
+      req.socket.remoteAddress;
     const ip = clientIp === '::1' ? '127.0.0.1' : clientIp;
     const geo = geoip.lookup(ip);
 
-    const agent = useragent.parse(req.headers['user-agent']);
-    const deviceType = agent.device.toString();
+    const agent = req.headers['user-agent'];
 
     let latitude: number = null;
     let longitude: number = null;
@@ -42,16 +44,12 @@ export class AuthController {
     const result = await this.authService.login(
       user,
       ip,
-      deviceType,
+      agent,
       latitude,
       longitude,
     );
     return {
-      success: true,
-      code: 200,
       data: { accessToken: result.access_token },
-      error: null,
-      meta: null,
     };
   }
 

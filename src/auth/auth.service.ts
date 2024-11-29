@@ -58,10 +58,14 @@ export class AuthService {
     latitude?: number,
     longitude?: number,
   ): Promise<any> {
+    const existingToken = await this.redisClient.get(`user:${user.user_id}`);
+    if (existingToken) {
+      throw new UnauthorizedException('User already logged in.');
+    }
+
     const payload = { sub: user.user_id, role: user.role_id };
     const token = this.jwtService.sign(payload, { expiresIn: '1h' });
 
-    // SSO Implementation
     await this.redisClient.set(`user:${user.user_id}`, token, {
       EX: 900,
     });

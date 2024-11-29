@@ -14,7 +14,7 @@ export class UserActivityInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const req = context.switchToHttp().getRequest();
     const user = req.user;
-
+    const now = new Date();
     if (user) {
       const log = {
         userId: user.userId,
@@ -22,7 +22,7 @@ export class UserActivityInterceptor implements NestInterceptor {
         email: user.email,
         method: req.method,
         endpoint: req.originalUrl || req.url,
-        timestamp: new Date(),
+        timestamp: new Date(now.getTime() + 7 * 60 * 60 * 1000),
       };
 
       this.elasticsearchService.indexActivityLog(log).catch((error) => {

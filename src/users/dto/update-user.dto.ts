@@ -9,11 +9,10 @@ import {
 
 export class UpdateUserDto {
   @IsString()
-  @IsNotEmpty()
-  readonly username: string;
+  readonly username?: string;
 
   @IsEmail({}, { message: 'Email format is invalid' })
-  readonly email: string;
+  readonly email?: string;
 
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
@@ -30,5 +29,5 @@ export class UpdateUserDto {
   @Matches(/(?=.*[!@#$%^&*])/, {
     message: 'Password must contain at least one special character',
   })
-  readonly password: string;
+  readonly password?: string;
 }
