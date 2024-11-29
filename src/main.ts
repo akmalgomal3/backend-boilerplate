@@ -13,7 +13,6 @@ async function bootstrap() {
 
     app.useGlobalPipes(new ValidationPipe());
     app.use(new IpMiddleware().use);
-    await app.listen(port);
 
     app.enableCors({
       origin: [`http://localhost:${port}`],
@@ -25,7 +24,8 @@ async function bootstrap() {
       .addBearerAuth()
       .build();
     const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('api', app, document);
+    SwaggerModule.setup('docs', app, document);
+    await app.listen(port);
   } catch (error) {
     console.error('Error during application creation:', error);
   }

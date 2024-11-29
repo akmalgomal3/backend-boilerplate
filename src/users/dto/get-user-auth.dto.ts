@@ -1,14 +1,14 @@
 import {
+  IsDate,
   IsEnum,
   IsNotEmpty,
   IsNumber,
   IsOptional,
-  IsString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class GetBannedUsersDto {
+export class GetUserAuthDto {
   @ApiProperty({ example: 1, description: 'Page', default: 1 })
   @IsNotEmpty()
   @IsNumber()
@@ -22,29 +22,28 @@ export class GetBannedUsersDto {
   limit: number = 10;
 
   @ApiProperty({
-    example: 'username',
-    description: 'Order by',
-    default: 'username',
+    example: 'success',
+    description: 'Status of the activity',
+    enum: ['failed', 'success'],
+    required: false,
   })
-  @IsEnum(['username', 'email', 'role'])
-  @IsNotEmpty()
-  orderBy: 'username' | 'email' | 'role' = 'username';
+  @IsEnum(['failed', 'success'])
+  @IsOptional()
+  status: 'failed' | 'success';
 
   @ApiProperty({
-    example: 'asc',
-    description: 'Order in',
-    default: 'asc',
-  })
-  @IsEnum(['desc', 'asc'])
-  @IsNotEmpty()
-  orderIn: 'desc' | 'asc' = 'asc';
-
-  @ApiProperty({
-    example: 'iqbal123',
-    description: 'search by username or email',
+    example: '2021-01-01',
+    description: 'Date from',
     required: false,
   })
   @IsOptional()
-  @IsString()
-  search?: string;
+  dateFrom: string;
+
+  @ApiProperty({
+    example: '2021-01-01',
+    description: 'Date to',
+    required: false,
+  })
+  @IsOptional()
+  dateTo: string;
 }

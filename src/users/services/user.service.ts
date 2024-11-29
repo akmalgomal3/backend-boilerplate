@@ -14,9 +14,9 @@ import { UserRoles } from '../../common/enums/user.enum';
 import { interval, Observable, switchMap, throwError } from 'rxjs';
 import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { catchError } from 'rxjs/operators';
-import { GetAppLogDto } from '../../libs/elasticsearch/dto/get-app-log.dto';
 import { ElasticsearchService } from '../../libs/elasticsearch/services/elasticsearch.service';
 import { GetUserActivityDto } from '../dto/get-user-activity.dto';
+import { GetUserAuthDto } from '../dto/get-user-auth.dto';
 
 @Injectable()
 export class UserService {
@@ -191,21 +191,12 @@ export class UserService {
     );
   }
 
-  async getUsersLogs(getLog: GetAppLogDto) {
-    try {
-      return await this.elasticClient.getLogs(getLog);
-    } catch (e) {
-      throw new HttpException(
-        e.message || 'Error when fetching logs',
-        e.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
   async getUserActivityLogs(logData: GetUserActivityDto) {
     try {
       return await this.elasticClient.getLogs({
         ...logData,
+        ...(logData.dateFrom && { dateFrom: new Date(logData.dateFrom) }),
+        ...(logData.dateTo && { dateTo: new Date(logData.dateTo) }),
         logType: 'user_activity',
       });
     } catch (e) {
@@ -216,11 +207,14 @@ export class UserService {
     }
   }
 
-  async getUserAuthLogs(logData: GetUserActivityDto) {
+  async getUserAuthLogs(logData: GetUserAuthDto) {
     try {
       return await this.elasticClient.getLogs({
         ...logData,
         logType: 'user_auth',
+        userRole: undefined,
+        ...(logData.dateFrom && { dateFrom: new Date(logData.dateFrom) }),
+        ...(logData.dateTo && { dateTo: new Date(logData.dateTo) }),
       });
     } catch (e) {
       throw new HttpException(

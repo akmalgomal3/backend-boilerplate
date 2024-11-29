@@ -76,6 +76,7 @@ export class ElasticsearchService {
       } = getLogDto;
       const mustQueries = [];
       const shouldQueries = [];
+      console.log(getLogDto);
 
       mustQueries.push({ term: { log_type: logType } });
 
@@ -95,8 +96,8 @@ export class ElasticsearchService {
         const rangeQuery: any = {
           range: {
             datetime: {
-              ...(dateFrom && { gte: dateFrom }),
-              ...(dateTo && { lte: dateTo }),
+              ...(dateFrom && { gte: new Date(dateFrom) }),
+              ...(dateTo && { lte: new Date(dateTo) }),
             },
           },
         };

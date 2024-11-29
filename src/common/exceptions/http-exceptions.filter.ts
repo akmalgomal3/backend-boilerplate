@@ -24,7 +24,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     if (
       !isPublic &&
-      request.url !== '/users/logged-in' &&
+      request.url !== '/users/logged-in' && // Exclude because is streaming data
       exception.name !== 'SessionTimeoutException'
     ) {
       const logData: CreateLogDto = request['log-data'];

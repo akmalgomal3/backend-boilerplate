@@ -5,10 +5,13 @@ import { Users } from '../../users/entity/user.entity';
 import { LoginDto } from '../dto/login.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { Ip } from '../../common/decorators/ip.decorator';
-import { IpInfo, IpType } from '../../common/types/ip.type';
+import { IpType } from '../../common/types/ip.type';
 import { LogData } from '../../common/decorators/log.decorator';
 import { CreateLogDto } from '../../libs/elasticsearch/dto/create-log.dto';
+import { ApiTags } from '@nestjs/swagger';
+import { GeneratePasswordDto } from '../dto/generate-password.dto';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -45,9 +48,7 @@ export class AuthController {
 
   @Public()
   @Post('/generate-password')
-  async generatePassword(
-    @Body() body: { password: string; confirmPassword: string },
-  ): Promise<object> {
+  async generatePassword(@Body() body: GeneratePasswordDto): Promise<object> {
     const { password, confirmPassword } = body;
     return {
       data: this.authService.generateEncryptedPassword(
