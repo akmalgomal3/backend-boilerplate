@@ -25,6 +25,9 @@ export class Sessions {
   @Column({ type: 'enum', enum: DeviceType })
   device_type: DeviceType;
 
+  @Column({ type: 'varchar', nullable: true })
+  user_agent: string;
+
   @ManyToOne(
     (): typeof Users => Users,
     (user: Users): Sessions[] => user.sessions,

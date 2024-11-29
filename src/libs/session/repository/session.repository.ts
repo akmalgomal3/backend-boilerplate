@@ -15,13 +15,13 @@ export class SessionRepository {
 
   async createSession(createSessionDto: CreateSessionDto): Promise<Sessions> {
     try {
-      const { type, ipAddress, userId, lastActivity, expiresAt } =
+      const { type, ipAddress, userId, lastActivity, expiresAt, user_agent } =
         createSessionDto;
 
       const sessions: Sessions[] = await this.repository.query(
-        `INSERT INTO sessions (user_id, last_activity, expires_at, device_type, ip_address)
-         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-        [userId, lastActivity, expiresAt, type, ipAddress],
+        `INSERT INTO sessions (user_id, last_activity, expires_at, device_type, ip_address, user_agent)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [userId, lastActivity, expiresAt, type, ipAddress, user_agent],
       );
 
       return sessions[0];

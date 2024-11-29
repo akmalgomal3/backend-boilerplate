@@ -13,6 +13,7 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { JwtPayload } from '../types/jwt-payload.type';
 import { Request } from 'express';
 import { UtilsService } from '../utils/services/utils.service';
+import { SessionTimeoutException } from '../exceptions/http-exceptions.filter';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -59,6 +60,11 @@ export class AuthGuard implements CanActivate {
       request['user'] = payload;
       await this.utils.createLogData(context);
     } catch (e) {
+      if (e.name === 'TokenExpiredError') {
+        throw new SessionTimeoutException(
+          'Your session has ended, please login again',
+        );
+      }
       throw new HttpException(e.message || 'Unauthorized', e.status || 401);
     }
     return true;

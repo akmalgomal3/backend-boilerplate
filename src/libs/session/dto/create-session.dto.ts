@@ -6,4 +6,5 @@ export class CreateSessionDto {
   expiresAt: Date;
   type: DeviceType;
   ipAddress?: string;
+  user_agent?: string;
 }

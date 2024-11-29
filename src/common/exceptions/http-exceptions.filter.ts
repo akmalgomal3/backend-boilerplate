@@ -3,6 +3,7 @@ import {
   Catch,
   ArgumentsHost,
   HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiResponse } from '../types/response.type';
@@ -21,7 +22,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const errorResponse = exception.getResponse() as any;
     const isPublic: boolean = request['is-public'];
 
-    if (!isPublic) {
+    if (
+      !isPublic &&
+      request.url !== '/users/logged-in' &&
+      exception.name !== 'SessionTimeoutException'
+    ) {
       const logData: CreateLogDto = request['log-data'];
       const logMessage: string =
         typeof errorResponse === 'string'
@@ -47,5 +52,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
     };
 
     response.status(status).json(apiResponse);
+  }
+}
+
+export class SessionTimeoutException extends HttpException {
+  constructor(message: string) {
+    super(message, HttpStatus.UNAUTHORIZED);
   }
 }

@@ -110,8 +110,7 @@ export class AuthService {
       );
 
       if (activeSession) {
-        if (activeSession.ip_address !== ipData['ip-private']) {
-          await this.userService.addFailedLoginAttempts(user.id);
+        if (activeSession.user_agent !== ipData['user-agent']) {
           throw new UnauthorizedException(
             'There is an active user, please logout first',
           );
@@ -126,8 +125,9 @@ export class AuthService {
           userId: user.id,
           type: deviceType,
           lastActivity: now,
-          ipAddress: ipData['ip-private'], // TODO: get real IP address
+          ipAddress: ipData['ip-address'],
           expiresAt: addHours(now, 1),
+          user_agent: ipData['user-agent'],
         }),
         this.sessionService.deleteUnusedSessions(user.id, deviceType),
         this.userService.setFailedLoginAttemptsToZero(user.id),
@@ -149,6 +149,7 @@ export class AuthService {
         username: user.username,
         device_type: deviceType,
         session_id: session.id,
+        user_agent: ipData['user-agent'],
       };
       const accessToken: string = await this.jwtService.signAsync(jwtPayload, {
         expiresIn: '1h',
@@ -179,6 +180,12 @@ export class AuthService {
     status: 'failed' | 'success',
   ): Promise<void> {
     try {
+      if (!logData.location.lat || !logData.location.lon) {
+        logData.location = {
+          lat: 0,
+          lon: 0,
+        };
+      }
       await this.elasticClient.createLog({
         ...logData,
         status,

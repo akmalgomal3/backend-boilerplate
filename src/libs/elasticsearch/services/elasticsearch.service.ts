@@ -6,6 +6,7 @@ import {
 } from '@elastic/elasticsearch/lib/api/types';
 import { CreateLogDto } from '../dto/create-log.dto';
 import { GetAppLogDto } from '../dto/get-app-log.dto';
+import { GetUserActivityDto } from '../../../users/dto/get-user-activity.dto';
 
 @Injectable()
 export class ElasticsearchService {
@@ -40,8 +41,8 @@ export class ElasticsearchService {
             timestamp: { type: 'date', format: 'epoch_millis' },
             datetime: { type: 'date' },
             device_type: { type: 'keyword' },
-            ip_private: { type: 'ip' },
-            ip_public: { type: 'ip' },
+            ip_address: { type: 'ip' },
+            user_agent: { type: 'text' },
             location: { type: 'geo_point' },
             country: { type: 'keyword' },
             city: { type: 'keyword' },
@@ -121,6 +122,13 @@ export class ElasticsearchService {
         from,
         size,
         query,
+        sort: [
+          {
+            datetime: {
+              order: 'desc',
+            },
+          },
+        ],
       });
 
       const hits = result.hits.hits.map(

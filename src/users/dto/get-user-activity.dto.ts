@@ -1,4 +1,3 @@
-import { UserRoles } from '../../../common/enums/user.enum';
 import {
   IsDate,
   IsEnum,
@@ -6,11 +5,11 @@ import {
   IsNotEmpty,
   IsNumber,
   IsOptional,
-  IsString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { UserRoles } from '../../common/enums/user.enum';
 
-export class GetAppLogDto {
+export class GetUserActivityDto {
   @IsNotEmpty()
   @IsNumber()
   @Type(() => Number)
@@ -20,10 +19,6 @@ export class GetAppLogDto {
   @IsNumber()
   @Type(() => Number)
   limit: number = 10;
-
-  @IsNotEmpty()
-  @IsIn(['user_auth', 'user_activity'])
-  logType: 'user_auth' | 'user_activity';
 
   @IsEnum(UserRoles)
   @IsOptional()
@@ -37,15 +32,7 @@ export class GetAppLogDto {
   @IsOptional()
   dateFrom: Date;
 
-  @IsOptional()
-  @IsString()
-  username?: string;
-
   @IsDate()
   @IsOptional()
   dateTo: Date;
-
-  @IsString()
-  @IsOptional()
-  search?: string;
 }

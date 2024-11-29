@@ -7,4 +7,5 @@ export type JwtPayload = {
   role: UserRoles;
   session_id: string;
   device_type: DeviceType;
+  user_agent: string
 };

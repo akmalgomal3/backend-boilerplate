@@ -16,6 +16,7 @@ import { map } from 'rxjs/operators';
 import { LoginUserResponseType } from '../types/login-user-response.type';
 import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { GetAppLogDto } from '../../libs/elasticsearch/dto/get-app-log.dto';
+import { GetUserActivityDto } from '../dto/get-user-activity.dto';
 
 @Controller()
 @UseInterceptors(ResponseInterceptor)
@@ -55,6 +56,37 @@ export class UserController {
   @Get('users/logs')
   async getLogs(@Query() getLogDto: GetAppLogDto) {
     const result = await this.userService.getUsersLogs(getLogDto);
+    return {
+      data: result.hits,
+      metadata: {
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        totalItems: result.total,
+      },
+    };
+  }
+
+  @Roles(UserRoles.Admin, UserRoles.Executive)
+  @Get('users/logs/activity')
+  async getUserActivity(@Query() getUserActivityDto: GetUserActivityDto) {
+    const result =
+      await this.userService.getUserActivityLogs(getUserActivityDto);
+    return {
+      data: result.hits,
+      metadata: {
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        totalItems: result.total,
+      },
+    };
+  }
+
+  @Roles(UserRoles.Admin, UserRoles.Executive)
+  @Get('users/logs/auth')
+  async getUserAuth(@Query() getUserAuthDto: GetUserActivityDto) {
+    const result = await this.userService.getUserAuthLogs(getUserAuthDto);
     return {
       data: result.hits,
       metadata: {

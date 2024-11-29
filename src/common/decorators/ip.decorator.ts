@@ -4,12 +4,12 @@ import { IpType } from '../types/ip.type';
 export const Ip = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): IpType => {
     const request = ctx.switchToHttp().getRequest();
-    const ipPublic = request['ip-public'];
-    const ipPrivate = request['ip-private'];
+    const ipAddress = request['ip-address'];
+    const userAgent = request.headers['user-agent'];
 
     return {
-      'ip-private': ipPrivate,
-      'ip-public': ipPublic,
+      'ip-address': ipAddress,
+      'user-agent': userAgent,
     };
   },
 );

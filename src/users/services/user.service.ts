@@ -16,6 +16,7 @@ import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { catchError } from 'rxjs/operators';
 import { GetAppLogDto } from '../../libs/elasticsearch/dto/get-app-log.dto';
 import { ElasticsearchService } from '../../libs/elasticsearch/services/elasticsearch.service';
+import { GetUserActivityDto } from '../dto/get-user-activity.dto';
 
 @Injectable()
 export class UserService {
@@ -196,6 +197,34 @@ export class UserService {
     } catch (e) {
       throw new HttpException(
         e.message || 'Error when fetching logs',
+        e.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async getUserActivityLogs(logData: GetUserActivityDto) {
+    try {
+      return await this.elasticClient.getLogs({
+        ...logData,
+        logType: 'user_activity',
+      });
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error when fetching user activity logs',
+        e.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async getUserAuthLogs(logData: GetUserActivityDto) {
+    try {
+      return await this.elasticClient.getLogs({
+        ...logData,
+        logType: 'user_auth',
+      });
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error when fetching user auth logs',
         e.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

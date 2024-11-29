@@ -32,7 +32,7 @@ export class ResponseInterceptor<T>
         const statusCode =
           data?.statusCode || response.statusCode || HttpStatus.OK;
 
-        if (!isPublic) {
+        if (!isPublic && request.url !== '/users/logged-in') {
           this.utils
             .createUserActivityLog({
               ...logData,

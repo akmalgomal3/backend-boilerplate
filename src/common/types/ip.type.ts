@@ -1,6 +1,6 @@
 export type IpType = {
-  'ip-private'?: string;
-  'ip-public'?: string;
+  'ip-address'?: string;
+  'user-agent'?: string;
 };
 
 export type IpInfo = {

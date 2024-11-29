@@ -10,10 +10,10 @@ export class LogDataMiddleware implements NestMiddleware {
 
   async use(req: Request, res: Response, next: NextFunction) {
     if (req.baseUrl === '/auth/login' || req.baseUrl === '/auth/register') {
-      const ipPublic: string = req['ip-public'];
-      const ipPrivate: string = req['ip-private'];
+      const ipAddress: string = req['ip-address'];
+      const userAgent: string = req['user-agent'];
 
-      const ipData: IpInfo = await this.utils.getIpInfo(ipPublic);
+      const ipData: IpInfo = await this.utils.getIpInfo(ipAddress);
 
       const now = new Date();
       req['log-data'] = {
@@ -28,16 +28,16 @@ export class LogDataMiddleware implements NestMiddleware {
         timestamp: getTime(now),
         datetime: now,
         device_type: req.body.deviceType,
-        ip_private: ipPrivate,
-        ip_public: ipPublic,
+        ip_address: ipAddress,
+        user_agent: userAgent,
         location: {
-          lat: ipData.lat,
-          lon: ipData.lon,
+          lat: ipData?.lat || 0,
+          lon: ipData?.lon || 0,
         },
-        country: ipData.country,
-        city: ipData.city,
-        postal_code: ipData.zip,
-        timezone: ipData.timezone,
+        country: ipData?.country || '',
+        city: ipData?.city || '',
+        postal_code: ipData?.zip || '',
+        timezone: ipData?.timezone || '',
       };
     }
 

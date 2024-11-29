@@ -10,8 +10,8 @@ export class CreateLogDto {
   timestamp?: number;
   datetime?: Date;
   device_type?: 'mobile' | 'web';
-  ip_private?: string;
-  ip_public?: string;
+  ip_address?: string;
+  user_agent?: string;
   location?: {
     lat: number;
     lon: number;
