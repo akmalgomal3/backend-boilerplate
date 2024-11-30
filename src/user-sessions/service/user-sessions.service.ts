@@ -33,8 +33,8 @@ export class UserSessionsService {
 
   async validateSession(device_id: string, user_id: string, device_type: string): Promise<UserSessions | null> {
     try {
-      const existingSession = await this.userSessionsRepository.findByFilters(device_id, user_id, device_type);
-
+      const existingSession = await this.userSessionsRepository.findByFilters(device_id, user_id);
+      
       const now = new Date();
       if (existingSession[0] && new Date(existingSession[0].expired_at) <= now) {
         await this.deleteSession(existingSession[0].id)

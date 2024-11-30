@@ -25,14 +25,20 @@ async function bootstrap() {
 		.setTitle('Auth Base Prob')
 		.setVersion('1.0')
 		.addBearerAuth()
-    .addGlobalParameters({
+    .addGlobalParameters(
+      {
       in: 'header',
       required: true,
       name: 'device-id',
-      schema: {
-        example: '4d3f4226-864f-4229-9fe5-ea531b363e28',
-      },
-    })
+      schema: { example: '4d3f4226-864f-4229-9fe5-ea531b363e28'}
+      }, 
+      {
+        in: 'header',
+        required: true,
+        name: 'x-forwarded-for',
+        schema: { example: '103.78.115.174'}
+      } 
+    )
 		.build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api', app, document);

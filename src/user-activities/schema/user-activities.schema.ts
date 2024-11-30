@@ -21,9 +21,6 @@ export class UserActivities extends Document {
   @Prop()
   longitude: number;
 
-  @Prop()
-  location: string;
-
   @Prop({ required: true })
   method: string;
 
@@ -31,7 +28,7 @@ export class UserActivities extends Document {
   endpoint: string;
 
   @Prop({ type: () => Object })
-  paramter: {};
+  parameter: {};
   
   @Prop({ required: true })
   status: number;

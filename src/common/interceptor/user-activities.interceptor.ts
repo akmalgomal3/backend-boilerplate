@@ -31,13 +31,16 @@ export class UserActivityInterceptor implements NestInterceptor {
     intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const ctx = context.switchToHttp();
     const req = ctx.getRequest();
-    
+
     const userActivity : Partial<UserActivities> = {
         user_id: req?.user?.id || 'guest', 
         device_id: req.device_id || 'unknown', 
         endpoint: req.url, 
         method: req.method, 
-        paramter: req.params, 
+        parameter: req.params,
+        ip_address: req.ip_address,
+        latitude: req.headers['latitude'], 
+        longitude: req.headers['longitude'], 
         timestamp: new Date(), 
         action: this.getAction(req.method,  req.url)
     }

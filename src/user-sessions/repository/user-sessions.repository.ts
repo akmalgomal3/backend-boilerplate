@@ -35,10 +35,9 @@ export class UserSessionsRepository {
     }
   }
 
-  async findByFilters(device_id: string, user_id: string, device_type: string): Promise<UserSessions[]> {
+  async findByFilters(user_id: string, device_type: string): Promise<UserSessions[]> {
     try {
       const result = await this.userSessionsModel.find({
-        device_id,
         user_id,
         device_type,
       }).exec();
