@@ -12,6 +12,18 @@ export class UserSessions extends Document {
   @Prop({ required: true })
   device_type: string;
 
+  // @Prop({ required: true })
+  // ip_address: string;
+
+  // @Prop({ required: true })
+  // latitude: number;
+
+  // @Prop({ required: true })
+  // longitude: number;
+
+  // @Prop({ required: true })
+  // location: string;
+
   @Prop({ required: true })
   expired_at: Date;
 

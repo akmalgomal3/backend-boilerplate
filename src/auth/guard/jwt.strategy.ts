@@ -27,6 +27,7 @@ export class JwtStrategy extends PassportStrategy(Strategy){
             }, HttpStatus.UNAUTHORIZED)
         }
 
+        isExistUser[0].device_id = payload.deviceId        
         const { password, created_at, updated_at, deleted_at, ...result } = isExistUser[0]
 
         return result

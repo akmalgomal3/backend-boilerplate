@@ -1,14 +1,17 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from './users/user.module';
 import { DatabaseModule } from './databases/database.module';
 import { RolesModule } from './roles/roles.module';
 import { AuthModule } from './auth/auth.module';
 import { RolesGuard } from './roles/guard/roles.guard';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guard/jwt.guard';
 import { UserSessionsModule } from './user-sessions/user-sessions.module';
 import { MongooseModule } from '@nestjs/mongoose';
+import { UserActivitiesModule } from './user-activities/user-activities.module';
+import { DeviceIdMiddleware } from './common/middleware/device-id.middleware';
+import { UserActivityInterceptor } from './common/interceptor/user-activities.interceptor';
 
 @Module({
   imports: [
@@ -26,7 +29,8 @@ import { MongooseModule } from '@nestjs/mongoose';
     DatabaseModule,
     RolesModule,
     AuthModule,
-    UserSessionsModule
+    UserSessionsModule,
+    UserActivitiesModule
   ],
 
   controllers: [],
@@ -38,7 +42,16 @@ import { MongooseModule } from '@nestjs/mongoose';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
-    }
+    }, 
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: UserActivityInterceptor,
+    },
   ],
 })
-export class AppModule { }
+
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(DeviceIdMiddleware).forRoutes('*');
+  }
+}

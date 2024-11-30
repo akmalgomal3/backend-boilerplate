@@ -17,12 +17,15 @@ export class UserRepository {
     async getUsers(skip: number, take: number): Promise<[Users[], number]> {
         try {
             const result = await this.repository.findAndCount({
+                select: ['id', 'username', 'email', "full_name", "is_banned", "active", "created_at"],
                 skip,
                 take,
                 order: {
                     username: 'DESC'
                 }
             });
+
+            // const result = await this.repository.query(query, [take, skip])
             return result
         } catch (error) {
             throw error;

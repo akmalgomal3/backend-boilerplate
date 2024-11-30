@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -14,11 +15,14 @@ import * as CryptoJS from 'crypto-js';
 import * as bcrypt from 'bcrypt';
 import { CheckPasswordRegist } from '../types/checkPasswordRegister.type.ts';
 import { UserSessionsService } from 'src/user-sessions/service/user-sessions.service';
+import { CreateUserSessionDto } from 'src/user-sessions/dto/create-user-session.dto.js';
+import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class AuthService {
   private readonly jwtSecret: string;
   private readonly secretKey: string;
+  private readonly resetLoginAttemp: number;
 
   constructor(
     private rolesService: RolesService,
@@ -29,6 +33,7 @@ export class AuthService {
   ) {
     this.jwtSecret = this.configService.get<string>('JWT_SECRET');
     this.secretKey = this.configService.get<string>('SECRET_KEY');
+    this.resetLoginAttemp = this.configService.get<number>('RESET_LOGIN_ATTEMP');
   }
 
   async register(registerUserDTO: CreateUserDto): Promise<Users> {
@@ -43,16 +48,10 @@ export class AuthService {
       username = username.toLocaleLowerCase();
 
       const existingUser = await this.usersService.getUserByEmailOrUsername(email,username,);
-      if (existingUser) {
-        if (existingUser.username === username) {
-          throw new BadRequestException(
-            `User with username "${username}" already exists`,
-          );
-        } else if (existingUser.email === email) {
-          throw new BadRequestException(
-            `User with email "${email}" already exists`,
-          );
-        }
+      if (existingUser && existingUser.username === username) {
+        throw new BadRequestException(`User with username "${username}" already exists`);
+      } else if (existingUser && existingUser.email === email) {
+        throw new BadRequestException(`User with email "${email}" already exists`);
       }
 
       const isPasswordValid = await this.checkRegisterPassword(password, confirm_password)
@@ -67,22 +66,25 @@ export class AuthService {
         ...registerUserDTO,
         password: hashedPassword,
       });
-      return result;
 
+      return result;
       //TO DO: Add user activity here
     } catch (e) {
       throw e;
     }
   }
 
-  async login(req: Request, loginDTO: LoginDTO) {
-    let { device_id, usernameOrEmail, password } = loginDTO;
+  async login(req: any, loginDTO: LoginDTO) {
+    let { usernameOrEmail, password } = loginDTO;
     try {
       usernameOrEmail = usernameOrEmail.toLocaleLowerCase();
       const user = await this.usersService.getUserByEmailOrUsername(usernameOrEmail,usernameOrEmail);
       if (!user) {
         throw new BadRequestException(`email or username not exist`);
       }
+
+      //Pass the user-id to the request object
+      (req as any).user_id = user.id;
 
       if(user.is_banned){
         throw new BadRequestException(`your account is banned  by system, contact admin for help`);
@@ -101,29 +103,42 @@ export class AuthService {
         throw new BadRequestException(`password is incorrect, you had ${loginAttempUser} attemp left`);
       }
 
-      const deviceType = await this.usersService.getUserDeviceType(req)
+      await this.usersService.updateLoginAttemp(user.id, this.resetLoginAttemp)
 
-      //TO DO: Validation session user
-      const existSession = await this.userSessionsService.validateSession(device_id, user.id, deviceType)
+      const deviceType = await this.usersService.getUserDeviceType(req)
+      const existSession = await this.userSessionsService.validateSession(req.device_id, user.id, deviceType)
       if(existSession){
-        throw new BadRequestException(`session already running in other device`);
+        throw new UnauthorizedException(`session already running in ${deviceType} device`);
       }
 
       const token = await this.getTokens(user.id, user.username, user.role);
-
-      //TO DO: Create session
+      const getExpired = this.getTokenExpiration(token.accessToken)
       await this.userSessionsService.createSession({
-        device_id, 
+        device_id: req.device_id, 
         user_id: user.id, 
         device_type: deviceType, 
-        expired_at: new Date(Date.now() + 1 * 60 * 60 * 1000), // Expires in 1 hour
+        expired_at: getExpired,
         last_activity_at: new Date(),
-      })
+      });
 
+      return {...token};
       //TO DO: Add user activity here
-      return token;
     } catch (e) {
       throw e;
+    }
+  }
+
+  getTokenExpiration(token: string): Date {
+    try {
+      const decoded = jwt.decode(token) as { exp: number };
+      if (!decoded || !decoded.exp) {
+        throw new UnauthorizedException('Invalid token: Missing expiration');
+      }
+
+      // Convert `exp` (seconds since epoch) to a Date object
+      return new Date(decoded.exp * 1000);
+    } catch (error) {
+      throw new UnauthorizedException('Failed to decode token');
     }
   }
 
@@ -133,7 +148,7 @@ export class AuthService {
         {
           sub: userId,
           username,
-          role,
+          role, 
         },
         {
           secret: this.jwtSecret,

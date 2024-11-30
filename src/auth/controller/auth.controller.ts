@@ -43,7 +43,8 @@ export class AuthController {
     @Roles(RoleEnum.Admin)
     profile(@Request() req: any){
         return {
-            data: req.user
+            data: req.user,
+            statusCode: 200
         }
     }
 

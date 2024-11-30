@@ -15,9 +15,9 @@ export class CreateUserSessionDto {
 
   @IsDate()
   @IsNotEmpty()
-  expired_at: Date;
+  expired_at?: Date;
 
   @IsDate()
   @IsNotEmpty()
-  last_activity_at: Date;
+  last_activity_at?: Date;
 }
