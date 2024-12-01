@@ -49,7 +49,7 @@ export class UserService {
         }
     }
 
-    async getUserByEmailOrUsername(email: string, username: string){
+    async getUserByEmailOrUsername(email: string, username: string): Promise<Users | null>{
         try {
             const result = await this.userRepository.getUserByEmailOrUsername(
                 email,

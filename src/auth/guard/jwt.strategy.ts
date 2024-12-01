@@ -3,6 +3,7 @@ import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UserService } from 'src/users/services/user.service';
 import { ConfigService } from '@nestjs/config';
+import { Users } from 'src/users/entity/user.entity';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy){
@@ -16,7 +17,7 @@ export class JwtStrategy extends PassportStrategy(Strategy){
         })
     }
 
-    async validate(payload: any){
+    async validate(payload: any): Promise<Partial<Users |null>>{
         const id = payload.sub
         const isExistUser = await this.usersService.getUser(id)
 

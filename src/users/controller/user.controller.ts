@@ -27,6 +27,8 @@ export class UserController {
     @Get('user/:id')
     async getUser(@Param('id', ParseUUIDPipe) id: string) {
         const result = await this.userService.getUser(id)
-        return {data: result}
+        return {
+            data: result
+        }
     }
 }

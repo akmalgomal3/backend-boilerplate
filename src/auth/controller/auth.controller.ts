@@ -38,9 +38,9 @@ export class AuthController {
     }
 
     @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard, RolesGuard)
+    // @UseGuards(JwtAuthGuard, RolesGuard)
     @Get('/authorize-token')
-    @Roles(RoleEnum.Admin)
+    // @Roles(RoleEnum.Admin)
     profile(@Request() req: any){
         return {
             data: req.user,

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -36,7 +37,7 @@ export class AuthService {
     this.resetLoginAttemp = this.configService.get<number>('RESET_LOGIN_ATTEMP');
   }
 
-  async register(registerUserDTO: CreateUserDto): Promise<Users> {
+  async register(registerUserDTO: CreateUserDto): Promise<Partial<Users>> {
     let { email, username, password, confirm_password, role_id } = registerUserDTO;
     try {
       const role = await this.rolesService.getRoleById(role_id);
@@ -67,8 +68,8 @@ export class AuthService {
         password: hashedPassword,
       });
 
+      delete result.password
       return result;
-      //TO DO: Add user activity here
     } catch (e) {
       throw e;
     }
@@ -87,7 +88,7 @@ export class AuthService {
       (req as any).user_id = user.id;
 
       if(user.is_banned){
-        throw new BadRequestException(`your account is banned  by system, contact admin for help`);
+        throw new ForbiddenException(`your account is banned by system, contact admin for help`);
       }
 
       const isPasswordValid = await this.validatePassword(password, user.password)
@@ -97,7 +98,7 @@ export class AuthService {
 
         if(loginAttempUser === 0){
           await this.usersService.updateBannedUser(user.id, true)
-          throw new BadRequestException(`your account is banned by system, contact admin for help`);
+          throw new ForbiddenException(`your account is banned by system, contact admin for help`);
         }
 
         throw new BadRequestException(`password is incorrect, you had ${loginAttempUser} attemp left`);
@@ -122,7 +123,6 @@ export class AuthService {
       });
 
       return {...token};
-      //TO DO: Add user activity here
     } catch (e) {
       throw e;
     }

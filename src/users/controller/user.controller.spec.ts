@@ -106,7 +106,7 @@ describe('UserController', () => {
             const result = await controller.getUser(userId);
 
             expect(service.getUser).toHaveBeenCalledWith(userId);
-            expect(result).toEqual(mockUsers[0]);
+            expect(result).toEqual({ data: mockUsers[0]});
         });
 
         it('should handle non-existent user', async () => {
@@ -115,7 +115,7 @@ describe('UserController', () => {
 
             const result = await controller.getUser(userId);
 
-            expect(result).toBeNull();
+            expect(result).toEqual({ data: null});
         });
 
         it('should handle service errors', async () => {
