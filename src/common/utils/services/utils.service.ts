@@ -46,7 +46,7 @@ export class UtilsService {
     request['log-data'] = {
       user_id: user.id,
       user_role: user.role,
-      username: user.username,
+      identifier: user.username,
       method: request?.method,
       path: request?.route?.path,
       log_type: 'user_activity',

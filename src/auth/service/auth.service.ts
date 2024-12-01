@@ -15,7 +15,7 @@ import { JwtService } from '@nestjs/jwt';
 import { SessionService } from '../../libs/session/services/session.service';
 import { addHours } from 'date-fns';
 import { JwtPayload } from '../../common/types/jwt-payload.type';
-import { UserRoles } from '../../common/enums/user.enum';
+import { DeviceType, UserRoles } from '../../common/enums/user.enum';
 import { CreateLogDto } from '../../libs/elasticsearch/dto/create-log.dto';
 import { ElasticsearchService } from '../../libs/elasticsearch/services/elasticsearch.service';
 import { IpType } from '../../common/types/ip.type';
@@ -66,7 +66,7 @@ export class AuthService {
         this.createLog(
           {
             ...logData,
-            username,
+            identifier: username,
           },
           `User ${username} has been registered successfully`,
           'success',
@@ -78,7 +78,7 @@ export class AuthService {
       await this.createLog(
         {
           ...logData,
-          username: registerDto.username || '',
+          identifier: registerDto.username || '',
         },
         `Failed to register user, due to ${e.message || 'unknown error'}`,
         'failed',
@@ -95,7 +95,8 @@ export class AuthService {
     logData: CreateLogDto,
     ipData: IpType,
   ): Promise<{ accessToken: string }> {
-    const { identifier, deviceType } = loginDto;
+    const { identifier } = loginDto;
+    const deviceType: DeviceType = ipData['device-type'];
     try {
       const password: string = this.utils.decrypt(loginDto.password);
 
@@ -134,7 +135,9 @@ export class AuthService {
         this.createLog(
           {
             ...logData,
-            username: identifier,
+            user_id: user.id,
+            user_role: user.role as UserRoles,
+            identifier: identifier,
           },
           `User ${identifier} has login successfully`,
           'success',
@@ -162,7 +165,7 @@ export class AuthService {
       await this.createLog(
         {
           ...logData,
-          username: identifier,
+          identifier: identifier,
         },
         `Failed login attempt for ${identifier}, due to ${e.message || 'unknown error'}`,
         'failed',

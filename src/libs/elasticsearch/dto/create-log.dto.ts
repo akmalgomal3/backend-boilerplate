@@ -1,7 +1,7 @@
 export class CreateLogDto {
   user_id?: string;
   user_role?: 'Executive' | 'Operator' | 'Admin' | '';
-  username: string;
+  identifier?: string;
   method?: string;
   path?: string;
   log_type?: 'user_auth' | 'user_activity';

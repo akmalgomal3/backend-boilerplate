@@ -1,6 +1,9 @@
+import { DeviceType } from '../enums/user.enum';
+
 export type IpType = {
   'ip-address'?: string;
   'user-agent'?: string;
+  'device-type'?: DeviceType;
 };
 
 export type IpInfo = {

@@ -1,129 +1,211 @@
-import { Test, TestingModule } from "@nestjs/testing"
-import { UserService } from "../services/user.service"
-import { UserController } from "./user.controller"
+import { Test, TestingModule } from '@nestjs/testing';
+import { UserController } from './user.controller';
+import { UserService } from '../services/user.service';
+import { ResponseInterceptor } from 'src/common/interceptor/response.interceptor';
+import { UtilsService } from '../../common/utils/services/utils.service';
+import { ConfigService } from '@nestjs/config';
+import { ElasticsearchService } from '../../libs/elasticsearch/services/elasticsearch.service';
+import { ElasticsearchService as ElasticClient } from '@nestjs/elasticsearch';
+import { GetBannedUsersDto } from '../dto/get-banned-users.dto';
+import { DeviceType, UserRoles } from '../../common/enums/user.enum';
+import { JwtPayload } from '../../common/types/jwt-payload.type';
+import { of } from 'rxjs';
 
 describe('UserController', () => {
-    let controller: UserController
-    let service: UserService
+  let controller: UserController;
+  let userService: UserService;
 
-    const mockUsers = [
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [UserController],
+      providers: [
         {
-            user_id: "aa57782b-273c-4916-a5fd-205bd6a1d984",
-            username: "oplabinkur",
-            password: "241825030f9606a5baff192475e7f97b",
-            email: "oplabinkur@gmail.com",
-            role_id: "4",
-            full_name: "Operator Labinkur",
-            active: true,
-            created_by: null,
-            created_at: null,
-            updated_by: "b1cdecdb-fd05-4aff-b6a5-4937bc55d626",
-            updated_at: "2024-10-08T01:29:54.326Z",
-            is_dev: true
-        }
+          provide: UserService,
+          useValue: {
+            getUsers: jest.fn(),
+            getBannedUsers: jest.fn(),
+            subscribeToGetLoggedInUser: jest.fn(),
+            getUserActivityLogs: jest.fn(),
+            getUserAuthLogs: jest.fn(),
+          },
+        },
+        UtilsService,
+        ConfigService,
+        ResponseInterceptor,
+        {
+          provide: ElasticsearchService,
+          useClass: ElasticsearchService,
+        },
+        {
+          provide: ElasticClient,
+          useValue: {
+            indices: {
+              exists: jest.fn().mockResolvedValue(false),
+              create: jest.fn().mockResolvedValue({}),
+            },
+            index: jest.fn().mockResolvedValue({}),
+            search: jest.fn().mockResolvedValue({
+              hits: {
+                hits: [],
+                total: 0,
+              },
+            }),
+          },
+        },
+      ],
+    }).compile();
+
+    controller = module.get<UserController>(UserController);
+    userService = module.get<UserService>(UserService);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  it('should return users', async () => {
+    const result = {
+      data: [
+        {
+          id: 'someid',
+          username: 'someusername',
+          email: 'some@gmail.com',
+          role: UserRoles.Admin,
+          ban_reason: 'Attempting 5 times',
+          password: 'somepassword',
+          failed_login_attempts: 3,
+          is_banned: true,
+          created_at: new Date(),
+          updated_at: new Date(),
+          sessions: [],
+        },
+      ],
+      metadata: { page: 1, limit: 10, totalPages: 1, totalItems: 1 },
+    };
+    jest.spyOn(userService, 'getUsers').mockResolvedValue(result);
+
+    const response = await controller.getUsers(1, 10);
+    expect(response).toEqual({
+      data: result.data,
+      metadata: result.metadata,
+    });
+  });
+
+  it('should return banned users', async () => {
+    const result = {
+      data: [
+        {
+          id: 'someid',
+          username: 'someusername',
+          email: 'some@gmail.com',
+          role: UserRoles.Admin,
+          ban_reason: 'Attempting 5 times',
+          password: 'somepassword',
+          failed_login_attempts: 3,
+          is_banned: true,
+          created_at: new Date(),
+          updated_at: new Date(),
+          sessions: [],
+        },
+      ],
+      metadata: { page: 1, limit: 10, totalPages: 1, totalItems: 1 },
+    };
+    jest.spyOn(userService, 'getBannedUsers').mockResolvedValue(result);
+
+    const getBannedUsersDto: GetBannedUsersDto = {
+      orderBy: 'username',
+      orderIn: 'asc',
+      page: 1,
+      limit: 10,
+    };
+    const response = await controller.getBannedUsers(getBannedUsersDto);
+    expect(response).toEqual({
+      data: result.data,
+      metadata: result.metadata,
+    });
+  });
+
+  it('should listen to logged-in users', async () => {
+    const user: JwtPayload = {
+      id: 'someid',
+      username: 'someusername',
+      role: UserRoles.Admin,
+      device_type: DeviceType.web,
+      email: 'some@gmail.com',
+      session_id: 'somesessionid',
+      user_agent: 'Mozilla/5.0',
+    };
+    const loggedInUsers = [
+      {
+        id: 'someid',
+        username: 'someusername',
+        email: 'some@gmail.com',
+        role: UserRoles.Admin,
+        deviceType: DeviceType.web,
+        lastActivity: new Date(),
+        expiresAt: new Date(),
+      },
     ];
+    jest
+      .spyOn(userService, 'subscribeToGetLoggedInUser')
+      .mockReturnValue(of(loggedInUsers));
 
-    const mockPaginatedResponse = {
-        data: mockUsers,
-        metadata: {
-            page: 1,
-            limit: 10,
-            totalPages: 1,
-            totalItems: 1
-        }
+    const req = { user };
+    const response = await controller.listenToLoggedInUsers(req).toPromise();
+    expect(response).toEqual({ data: loggedInUsers });
+  });
+
+  it('should return user activity logs', async () => {
+    const result = {
+      hits: [
+        {
+          user_id: 'someid',
+          user_role: UserRoles.Admin,
+          username: 'someusername',
+          method: 'GET',
+          path: '/somepath',
+          log_type: 'activity',
+          status: 'success',
+          activity: 'User logged in',
+          timestamp: Date.now(),
+          datetime: new Date(),
+          device_type: 'web',
+          ip_address: '127.0.0.1',
+          user_agent: 'Mozilla/5.0',
+          location: { lat: 0, lon: 0 },
+          country: 'Country',
+          city: 'City',
+          postal_code: '12345',
+          timezone: 'UTC',
+        },
+      ],
+      total: 1,
+      totalPages: 1,
+      page: 1,
+      limit: 10,
     };
+    jest.spyOn(userService, 'getUserActivityLogs').mockResolvedValue(result);
 
-    const mockUserService = {
-        getUsers: jest.fn().mockResolvedValue(mockPaginatedResponse),
-        getUser: jest.fn().mockResolvedValue(mockUsers[0])
+    const getUserActivityDto = {
+      logType: 'activity',
+      status: 'success' as 'success' | 'failed',
+      userRole: UserRoles.Admin,
+      dateTo: '2021-01-01',
+      dateFrom: '2021-01-03',
+      search: 'User logged in',
+      username: 'someusername',
+      limit: 10,
+      page: 1,
     };
-
-    beforeEach(async () => {
-        const module: TestingModule = await Test.createTestingModule({
-            controllers: [UserController],
-            providers: [
-                {
-                    provide: UserService,
-                    useValue: mockUserService
-                }
-            ]
-        }).compile();
-
-        controller = module.get<UserController>(UserController);
-        service = module.get<UserService>(UserService);
+    const response = await controller.getUserActivity(getUserActivityDto);
+    expect(response).toEqual({
+      data: result.hits,
+      metadata: {
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        totalItems: result.total,
+      },
     });
-
-    afterEach(() => {
-        jest.clearAllMocks();
-    });
-
-    describe('getUsers', () => {
-        it('should return paginated users', async () => {
-            const page = 1;
-            const limit = 10;
-
-            const result = await controller.getUsers(page, limit);
-
-            expect(service.getUsers).toHaveBeenCalledWith({ page, limit });
-            expect(result).toEqual({
-                data: mockPaginatedResponse.data,
-                metadata: mockPaginatedResponse.metadata
-            });
-        });
-
-        it('should handle empty result', async () => {
-            const emptyResponse = {
-                data: [],
-                metadata: {
-                    page: 1,
-                    limit: 10,
-                    totalPages: 0,
-                    totalItems: 0
-                }
-            };
-            mockUserService.getUsers.mockResolvedValueOnce(emptyResponse);
-
-            const result = await controller.getUsers(1, 10);
-
-            expect(result).toEqual({
-                data: [],
-                metadata: emptyResponse.metadata
-            });
-        });
-
-        it('should handle service errors', async () => {
-            const error = new Error('Database error');
-            mockUserService.getUsers.mockRejectedValueOnce(error);
-
-            await expect(controller.getUsers(1, 10)).rejects.toThrow('Database error');
-        });
-    });
-
-    describe('getUser', () => {
-        it('should return a single user', async () => {
-            const userId = '1';
-
-            const result = await controller.getUser(userId);
-
-            expect(service.getUser).toHaveBeenCalledWith(userId);
-            expect(result).toEqual(mockUsers[0]);
-        });
-
-        it('should handle non-existent user', async () => {
-            const userId = 'non-existent';
-            mockUserService.getUser.mockResolvedValueOnce(null);
-
-            const result = await controller.getUser(userId);
-
-            expect(result).toBeNull();
-        });
-
-        it('should handle service errors', async () => {
-            const userId = '1';
-            const error = new Error('User not found');
-            mockUserService.getUser.mockRejectedValueOnce(error);
-
-            await expect(controller.getUser(userId)).rejects.toThrow('User not found');
-        });
-    });
-})
+  });
+});

@@ -6,7 +6,6 @@ import {
 } from '@elastic/elasticsearch/lib/api/types';
 import { CreateLogDto } from '../dto/create-log.dto';
 import { GetAppLogDto } from '../dto/get-app-log.dto';
-import { GetUserActivityDto } from '../../../users/dto/get-user-activity.dto';
 
 @Injectable()
 export class ElasticsearchService {
@@ -32,7 +31,7 @@ export class ElasticsearchService {
           properties: {
             user_id: { type: 'text' },
             user_role: { type: 'keyword' },
-            username: { type: 'text' },
+            identifier: { type: 'keyword' },
             method: { type: 'keyword' },
             path: { type: 'text' },
             log_type: { type: 'keyword' },
@@ -70,13 +69,12 @@ export class ElasticsearchService {
         dateTo,
         dateFrom,
         search,
-        username,
+        identifier,
         limit = 10,
         page = 1,
       } = getLogDto;
       const mustQueries = [];
       const shouldQueries = [];
-      console.log(getLogDto);
 
       mustQueries.push({ term: { log_type: logType } });
 
@@ -88,8 +86,8 @@ export class ElasticsearchService {
         mustQueries.push({ term: { status: getLogDto.status } });
       }
 
-      if (username) {
-        mustQueries.push({ term: { username: username } });
+      if (identifier) {
+        mustQueries.push({ term: { identifier: identifier } });
       }
 
       if (dateFrom || dateTo) {

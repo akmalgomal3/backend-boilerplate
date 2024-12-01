@@ -1,5 +1,4 @@
-import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
-import { DeviceType } from '../../common/enums/user.enum';
+import { IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class LoginDto {
@@ -18,13 +17,4 @@ export class LoginDto {
   @IsString()
   @IsNotEmpty()
   password: string;
-
-  @ApiProperty({
-    example: 'web',
-    description: 'Device type',
-    enum: DeviceType,
-  })
-  @IsEnum(DeviceType)
-  @IsNotEmpty()
-  deviceType: DeviceType;
 }

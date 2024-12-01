@@ -39,7 +39,7 @@ export class GetAppLogDto {
 
   @IsOptional()
   @IsString()
-  username?: string;
+  identifier?: string;
 
   @IsDate()
   @IsOptional()
