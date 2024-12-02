@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Req } from '@nestjs/common';
 import { AuthService } from '../service/auth.service';
 import { RegisterDto } from '../dto/register.dto';
 import { Users } from '../../users/entity/user.entity';
@@ -8,8 +8,12 @@ import { Ip } from '../../common/decorators/ip.decorator';
 import { IpType } from '../../common/types/ip.type';
 import { LogData } from '../../common/decorators/log.decorator';
 import { CreateLogDto } from '../../libs/elasticsearch/dto/create-log.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { GeneratePasswordDto } from '../dto/generate-password.dto';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRoles } from '../../common/enums/user.enum';
+import { JwtPayload } from '../../common/types/jwt-payload.type';
+import { User } from '../../common/decorators/user.decorator';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -55,6 +59,16 @@ export class AuthController {
         password,
         confirmPassword,
       ),
+    };
+  }
+
+  @ApiBearerAuth()
+  @Roles(UserRoles.Operator, UserRoles.Admin, UserRoles.Executive)
+  @Post('/logout')
+  async logout(@User() user: JwtPayload): Promise<object> {
+    const result = await this.authService.logout(user);
+    return {
+      data: result,
     };
   }
 }

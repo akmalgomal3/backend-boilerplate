@@ -54,10 +54,17 @@ export class ElasticsearchService {
   }
 
   async createLog(logDto: CreateLogDto): Promise<void> {
-    await this.elasticClient.index({
-      index: this.logsIndex,
-      document: logDto,
-    });
+    try {
+      await this.elasticClient.index({
+        index: this.logsIndex,
+        document: logDto,
+      });
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error when creating log',
+        e.status || 500,
+      );
+    }
   }
 
   async getLogs(getLogDto: GetAppLogDto) {

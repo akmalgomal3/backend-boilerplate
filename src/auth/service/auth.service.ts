@@ -177,6 +177,21 @@ export class AuthService {
     }
   }
 
+  async logout(user: JwtPayload): Promise<{ message: string }> {
+    try {
+      await this.sessionService.deleteSession(user.session_id);
+
+      return {
+        message: 'User has been logged out',
+      };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error when user try to logout',
+        e.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   async createLog(
     logData: CreateLogDto,
     activity: string,

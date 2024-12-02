@@ -58,8 +58,8 @@ export class UtilsService {
       ip_address: ipAddress,
       user_agent: userAgent,
       location: {
-        lat: ipData?.lat,
-        lon: ipData?.lon,
+        lat: ipData?.lat || 0,
+        lon: ipData?.lon || 0,
       },
       country: ipData?.country,
       city: ipData?.city,

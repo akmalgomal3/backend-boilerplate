@@ -9,7 +9,11 @@ export class LogDataMiddleware implements NestMiddleware {
   constructor(private readonly utils: UtilsService) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
-    if (req.baseUrl === '/auth/login' || req.baseUrl === '/auth/register') {
+    if (
+      req.baseUrl === '/auth/login' ||
+      req.baseUrl === '/auth/register' ||
+      req.baseUrl === '/auth/logout'
+    ) {
       const ipAddress: string = req['ip-address'];
       const userAgent: string = req['user-agent'];
 
