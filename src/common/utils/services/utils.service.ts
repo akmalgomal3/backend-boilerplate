@@ -20,9 +20,16 @@ export class UtilsService {
   }
 
   decrypt(str: string): string {
-    const bytes = CryptoJS.AES.decrypt(str, this.secretKey);
+    try {
+      const bytes = CryptoJS.AES.decrypt(str, this.secretKey);
 
-    return bytes.toString(CryptoJS.enc.Utf8);
+      return bytes.toString(CryptoJS.enc.Utf8);
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error decrypting string',
+        e.status || 500,
+      );
+    }
   }
 
   encrypt(str: string): string {

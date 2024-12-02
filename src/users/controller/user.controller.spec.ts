@@ -63,31 +63,33 @@ describe('UserController', () => {
     expect(controller).toBeDefined();
   });
 
-  it('should return users', async () => {
-    const result = {
-      data: [
-        {
-          id: 'someid',
-          username: 'someusername',
-          email: 'some@gmail.com',
-          role: UserRoles.Admin,
-          ban_reason: 'Attempting 5 times',
-          password: 'somepassword',
-          failed_login_attempts: 3,
-          is_banned: true,
-          created_at: new Date(),
-          updated_at: new Date(),
-          sessions: [],
-        },
-      ],
-      metadata: { page: 1, limit: 10, totalPages: 1, totalItems: 1 },
-    };
-    jest.spyOn(userService, 'getUsers').mockResolvedValue(result);
+  describe('getUsers', () => {
+    it('should return users', async () => {
+      const result = {
+        data: [
+          {
+            id: 'someid',
+            username: 'someusername',
+            email: 'some@gmail.com',
+            role: UserRoles.Admin,
+            ban_reason: 'Attempting 5 times',
+            password: 'somepassword',
+            failed_login_attempts: 3,
+            is_banned: true,
+            created_at: new Date(),
+            updated_at: new Date(),
+            sessions: [],
+          },
+        ],
+        metadata: { page: 1, limit: 10, totalPages: 1, totalItems: 1 },
+      };
+      jest.spyOn(userService, 'getUsers').mockResolvedValue(result);
 
-    const response = await controller.getUsers(1, 10);
-    expect(response).toEqual({
-      data: result.data,
-      metadata: result.metadata,
+      const response = await controller.getUsers(1, 10);
+      expect(response).toEqual({
+        data: result.data,
+        metadata: result.metadata,
+      });
     });
   });
 

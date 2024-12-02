@@ -36,6 +36,8 @@ export class ResponseInterceptor<T>
           this.utils
             .createUserActivityLog({
               ...logData,
+              log_type:
+                request.url === '/auth/logout' ? 'user_auth' : 'user_activity',
               status: 'success',
             })
             .then();
