@@ -1,4 +1,4 @@
-import { Injectable, NestMiddleware, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NestMiddleware, BadRequestException } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { isIP } from 'net'
 
@@ -6,7 +6,7 @@ import { isIP } from 'net'
 export class DeviceIdMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
     const deviceId = req.headers['device-id'];
-    let ipAddr = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const ipAddr = req.headers['x-forwarded-for'] || "";
 
     if (!deviceId) {
       throw new BadRequestException('Device-ID is required');
@@ -24,7 +24,6 @@ export class DeviceIdMiddleware implements NestMiddleware {
       throw new BadRequestException(`Invalid public IP address: ${ipAddr}`);
     }
 
-    // Pass the device-id to the request object
     (req as any).device_id = deviceId;
     (req as any).ip_address = ipAddr;
     next();
@@ -47,6 +46,6 @@ export class DeviceIdMiddleware implements NestMiddleware {
     if (isIP(ip) === 4 && privateIPv4.test(ip)) return false; // IPv4 private
     if (isIP(ip) === 6 && privateIPv6.test(ip)) return false; // IPv6 private
   
-    return true; // It's a public IP
+    return true; 
   }
 }

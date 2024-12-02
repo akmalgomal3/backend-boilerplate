@@ -1,7 +1,8 @@
-import { ForbiddenException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { ForbiddenException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { UserSessionsRepository } from './../repository/user-sessions.repository';
 import { CreateUserSessionDto } from './../dto/create-user-session.dto';
 import { UserSessions } from '../schema/user-sessions.schema';
+import { error } from 'console';
 
 @Injectable()
 export class UserSessionsService {
@@ -31,9 +32,9 @@ export class UserSessionsService {
     }
   }
 
-  async validateSession(device_id: string, user_id: string, device_type: string): Promise<UserSessions | null> {
+  async validateSession(user_id: string, device_type: string): Promise<UserSessions | null> {
     try {
-      const existingSession = await this.userSessionsRepository.findByFilters(device_id, user_id);
+      const existingSession = await this.userSessionsRepository.findByUserIdDeviceType(user_id, device_type);
       
       const now = new Date();
       if (existingSession[0] && new Date(existingSession[0].expired_at) <= now) {
@@ -42,6 +43,20 @@ export class UserSessionsService {
       }
 
       return existingSession[0]
+    } catch (e) {
+      throw e
+    }
+  }
+  
+  async updateLastActivity(user_id: string, deviceType: string): Promise<UserSessions | null>{
+    try {
+      const sessionUser = await this.validateSession(user_id, deviceType)
+      if(!sessionUser){
+        return null
+      }
+
+      const editSession = await this.updateSession(sessionUser.id, {last_activity_at: new Date()})
+      return editSession
     } catch (e) {
       throw e
     }

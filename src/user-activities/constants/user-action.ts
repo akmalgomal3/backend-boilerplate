@@ -4,5 +4,6 @@ export const UserAction = {
     UPDATE: 'UPDATE',
     DELETE: 'DELETE',
     LOGIN: 'LOGIN', 
-    REGISTER: 'REGISTER'
+    REGISTER: 'REGISTER', 
+    LOGOUT: 'LOGOUT'
 }

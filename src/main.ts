@@ -6,20 +6,22 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { UserActivityInterceptor } from './common/interceptor/user-activities.interceptor';
 import { UserActivitiesService } from './user-activities/service/user-activities.service';
+import { UserSessionsService } from './user-sessions/service/user-sessions.service';
 
 async function bootstrap() {
   try {
-
     const app = await NestFactory.create(AppModule);
     const configService = app.get(ConfigService);
-    const port = configService.get<number>('APP_PORT') ?? 3000;
-  
-    app.useGlobalPipes(new ValidationPipe());
-    app.useGlobalInterceptors(new ResponseInterceptor(), new UserActivityInterceptor(app.get(UserActivitiesService)));
 
+    const port = configService.get<number>('APP_PORT') ?? 3000;
+    app.enableCors();
     app.enableCors({
-      origin: [`http://localhost:${port}`],
+      origin: [`http://localhost:${port}`, configService.get<string>('CLIENT_URL')],
+      allowedHeaders: ['ip-address', 'x-forwarded-for']
     });
+
+    app.useGlobalPipes(new ValidationPipe());
+    app.useGlobalInterceptors(new ResponseInterceptor(), new UserActivityInterceptor(app.get(UserActivitiesService), app.get(UserSessionsService)));
 
     const config = new DocumentBuilder()
 		.setTitle('Auth Base Prob')

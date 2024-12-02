@@ -84,9 +84,6 @@ export class AuthService {
         throw new BadRequestException(`email or username not exist`);
       }
 
-      //Pass the user-id to the request object
-      (req as any).user_id = user.id;
-
       if(user.is_banned){
         throw new ForbiddenException(`your account is banned by system, contact admin for help`);
       }
@@ -107,7 +104,7 @@ export class AuthService {
       await this.usersService.updateLoginAttemp(user.id, this.resetLoginAttemp)
 
       const deviceType = await this.usersService.getUserDeviceType(req)
-      const existSession = await this.userSessionsService.validateSession(req.device_id, user.id, deviceType)
+      const existSession = await this.userSessionsService.validateSession(user.id, deviceType)
       if(existSession){
         throw new UnauthorizedException(`session already running in ${deviceType} device`);
       }
@@ -125,6 +122,19 @@ export class AuthService {
       return {...token};
     } catch (e) {
       throw e;
+    }
+  }
+
+  async logout(userId: string, deviceType: string): Promise<Partial<Users>>{
+    try {
+      const session = await this.userSessionsService.validateSession(userId, deviceType)
+      if(!session){
+        throw new UnauthorizedException(`session not found`)
+      }
+      const deleteSession = await this.userSessionsService.deleteSession(session.id)
+      return deleteSession
+    } catch (e) {
+      throw e
     }
   }
 

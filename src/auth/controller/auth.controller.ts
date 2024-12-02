@@ -10,6 +10,7 @@ import { RolesGuard } from 'src/roles/guard/roles.guard';
 import { RoleEnum } from 'src/roles/entity/roles.enum';
 import { Roles } from 'src/roles/guard/roles.decorator';
 import { Public } from 'src/common/decorator/public.decorator';
+import { GetUserDeviceType } from 'src/common/helper/user-device-type.helper';
 
 @Controller('/v1/auth')
 export class AuthController {
@@ -37,8 +38,19 @@ export class AuthController {
         }
     }
 
+    @Post('logout')
+    @UseGuards(JwtAuthGuard)
+    async logout(@Request() req){
+        const deviceType = await GetUserDeviceType(req)
+        await this.authService.logout(req?.user?.id, deviceType)
+        return {
+            statusCode: HttpStatus.OK,
+            data: null
+        }
+    }
+
     @ApiBearerAuth()
-    // @UseGuards(JwtAuthGuard, RolesGuard)
+    @UseGuards(JwtAuthGuard)
     @Get('/authorize-token')
     // @Roles(RoleEnum.Admin)
     profile(@Request() req: any){

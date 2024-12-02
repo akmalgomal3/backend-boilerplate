@@ -3,20 +3,21 @@ import {
   NestInterceptor,
   ExecutionContext,
   CallHandler,
-  HttpException,
 } from '@nestjs/common';
-import { Observable, throwError } from 'rxjs';
+import { Observable } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { UserActivities } from 'src/user-activities/schema/user-activities.schema';
 import { GetUserDeviceType } from '../helper/user-device-type.helper';
-import { ApiResponse } from '../types/response.type';
 import { UserActivitiesService } from 'src/user-activities/service/user-activities.service';
 import { GetUserActionMapping } from '../helper/user-action-mapping.helper';
+import { UserSessions } from 'src/user-sessions/schema/user-sessions.schema';
+import { UserSessionsService } from 'src/user-sessions/service/user-sessions.service';
 
 @Injectable()
 export class UserActivityInterceptor implements NestInterceptor {
     constructor(
-        private readonly userActivitiesService: UserActivitiesService
+        private readonly userActivitiesService: UserActivitiesService,
+        private readonly userSessionService: UserSessionsService
     ){}
 
     private getDeviceTypeUser(req: Request): Promise<string> {
@@ -26,6 +27,15 @@ export class UserActivityInterceptor implements NestInterceptor {
     private getAction(method: string, endpoint: string): string {
       const action = GetUserActionMapping(method, endpoint)
       return action
+    }
+
+    private updateLastActivity(userId: string, deviceType: string): Promise<Partial<UserSessions>>{
+      const updateSession = this.userSessionService.updateLastActivity(userId, deviceType)
+      if(!updateSession){
+        console.error(`Session not found`)
+      }
+
+      return updateSession
     }
 
     intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -39,10 +49,10 @@ export class UserActivityInterceptor implements NestInterceptor {
         method: req.method, 
         parameter: req.params,
         ip_address: req.ip_address,
-        latitude: req.headers['latitude'], 
-        longitude: req.headers['longitude'], 
+        latitude: req.headers['latitude'] || 0, 
+        longitude: req.headers['longitude'] || 0, 
         timestamp: new Date(), 
-        action: this.getAction(req.method,  req.url)
+        action: this.getAction(req.method, req.url)
     }
 
     return next.handle().pipe(
@@ -52,18 +62,19 @@ export class UserActivityInterceptor implements NestInterceptor {
         userActivity.device_type = await this.getDeviceTypeUser(req)
 
         await this.userActivitiesService.logActivity(userActivity);
+        await this.updateLastActivity(userActivity.user_id, userActivity.device_type);
       }), 
-      catchError(async (err)=> {
+      catchError(async (err) => {
         const errResponse = err?.response
-        userActivity.status = errResponse?.statusCode || err.status
+        userActivity.status = errResponse?.statusCode || err.status || 500
         userActivity.message = errResponse?.message || "error"
         userActivity.device_type = await this.getDeviceTypeUser(req)
         
         await this.userActivitiesService.logActivity(userActivity);
+        await this.updateLastActivity(userActivity.user_id, userActivity.device_type)
 
         throw err
       }),
-
     );
   }
 

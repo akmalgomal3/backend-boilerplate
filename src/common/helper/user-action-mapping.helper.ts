@@ -12,6 +12,9 @@ export const GetUserActionMapping = (method: string, endpoint: string): string =
     case endpoint.includes('register'):
       action = UserAction.REGISTER;
       break;
+    case endpoint.includes('logout'):
+      action = UserAction.LOGOUT;
+      break;
     case method.includes('get'):
         action = UserAction.GET;
         break;
