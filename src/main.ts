@@ -6,6 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ElasticsearchService } from './elasticsearch/elasticsearch.service';
 import { UserActivityInterceptor } from './common/interceptor/user-activity.interceptor';
 import * as express from 'express';
+import { UserService } from './users/services/user.service';
 
 async function bootstrap() {
   try {
@@ -15,17 +16,20 @@ async function bootstrap() {
 
     app.useGlobalInterceptors(new ResponseInterceptor());
     const elasticsearchService = app.get(ElasticsearchService);
+    const userService = app.get(UserService);
     app.useGlobalInterceptors(
-      new UserActivityInterceptor(elasticsearchService),
+      new UserActivityInterceptor(elasticsearchService, userService),
     );
     const expressApp = app
       .getHttpAdapter()
       .getInstance() as express.Application;
     expressApp.set('trust proxy', 1);
-    await app.listen(port);
 
+    // Enable CORS
     app.enableCors({
-      origin: [`http://localhost:${port}`],
+      origin: '*', // Izinkan semua asal (untuk pengembangan)
+      methods: 'GET,POST,PATCH,DELETE',
+      allowedHeaders: 'Content-Type,Authorization',
     });
 
     const config = new DocumentBuilder()
@@ -35,6 +39,7 @@ async function bootstrap() {
       .build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api', app, document);
+    await app.listen(port);
   } catch (error) {
     console.error('Error during application creation:', error);
   }

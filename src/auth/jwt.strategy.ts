@@ -26,7 +26,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(req: Request, payload: any) {
-    const tokenInRedis = await this.redisClient.get(`user:${payload.sub}`);
+    const tokenInRedis = await this.redisClient.get(
+      `user:${payload.sub}:${req.headers['user-agent']}`,
+    );
 
     if (!tokenInRedis) {
       throw new UnauthorizedException('Token expired or invalid');
@@ -36,7 +38,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Token mismatch');
     }
     // Idle timeout implementation
-    await this.redisClient.expire(`user:${payload.sub}`, 900);
+    await this.redisClient.expire(
+      `user:${payload.sub}:${req.headers['user-agent']}`,
+      900,
+    );
 
     const user = await this.userService.getUser(payload.sub);
 

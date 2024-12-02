@@ -31,11 +31,11 @@ export class SessionsService {
     };
   }
 
-  async endSession(userId: number) {
+  async endSession(userId: number, deviceType: string) {
     const sessionsCollection = this.mongoDb.collection('sessions');
     const now = new Date();
     return sessionsCollection.updateMany(
-      { userId, logoutTime: null },
+      { userId, deviceType, logoutTime: null },
       { $set: { logoutTime: new Date(now.getTime() + 7 * 60 * 60 * 1000) } },
     );
   }

@@ -9,7 +9,6 @@ import {
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import * as geoip from 'geoip-lite';
-import * as useragent from 'useragent';
 
 @Controller()
 export class AuthController {
@@ -56,7 +55,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   async logout(@Request() req) {
-    await this.authService.logout(req.user.userId);
+    await this.authService.logout(req.user.userId, req.headers['user-agent']);
     return {
       success: true,
       code: 200,

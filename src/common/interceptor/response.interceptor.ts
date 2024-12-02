@@ -43,7 +43,6 @@ export class ResponseInterceptor<T>
           message: err.message || 'An unexpected error occurred',
           data: null,
         };
-
         return throwError(() => new HttpException(errorResponse, statusCode));
       }),
     );

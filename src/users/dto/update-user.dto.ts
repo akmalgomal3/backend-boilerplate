@@ -6,14 +6,18 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateUserDto {
+  @ApiProperty()
   @IsString()
   readonly username?: string;
 
+  @ApiProperty()
   @IsEmail({}, { message: 'Email format is invalid' })
   readonly email?: string;
 
+  @ApiProperty()
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
   @MaxLength(12, { message: 'Password must be at most 12 characters long' })

@@ -32,11 +32,7 @@ export class UserController {
   async create(@Body() createUserDto: CreateUserDto) {
     const user = await this.userService.create(createUserDto);
     return {
-      success: true,
-      code: 201,
       data: user,
-      error: null,
-      meta: null,
     };
   }
 
@@ -74,7 +70,7 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('Admin')
+  @Roles('Admin', 'Operator')
   @Get('banned')
   async getBannedUsers() {
     const users = await this.userService.findBannedUsers();
@@ -123,11 +119,7 @@ export class UserController {
     const activities =
       await this.elasticsearchService.searchActivityLogs(query);
     return {
-      success: true,
-      code: 200,
       data: activities,
-      error: null,
-      meta: null,
     };
   }
 }
