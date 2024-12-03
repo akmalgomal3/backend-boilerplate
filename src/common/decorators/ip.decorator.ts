@@ -9,7 +9,7 @@ export const Ip = createParamDecorator(
     const userAgent = request.headers['user-agent'];
 
     const regex =
-      /Mobi|Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+      /Mobi|Android|iOS|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
 
     const deviceType: DeviceType = regex.test(userAgent)
       ? DeviceType.mobile
