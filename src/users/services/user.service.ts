@@ -15,12 +15,12 @@ export class UserService {
        
     ) { }
 
-    async getUsers(dto: PaginationDto): Promise<PaginatedResponseDto<Users>> {
+    async getUsers(dto: PaginationDto, isBanned: boolean, search: string): Promise<PaginatedResponseDto<Users>> {
         try {
             const { page = 1, limit = 10 } = dto;
             const skip = (page - 1) * limit;
 
-            const [data, totalItems] = await this.userRepository.getUsers(skip, limit);
+            const [data, totalItems] = await this.userRepository.getUsers(skip, limit, isBanned, search);
             const totalPages = Math.ceil(totalItems / limit);
 
             return {

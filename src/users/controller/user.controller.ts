@@ -5,7 +5,7 @@ import { ApiBearerAuth } from "@nestjs/swagger";
 import { JwtAuthGuard } from "src/auth/guard/jwt.guard";
 
 @ApiBearerAuth()
-@Controller('users')
+@Controller('/v1/users')
 @UseInterceptors(ResponseInterceptor)
 export class UserController {
     constructor(private userService: UserService) { }
@@ -14,9 +14,11 @@ export class UserController {
     @Get()
     async getUsers(
         @Query('page') page: number,
-        @Query('limit') limit: number
+        @Query('limit') limit: number,
+        @Query('isBanned') isBanned: boolean,
+        @Query('search') search: string
     ) {
-        const result = await this.userService.getUsers({ page, limit })
+        const result = await this.userService.getUsers({ page, limit }, isBanned, search)
         return {
             data: result.data,
             metadata: result.metadata

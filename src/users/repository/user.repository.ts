@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { DataSource, Repository } from "typeorm";
+import { Brackets, DataSource, ILike, Repository } from "typeorm";
 import { CreateUserDto } from "../dto/create-user.dto";
 import { UpdateUserDto } from "../dto/update-user.dto";
 import { Users } from "../entity/user.entity";
@@ -14,7 +14,7 @@ export class UserRepository {
         this.repository = this.dataSource.getRepository(Users);
     }
 
-    async getUsers(skip: number, take: number): Promise<[Users[], number]> {
+    async getUsers(skip: number, take: number, isBanned: boolean, search: string): Promise<[Users[], number]> {
         try {
             const result = await this.repository.findAndCount({
                 select: ['id', 'username', 'email', "full_name", "is_banned", "active", "created_at"],
@@ -22,10 +22,13 @@ export class UserRepository {
                 take,
                 order: {
                     username: 'DESC'
+                },
+                where:{
+                    full_name: search ? ILike(`%${search}%`) : undefined, 
+                    is_banned: isBanned ? isBanned : undefined
                 }
             });
 
-            // const result = await this.repository.query(query, [take, skip])
             return result
         } catch (error) {
             throw error;
