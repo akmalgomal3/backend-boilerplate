@@ -103,7 +103,5 @@ export class UserService {
         } catch (e) {
             throw e
         }
-    }
-
-    
+    }  
 }

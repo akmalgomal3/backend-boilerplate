@@ -1,6 +1,7 @@
 export class PaginationDto {
     page: number;
     limit: number;
+    // isBanned: boolean;
 }
 
 export class PaginatedResponseDto<T> {

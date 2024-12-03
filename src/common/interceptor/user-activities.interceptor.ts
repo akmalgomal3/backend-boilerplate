@@ -3,6 +3,7 @@ import {
   NestInterceptor,
   ExecutionContext,
   CallHandler,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
@@ -29,15 +30,6 @@ export class UserActivityInterceptor implements NestInterceptor {
       return action
     }
 
-    private updateLastActivity(userId: string, deviceType: string): Promise<Partial<UserSessions>>{
-      const updateSession = this.userSessionService.updateLastActivity(userId, deviceType)
-      if(!updateSession){
-        console.error(`Session not found`)
-      }
-
-      return updateSession
-    }
-
     intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const ctx = context.switchToHttp();
     const req = ctx.getRequest();
@@ -62,7 +54,6 @@ export class UserActivityInterceptor implements NestInterceptor {
         userActivity.device_type = await this.getDeviceTypeUser(req)
 
         await this.userActivitiesService.logActivity(userActivity);
-        await this.updateLastActivity(userActivity.user_id, userActivity.device_type);
       }), 
       catchError(async (err) => {
         const errResponse = err?.response
@@ -71,7 +62,6 @@ export class UserActivityInterceptor implements NestInterceptor {
         userActivity.device_type = await this.getDeviceTypeUser(req)
         
         await this.userActivitiesService.logActivity(userActivity);
-        await this.updateLastActivity(userActivity.user_id, userActivity.device_type)
 
         throw err
       }),

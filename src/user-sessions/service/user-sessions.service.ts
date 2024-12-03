@@ -26,7 +26,8 @@ export class UserSessionsService {
 
   async getSessionsByUserId(user_id: string) {
     try {
-      return await this.userSessionsRepository.findByUserId(user_id);
+      const result = await this.userSessionsRepository.findByUserId(user_id);
+      return result[0]
     } catch (e) {
       throw e
     }
@@ -37,22 +38,31 @@ export class UserSessionsService {
       const existingSession = await this.userSessionsRepository.findByUserIdDeviceType(user_id, device_type);
       
       const now = new Date();
-      if (existingSession[0] && new Date(existingSession[0].expired_at) <= now) {
-        await this.deleteSession(existingSession[0].id)
-        return null
+      if (existingSession[0]){
+        if(new Date(existingSession[0].expired_at) <= now || this.isIdle(existingSession[0].last_activity_at)){
+          await this.deleteSession(existingSession[0].id)
+          return null
+        }
       }
-
+      
       return existingSession[0]
     } catch (e) {
       throw e
     }
   }
+
+  isIdle(lastActivity: Date): boolean {
+    const now = Date.now();
+    const lastActivityTimestamp = new Date(lastActivity).getTime()
+    const fifteenMinutes = 5 * 60 * 1000;
+    return now - lastActivityTimestamp > fifteenMinutes;
+  };
   
   async updateLastActivity(user_id: string, deviceType: string): Promise<UserSessions | null>{
     try {
       const sessionUser = await this.validateSession(user_id, deviceType)
       if(!sessionUser){
-        return null
+        throw new UnauthorizedException(`Session not found`)
       }
 
       const editSession = await this.updateSession(sessionUser.id, {last_activity_at: new Date()})

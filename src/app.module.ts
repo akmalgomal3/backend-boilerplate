@@ -12,6 +12,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UserActivitiesModule } from './user-activities/user-activities.module';
 import { DeviceIdMiddleware } from './common/middleware/device-id.middleware';
 import { UserActivityInterceptor } from './common/interceptor/user-activities.interceptor';
+import { LastActivityInterceptor } from './common/interceptor/user-last-activity.interceptor';
 
 @Module({
   imports: [
@@ -46,6 +47,10 @@ import { UserActivityInterceptor } from './common/interceptor/user-activities.in
     {
       provide: APP_INTERCEPTOR,
       useClass: UserActivityInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LastActivityInterceptor,
     },
   ],
 })

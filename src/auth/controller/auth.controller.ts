@@ -38,8 +38,8 @@ export class AuthController {
         }
     }
 
+    @Public()
     @Post('logout')
-    @UseGuards(JwtAuthGuard)
     async logout(@Request() req){
         const deviceType = await GetUserDeviceType(req)
         await this.authService.logout(req?.user?.id, deviceType)

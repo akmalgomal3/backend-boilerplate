@@ -118,21 +118,23 @@ export class AuthService {
         expired_at: getExpired,
         last_activity_at: new Date(),
       });
-
+      
+      console.log('mari jalan jalans');
+      
       return {...token};
     } catch (e) {
       throw e;
     }
   }
 
-  async logout(userId: string, deviceType: string): Promise<Partial<Users>>{
+  async logout(userId: string, deviceType: string): Promise<Boolean>{
     try {
       const session = await this.userSessionsService.validateSession(userId, deviceType)
-      if(!session){
-        throw new UnauthorizedException(`session not found`)
+      if(session){
+        await this.userSessionsService.deleteSession(session.id)
       }
-      const deleteSession = await this.userSessionsService.deleteSession(session.id)
-      return deleteSession
+
+      return true
     } catch (e) {
       throw e
     }
@@ -158,7 +160,7 @@ export class AuthService {
         {
           sub: userId,
           username,
-          role, 
+          role,
         },
         {
           secret: this.jwtSecret,
