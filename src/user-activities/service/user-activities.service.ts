@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { UserActivitiesRepository } from '../repository/user-activities.repository';
 import { UserActivities } from '../schema/user-activities.schema';
+import { PaginatedResponseDto, PaginationDto } from 'src/common/dto/pagination.dto';
+import { UserActivityFilterDTO } from '../dto/user-activity-filter.dto';
 
 @Injectable()
 export class UserActivitiesService {
@@ -16,9 +18,28 @@ export class UserActivitiesService {
     }
   }
 
-  async getLogs(): Promise<UserActivities[] | null> {
+  async getLogs(dto: PaginationDto, filterDTO: UserActivityFilterDTO): Promise<PaginatedResponseDto<UserActivities>> {
     try {
-      return await this.userActivityRepository.findAll();
+      const { page = 1, limit = 10 } = dto;
+      const {action, startDate, endDate} = filterDTO
+      const skip = (page - 1) * limit;
+
+      const filter = {
+        ...(action && { action: action.toUpperCase() }),
+      }
+
+      const [data, totalItems] = await this.userActivityRepository.findAll(skip, limit, filter, startDate, endDate);
+      const totalPages = Math.ceil(totalItems / limit);
+
+      return {
+        data,
+        metadata: {
+            page: Number(page),
+            limit: Number(limit),
+            totalPages: Number(totalPages),
+            totalItems: Number(totalItems)
+        }
+    };
     } catch (error) {
       this.logger.error(`Failed to fetch logs: ${error.message}`);
       return null;

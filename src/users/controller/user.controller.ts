@@ -10,7 +10,6 @@ import { JwtAuthGuard } from "src/auth/guard/jwt.guard";
 export class UserController {
     constructor(private userService: UserService) { }
 
-    @UseGuards(JwtAuthGuard)
     @Get()
     async getUsers(
         @Query('page') page: number,
@@ -25,7 +24,6 @@ export class UserController {
         };
     }
 
-    @UseGuards(JwtAuthGuard)
     @Get('user/:id')
     async getUser(@Param('id', ParseUUIDPipe) id: string) {
         const result = await this.userService.getUser(id)

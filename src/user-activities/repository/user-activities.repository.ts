@@ -21,9 +21,21 @@ export class UserActivitiesRepository {
     }
   }
 
-  async findAll(): Promise<UserActivities[] | null> {
+  async findAll(skip: number, limit: number, filter: any= {}, startDate?: string, endDate?: string): Promise<[UserActivities[], number]> {
     try {
-      return await this.userActivitiesModel.find().exec();
+      if (startDate || endDate) {
+        filter.createdAt = {};
+        if (startDate) {
+          filter.createdAt.$gte = new Date(startDate); 
+        }
+        if (endDate) {
+          filter.createdAt.$lte = new Date(endDate);
+        }
+      }
+
+      const data = await this.userActivitiesModel.find(filter).skip(skip).limit(limit).sort({createdAt: -1}).exec();
+      const totalItems = await this.userActivitiesModel.countDocuments(filter)
+      return [data, totalItems]
     } catch (error) {
       this.logger.error(`Error fetching user activity logs: ${error.message}`);
       return null;
