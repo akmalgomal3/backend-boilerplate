@@ -1,298 +1,269 @@
-<<<<<<< HEAD
 
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Backend Application Documentation
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Table of Contents
+- [Introduction](#introduction)
+- [Technologies Used](#technologies-used)
+- [Setup and Installation](#setup-and-installation)
+- [Environment Variables](#environment-variables)
+- [API Endpoints](#api-endpoints)
+- [Database](#database)
+- [Testing](#testing)
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ npm install
-```
-
-## Compile and run the project
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-# Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
-
-# backend-boilerplate
-
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://gitlab.ntx-technology.com/backend/backend-boilerplate.git
-git branch -M master
-git push -uf origin master
-```
-
-## Integrate with your tools
-
-- [ ] [Set up project integrations](https://gitlab.ntx-technology.com/backend/backend-boilerplate/-/settings/integrations)
-
-## Collaborate with your team
-
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
 
 ---
 
-# Editing this README
+## Introduction
+This is the backend of an application that ensures single-session login in each device type, desktop or mobile using session that stored in [MongoDB](https://www.mongodb.com/). Built using [NestJS](https://nestjs.com/) and [PostgreSQL](https://www.postgresql.org/), it serves as the backbone for secure and efficient data management.
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+## List Feature
+- **Role Management**
+   - List Role
+   - Update Role
+   - Delete Role
+- **User Management**: 
+   - List User logged in (filter by `is_logged_in`)
+   - List User banned (filter by `is_banned`)
+   - List User Activities 
+- **User Authentication**
+   - Register
+      - Ensure email and username are unique 
+      - Password are strong (must include numbers, uppercase and lowercase letters, and special characters)
+      - Also password is being encrypt and decrypt with [Crypto](https://www.npmjs.com/package/crypto-js)
+   - Login
+      - Only one session running in each device type, mobile or desktop. User can't login because session already exist
+      - If you fill in the wrong password more than 5 times, the user will be banned.
+- **User Authorization**
+   - Only valid JWT token can access the API
+   - Only valid Role that has an access can access the API
 
-## Suggestions for a good README
+---
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+## Technologies Used
+List the main technologies or frameworks used:
 
-## Name
+- **Framework**: NestJS (TypeScript)
+- **Database**: PostgreSQL & MongoDB
+- **Authentication**: JWT (JSON Web Token)
+- **Real-time Communication**: WebSocket
+- **ORM**: TypeORM
+- **Other Tools**: Docker (optional)
 
-Choose a self-explaining name for your project.
+---
 
-## Description
+## Setup and Installation
+### Prerequisites
+- Git
+- Node.js (v16 or higher)
+- PostgreSQL (v13 or higher)
+- Docker (optional, for containerized setup)
 
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+### Steps
+1. Clone the repository:
+   ```bash
+   git clone https://gitlab.ntx-technology.com/backend/backend-boilerplate.git
+   cd backend-boilerplate
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Setup environment variables (see [Environment Variables](#environment-variables)).
+4. Run the application:
+   ```bash
+   npm run start:dev
+   ```
 
-## Badges
-
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-ß
-
-## Roadmap
-
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-
-Show your appreciation to those who have contributed to the project.
-
-## License
-
-For open source projects, say how it is licensed.
-
-## Project status
-
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
-
-> > > > > > > 58216b0bd3c7fc17a2b2d0ed3c071495d62e40fa
-
-```markdown
-# Project Name
-
-## Description
-
-This project is a NestJS application designed to manage and interact with various data and services. It uses TypeScript and several industry-standard tools to streamline development, testing, and deployment processes.
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-```
-
-cd existing_repo
-git remote add origin https://gitlab.ntx-technology.com/backend/backend-boilerplate.git
-git branch -M master
-git push -uf origin master
-
-## Features
-
-- **NestJS Framework** for building scalable server-side applications.
-- **Prettier** for consistent code formatting.
-- **ESLint** for linting and maintaining code quality.
-- **Jest** for unit and end-to-end testing.
-- **File Upload Handling** with `FileInterceptor` in NestJS.
-- **JWT Authentication** for secure API access with role-based authorization.
-
-## Installation
-
-To install dependencies, run the following command:
-
-```bash
-npm install
-```
-
-## Available Scripts
-
-This project comes with several predefined scripts to assist with development, testing, and production workflows.
-
-### Development
-
-- `npm run build`: Compiles the project for production.
-- `npm run format`: Automatically formats the TypeScript files using Prettier.
-- `npm run start`: Starts the application in normal mode.
-- `npm run start:dev`: Starts the application in watch mode (for development).
-- `npm run start:debug`: Starts the application in debug mode with watch enabled.
-- `npm run start:prod`: Runs the compiled production build.
-
-### Linting
-
-- `npm run lint`: Lints the code using ESLint, with automatic fixes applied.
-
-### Testing
-
-- `npm run test`: Runs the unit tests with Jest.
-- `npm run test:watch`: Runs Jest in watch mode to automatically re-run tests on file changes.
-- `npm run test:cov`: Runs tests and provides a code coverage report.
-- `npm run test:debug`: Runs Jest with debugging enabled.
-- `npm run test:e2e`: Runs end-to-end tests with Jest using the specified configuration.
+---
 
 ## Environment Variables
+Define the required environment variables in a `.env` file the example also available in `.env.example.`
 
-This application reads environment variables from the operating system or Docker Compose environment. Make sure to configure the necessary variables to ensure the application functions correctly.
+```env
+# Application
+APP_PORT=
 
-## Folder Structure
+# JWT
+JWT_SECRET=
 
-- `src/`: Contains the main application code, including modules, controllers, and services.
-- `test/`: Contains test files, both unit and end-to-end tests.
-- `libs/`: Contains shared libraries or utilities.
+# CRYPTO
+SECRET_KEY=
 
-## Contributing
+# POSTGRESQL CRED
+DB_HOST=
+DB_PORT=
+DB_USERNAME=
+DB_PASSWORD=
+DB_NAME=
 
-If you'd like to contribute to this project, please fork the repository and create a pull request with your changes. Be sure to run the linting and tests before submitting your changes.
 
-## License
-
-This project is licensed under the MIT License.
-
+# MONGO CRED
+MONGODB_URL=
+MONGODB_DBNAME=
 ```
 
-### Key Points:
-1. **Installation and Setup**: The `README` includes instructions for setting up the project with `npm install`.
-2. **Scripts Section**: Each script provided (such as `build`, `start`, `test`, etc.) is explained.
-3. **Testing & Debugging**: Instructions for running tests with Jest and debugging with `test:debug`.
-4. **Folder Structure**: A general explanation of where key project files are located.
-5. **Contributing**: Guidelines for contributing to the project.
+---
 
-You can customize and expand this template according to the project's specifics, such as adding details about specific routes, services, or any special configurations needed.
-```
+## API Endpoints
+Document the main endpoints. Example:
+
+### Authentication
+- **POST** `/v1/auth/register`: Register user data
+  - **Request Body**:
+    ```json
+    {
+      "role_id": "role.id",
+      "full_name": "example.full_name",
+      "email": "example.email",
+      "username": "example.username",
+      "password": "example.password", //must be encrypt
+      "confirm_password": "example.confirm_password", //must be encrypt
+      "is_dev": true //it's boolean
+    }
+    ```
+   - **Response: 200 Ok**:
+    ```json
+    {
+      "success": true,
+      "statusCode": 201,
+      "message": "Success",
+      "data": {
+         "id": "user.id",
+         "role_id": "role.email",
+         "email": "example.email",
+         "username": "example.username",
+         "full_name": "example.full_name",
+         "created_by": null,
+         "active": true,
+         "login_attemp": 5,
+         "is_dev": true,
+         "created_at": "2024-12-03T08:01:26.392Z",
+         "updated_at": "2024-12-03T08:01:26.392Z",
+         "deleted_at": null,
+         "is_logged_in": false,
+         "is_banned": false
+      }
+    }
+    ```
+   - **Response: 400 Bad Request (password must contain 8-12 characters)**:
+    ```json
+    {
+      "success": false,
+      "statusCode": 400,
+      "message": "password must contain 8-12 characters",
+      "data": null
+    }
+    ```
+   - **Response: 400 Bad Request (password and confirmation password is not equal)**:
+    ```json
+    {
+      "success": false,
+      "statusCode": 400,
+      "message": "password and confirmation password is not equal",
+      "data": null
+    }
+    ```
+
+- **POST** `/v1/auth/login`: Login and get a JWT token.
+  - **Request Body**:
+    ```json
+    {
+      "usernameOrEmail": "example",
+      "password": "password" //must be encrypted
+    }
+    ```
+  - **Response: 200 Ok**:
+    ```json
+    {
+      "success": true,
+      "statusCode": 200,
+      "message": "Success",
+      "data": {
+         "accessToken": "your.jwt.token", 
+         "refreshToken": "your.jwt.token"
+      }
+    }
+    ```
+
+   - **Response: 400 Bad Request (email or username not exist)**:
+    ```json
+    {
+      "success": false,
+      "statusCode": 400,
+      "message": "email or username not exist",
+      "data": null
+    }
+    ```
+
+   - **Response: 400 Bad Request (password is incorrect)**:
+    ```json
+    {
+      "success": false,
+      "statusCode": 400,
+      "message": "password is incorrect, you had 4 attemp left",
+      "data": null
+    }
+    ```
+
+- **POST** `/v1/auth/logout`: Logout and invalidate the session.
+  - **Response: 200 Ok**:
+    ```json
+    {
+      "success": true,
+      "statusCode": 200,
+      "message": "Success",
+      "data": null
+    }
+    ```
+### Authorization
+- **GET** `/v1/auth/authorize-token`: Authorize token in Bearer.
+  - **Response: 200 Ok**:
+    ```json
+    {
+      "success": true,
+      "statusCode": 200,
+      "message": "Success",
+      "data": {
+         "id": "user.id",
+         "email": "user.email",
+         "full_name": "user.full_name",
+         "role": "role.name"
+      }
+    }
+    ```
+
+### User Management
+- **GET** `/users`: Get a list of all users.
+- **GET** `/users/:id`: Get details of a specific user.
+
+---
+
+## Database
+Include details about the database structure or any migrations. For example:
+
+- **Users Table**:
+  | Column       | Type        | Description              |
+  |--------------|-------------|--------------------------|
+  | id           | UUID        | Primary key              |
+  | username     | VARCHAR     | Unique username          |
+  | password     | VARCHAR     | Hashed password          |
+  | is_logged_in | BOOLEAN     | Tracks login status      |
+
+---
+
+## Testing
+Explain how to run tests.
+
+1. Run unit tests:
+   ```bash
+   npm run test
+   ```
+2. Run unit testsin specific file:
+   ```bash
+   npm run test <path-to-file>
+   ```
+3. Run end-to-end tests:
+   ```bash
+   npm run test:e2e
+   ```
+---
