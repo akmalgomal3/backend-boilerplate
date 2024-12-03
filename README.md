@@ -121,7 +121,7 @@ Document the main endpoints. Example:
       "is_dev": true //it's boolean
     }
     ```
-   - **Response: 200 Ok**:
+  - **Response: 200 Ok**:
     ```json
     {
       "success": true,
@@ -145,7 +145,7 @@ Document the main endpoints. Example:
       }
     }
     ```
-   - **Response: 400 Bad Request (password must contain 8-12 characters)**:
+  - **Response: 400 Bad Request (password must contain 8-12 characters)**:
     ```json
     {
       "success": false,
@@ -154,7 +154,7 @@ Document the main endpoints. Example:
       "data": null
     }
     ```
-   - **Response: 400 Bad Request (password and confirmation password is not equal)**:
+  - **Response: 400 Bad Request (password and confirmation password is not equal)**:
     ```json
     {
       "success": false,
@@ -185,7 +185,7 @@ Document the main endpoints. Example:
     }
     ```
 
-   - **Response: 400 Bad Request (email or username not exist)**:
+  - **Response: 400 Bad Request (email or username not exist)**:
     ```json
     {
       "success": false,
@@ -195,7 +195,7 @@ Document the main endpoints. Example:
     }
     ```
 
-   - **Response: 400 Bad Request (password is incorrect)**:
+  - **Response: 400 Bad Request (password is incorrect)**:
     ```json
     {
       "success": false,
@@ -233,21 +233,99 @@ Document the main endpoints. Example:
     ```
 
 ### User Management
-- **GET** `/users`: Get a list of all users.
-- **GET** `/users/:id`: Get details of a specific user.
+- **GET** `/v1/users`: Get a list of all users.
+  - **Response: 200 Ok**:
+    ```json
+    {
+      "success": true,
+      "statusCode": 200,
+      "message": "Success",
+      "data": [
+        {
+          "created_at": "2024-11-28T18:19:55.782Z",
+          "id": "c9e1491f-ad87-4c6e-8286-ae6d576093fe",
+          "email": "admin@ntx.solution.com",
+          "username": "admin",
+          "full_name": "Akmalia Trias",
+          "active": true,
+          "is_banned": false,
+          "is_logged_in": true
+        }
+      ],
+      "metadata": {
+        "page": 1,
+        "limit": 10,
+        "totalPages": 1,
+        "totalItems": 1
+      }
+    }
+    ```
+
+### User Activities
+- **GET** `/v1/user-activity`: Get a list of all users.
+  - **Response: 200 Ok**:
+    ```json
+    {
+      "success": true,
+      "statusCode": 200,
+      "message": "Success",
+      "data": [
+        {
+          "_id": "674d839e5e2262a34efdaa88",
+          "device_id": "f3751268-2c10-4445-b5f7-7c9cef74c690",
+          "user_id": "guest",
+          "device_type": "desktop",
+          "ip_address": "139.255.255.242",
+          "latitude": -6.2091508,
+          "longitude": 106.8237489,
+          "method": "POST",
+          "endpoint": "/v1/auth/login",
+          "status": 200,
+          "action": "LOGIN",
+          "message": "Success",
+          "timestamp": "2024-12-02T09:53:34.104Z",
+          "createdAt": "2024-12-02T09:53:34.286Z",
+          "updatedAt": "2024-12-02T09:53:34.286Z",
+          "__v": 0
+        }
+      ],
+      "metadata": {
+        "page": 1,
+        "limit": 1,
+        "totalPages": 132,
+        "totalItems": 132
+      }
+    }
+    ```
+
 
 ---
 
 ## Database
 Include details about the database structure or any migrations. For example:
 
+- **Roles Table**
+  | Column       | Type        | Description                            |
+  |--------------|-------------|----------------------------------------|
+  | id           | UUID        | Primary key                            |
+  | role         | VARCHAR     | role name                              |
+---
+
 - **Users Table**:
-  | Column       | Type        | Description              |
-  |--------------|-------------|--------------------------|
-  | id           | UUID        | Primary key              |
-  | username     | VARCHAR     | Unique username          |
-  | password     | VARCHAR     | Hashed password          |
-  | is_logged_in | BOOLEAN     | Tracks login status      |
+  | Column       | Type        | Description                            |
+  |--------------|-------------|----------------------------------------|
+  | id           | UUID        | Primary key                            |
+  | role_id      | UUID        | Foreign key                            |
+  | full_name    | VARCHAR     | user fulname                           |
+  | username     | VARCHAR     | Unique username                        |
+  | email        | VARCHAR     | Unique email                           |
+  | password     | TEXT        | Hashed password                        |
+  | is_banned    | BOOLEAN     | Tracks banned status                   |
+  | is_logged_in | BOOLEAN     | Tracks login status                    |
+  | login_attemp | INT4        | Tracks login status                    |
+  | created_at   | TIMESTAMPZ  | data creted_at                         |  
+  | updated_at   | TIMESTAMPZ  | data updated_at login status           |
+  | deleted_at   | TIMESTAMPZ  | data deleted_at (for soft delete)      |
 
 ---
 
