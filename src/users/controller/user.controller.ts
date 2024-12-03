@@ -15,9 +15,10 @@ export class UserController {
         @Query('page') page: number,
         @Query('limit') limit: number,
         @Query('isBanned') isBanned: boolean,
+        @Query('isLoggedIn') isLoggedIn: boolean,
         @Query('search') search: string
     ) {
-        const result = await this.userService.getUsers({ page, limit }, isBanned, search)
+        const result = await this.userService.getUsers({ page, limit }, isBanned, isLoggedIn, search)
         return {
             data: result.data,
             metadata: result.metadata

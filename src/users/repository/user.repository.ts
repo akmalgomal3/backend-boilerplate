@@ -14,10 +14,10 @@ export class UserRepository {
         this.repository = this.dataSource.getRepository(Users);
     }
 
-    async getUsers(skip: number, take: number, isBanned: boolean, search: string): Promise<[Users[], number]> {
+    async getUsers(skip: number, take: number, isBanned: boolean, isLoggedIn: boolean, search: string): Promise<[Users[], number]> {
         try {
             const result = await this.repository.findAndCount({
-                select: ['id', 'username', 'email', "full_name", "is_banned", "active", "created_at"],
+                select: ['id', 'username', 'email', "full_name", "is_banned", "is_logged_in", "active", "created_at"],
                 skip,
                 take,
                 order: {
@@ -25,7 +25,8 @@ export class UserRepository {
                 },
                 where:{
                     full_name: search ? ILike(`%${search}%`) : undefined, 
-                    is_banned: isBanned ? isBanned : undefined
+                    is_banned: isBanned ? isBanned : undefined,
+                    is_logged_in: isLoggedIn ? isLoggedIn : undefined
                 }
             });
 
@@ -54,7 +55,7 @@ export class UserRepository {
 
     async getUserByEmailOrUsername(email: string, username: string): Promise<Users | null>{
         try {
-            const query = `SELECT u.id, u.email, u.username, u.password, u.login_attemp, u.is_banned, r.role FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE (u.email = $1 OR u.username = $2) AND u.deleted_at IS NULL `            
+            const query = `SELECT u.id, u.email, u.username, u.password, u.login_attemp, u.is_banned, r.role, u.is_logged_in FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE (u.email = $1 OR u.username = $2) AND u.deleted_at IS NULL `            
             const data = await this.repository.query(query, [email, username])
         
             return data[0]
@@ -105,6 +106,17 @@ export class UserRepository {
             const query = `UPDATE users SET is_banned = $1, updated_at = NOW()
                             WHERE id = $2 RETURNING id, username;`;
             const result = await this.dataSource.query(query, [isBanned, userId])
+            return result 
+        } catch (e) {
+            throw e
+        }
+    }
+
+    async updateIsLoggedIn(userId: string, isLoggedIn: boolean): Promise<Users>{
+        try {
+            const query = `UPDATE users SET is_logged_in = $1, updated_at = NOW()
+                            WHERE id = $2 RETURNING id, username;`;
+            const result = await this.dataSource.query(query, [isLoggedIn, userId])
             return result 
         } catch (e) {
             throw e

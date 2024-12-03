@@ -39,4 +39,7 @@ export class Users extends BaseColumn {
 
     @Column({ default: false })
     is_banned: boolean;
+
+    @Column({ default: false })
+    is_logged_in: boolean;
 }

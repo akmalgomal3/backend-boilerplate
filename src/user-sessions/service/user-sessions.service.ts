@@ -27,7 +27,7 @@ export class UserSessionsService {
   async getSessionsByUserId(user_id: string) {
     try {
       const result = await this.userSessionsRepository.findByUserId(user_id);
-      return result[0]
+      return result
     } catch (e) {
       throw e
     }
@@ -36,7 +36,7 @@ export class UserSessionsService {
   async validateSession(user_id: string, device_type: string): Promise<UserSessions | null> {
     try {
       const existingSession = await this.userSessionsRepository.findByUserIdDeviceType(user_id, device_type);
-      
+
       const now = new Date();
       if (existingSession[0]){
         if(new Date(existingSession[0].expired_at) <= now || this.isIdle(existingSession[0].last_activity_at)){
@@ -44,6 +44,7 @@ export class UserSessionsService {
           return null
         }
       }
+      
       
       return existingSession[0]
     } catch (e) {
@@ -54,7 +55,7 @@ export class UserSessionsService {
   isIdle(lastActivity: Date): boolean {
     const now = Date.now();
     const lastActivityTimestamp = new Date(lastActivity).getTime()
-    const fifteenMinutes = 5 * 60 * 1000;
+    const fifteenMinutes = 15 * 60 * 1000;
     return now - lastActivityTimestamp > fifteenMinutes;
   };
   

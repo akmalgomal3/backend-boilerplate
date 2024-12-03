@@ -38,7 +38,7 @@ export class AuthController {
         }
     }
 
-    @Public()
+    @ApiBearerAuth()
     @Post('logout')
     async logout(@Request() req){
         const deviceType = await GetUserDeviceType(req)
@@ -50,7 +50,6 @@ export class AuthController {
     }
 
     @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard)
     @Get('/authorize-token')
     // @Roles(RoleEnum.Admin)
     profile(@Request() req: any){

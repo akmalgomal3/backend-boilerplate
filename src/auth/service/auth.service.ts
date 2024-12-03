@@ -18,6 +18,7 @@ import { CheckPasswordRegist } from '../types/checkPasswordRegister.type.ts';
 import { UserSessionsService } from 'src/user-sessions/service/user-sessions.service';
 import { CreateUserSessionDto } from 'src/user-sessions/dto/create-user-session.dto.js';
 import * as jwt from 'jsonwebtoken';
+import { GetUserDeviceType } from 'src/common/helper/user-device-type.helper';
 
 @Injectable()
 export class AuthService {
@@ -88,6 +89,10 @@ export class AuthService {
         throw new ForbiddenException(`your account is banned by system, contact admin for help`);
       }
 
+      if(!user.is_logged_in){
+        await this.usersService.updateIsLoggedInUser(user.id, true)
+      }
+
       const isPasswordValid = await this.validatePassword(password, user.password)
       if (!isPasswordValid) {
         let loginAttempUser = user.login_attemp === 0 ? 0 : user.login_attemp - 1
@@ -103,7 +108,7 @@ export class AuthService {
 
       await this.usersService.updateLoginAttemp(user.id, this.resetLoginAttemp)
 
-      const deviceType = await this.usersService.getUserDeviceType(req)
+      const deviceType = await GetUserDeviceType(req)
       const existSession = await this.userSessionsService.validateSession(user.id, deviceType)
       if(existSession){
         throw new UnauthorizedException(`session already running in ${deviceType} device`);
@@ -130,8 +135,14 @@ export class AuthService {
   async logout(userId: string, deviceType: string): Promise<Boolean>{
     try {
       const session = await this.userSessionsService.validateSession(userId, deviceType)
+  
       if(session){
         await this.userSessionsService.deleteSession(session.id)
+      }
+
+      const getSessionByUser = await this.userSessionsService.getSessionsByUserId(userId)
+      if(!(getSessionByUser.length > 0)){
+        await this.usersService.updateIsLoggedInUser(userId, false)
       }
 
       return true

@@ -23,12 +23,13 @@ export class LastActivityInterceptor implements NestInterceptor {
   ): Promise<Observable<any>> {
     const handler = context.getHandler();
     const isPublic = this.reflector.get<boolean>('isPublic', handler);
-    if (isPublic) {
+    const ctx = context.switchToHttp();
+    const req = ctx.getRequest();
+
+    if (isPublic || req.url.includes('logout')) {
         return next.handle();
     }
 
-    const ctx = context.switchToHttp();
-    const req = ctx.getRequest();
     const user = req.user;
 
     if (!user) {

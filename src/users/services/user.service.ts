@@ -15,12 +15,12 @@ export class UserService {
        
     ) { }
 
-    async getUsers(dto: PaginationDto, isBanned: boolean, search: string): Promise<PaginatedResponseDto<Users>> {
+    async getUsers(dto: PaginationDto, isBanned: boolean, isLoggedIn: boolean, search: string): Promise<PaginatedResponseDto<Users>> {
         try {
             const { page = 1, limit = 10 } = dto;
             const skip = (page - 1) * limit;
 
-            const [data, totalItems] = await this.userRepository.getUsers(skip, limit, isBanned, search);
+            const [data, totalItems] = await this.userRepository.getUsers(skip, limit, isBanned, isLoggedIn, search);
             const totalPages = Math.ceil(totalItems / limit);
 
             return {
@@ -61,23 +61,7 @@ export class UserService {
             throw e
         }
     }
-
-    async getUserDeviceType(req: Request): Promise<string>{
-        try {
-            const userAgent = req.headers['user-agent'];
-            const agent = useragent.parse(userAgent);
-            let deviceType = "desktop";
-
-            if (agent.device.family === 'iPad' || agent.device.family === 'Playbook' || /mobile|iphone|ipod|android|blackberry|iemobile|kindle|silk-accelerated|hpwos|webos|opera mini/i.test(userAgent)) {
-                deviceType = "mobile";
-            }
-
-            return deviceType
-        } catch (e) {
-            throw e
-        }
-    }
-
+    
     async create(createUserDTO: CreateUserDto): Promise<Users> {
         try {
             const user = await this.userRepository.createUser(createUserDTO)
@@ -98,10 +82,19 @@ export class UserService {
 
     async updateBannedUser(userId: string, isBanned: boolean): Promise<Users> {
         try {
-            const user = await this.userRepository.updateBannedUser(userId, isBanned)
+            const user = await this.userRepository.updateIsLoggedIn(userId, isBanned)
             return user
         } catch (e) {
             throw e
         }
     }  
+
+    async updateIsLoggedInUser(userId: string, isLoggedIn: boolean){
+        try {
+            const user = await this.userRepository.updateIsLoggedIn(userId, isLoggedIn)
+            return user
+        } catch (e) {
+            throw e
+        }
+    }
 }
