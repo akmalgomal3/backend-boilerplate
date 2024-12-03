@@ -1,5 +1,24 @@
 # Backend Probation Challenge 1
 
+## Table of Contents
+- [Description](#description)
+- [Main Features](#main-features)
+- [Architecture](#architecture)
+    - [Technologies Used](#technologies-used)
+    - [Diagram of entities](#diagram-of-entities)
+    - [Data Storage](#data-storage)
+    - [Authentication](#authentication)
+    - [Logging](#logging)
+    - [Security](#security)
+    - [Testing](#testing)
+- [Installation Guide](#installation-guide)
+    - [Prerequisites](#prerequisites)
+    - [Steps](#steps)
+- [API Documentation](#api-documentation)
+    - [Auth](#auth)
+    - [Users](#users)
+
+
 ## Description
 
 This is a project that is part of the backend probation challenge. The project is a simple REST API that allows users to
@@ -28,6 +47,16 @@ page.
 
 The project is built using the NestJS framework. I tried to make the project as modular as possible to make it easier to
 maintain, scale, and test.
+
+### Technologies Used
+
+- **NestJS**: NestJS is the framework used to build the project. It is a progressive Node.js framework for building
+  efficient, reliable, and scalable server-side applications.
+- **PostgreSQL**: PostgreSQL is the main database used to store the data.
+- **Elasticsearch**: Elasticsearch is used to store the user's log activities.
+- **Docker**: Docker is used to run the PostgreSQL and Elasticsearch services.
+- **Git**: Git is used for version control.
+
 
 ### Diagram of entities
 

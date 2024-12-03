@@ -23,7 +23,7 @@ export class GetBannedUsersDto {
 
   @ApiProperty({
     example: 'username',
-    description: 'Order by',
+    description: 'Order by only username, email, or role',
     default: 'username',
   })
   @IsEnum(['username', 'email', 'role'])

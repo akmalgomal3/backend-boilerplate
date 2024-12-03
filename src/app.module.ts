@@ -12,6 +12,7 @@ import { ResponseInterceptor } from './common/interceptor/response.interceptor';
 import { SessionInterceptor } from './common/interceptor/session/session.interceptor';
 import { ElasticsearchModule } from './libs/elasticsearch/elasticsearch.module';
 import { HttpExceptionFilter } from './common/exceptions/http-exceptions.filter';
+import { PrometheusModule } from './libs/prometheus/prometheus.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { HttpExceptionFilter } from './common/exceptions/http-exceptions.filter'
     UtilsModule,
     JwtModule,
     ElasticsearchModule,
+    PrometheusModule,
   ],
   controllers: [],
   providers: [
