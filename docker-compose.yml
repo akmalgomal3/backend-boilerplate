@@ -39,6 +39,24 @@ services:
     volumes:
       - postgresql_data:/var/lib/postgresql/data
 
+  prometheus:
+    image: prom/prometheus
+    container_name: probation01_prometheus
+    ports:
+      - "${PROMETHESUS_PORT}:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - elastic
+
+  grafana:
+    image: grafana/grafana
+    container_name: probation01_grafana
+    ports:
+      - "${GRAFANA_PORT}:3000"
+    networks:
+      - elastic
+
 networks:
   elastic:
     driver: bridge
