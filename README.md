@@ -56,7 +56,8 @@ maintain, scale, and test.
 - **Elasticsearch**: Elasticsearch is used to store the user's log activities.
 - **Docker**: Docker is used to run the PostgreSQL and Elasticsearch services.
 - **Git**: Git is used for version control.
-
+- **TypeORM**: TypeORM is used to model the data in the PostgreSQL database.
+- **Swagger**: Swagger is used to document the API.
 
 ### Diagram of entities
 
