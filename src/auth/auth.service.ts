@@ -46,7 +46,6 @@ export class AuthService {
         }
         throw new UnauthorizedException('Invalid credentials');
       }
-      throw new UnauthorizedException('Invalid credentials');
     }
     return null;
   }
@@ -121,34 +120,6 @@ export class AuthService {
     return {
       access_token: token,
     };
-
-    // const existingToken = await this.redisClient.get(
-    //   `user:${user.user_id}:${deviceType}`,
-    // );
-    // if (existingToken) {
-    //   throw new UnauthorizedException('User already logged in.');
-    // }
-    //
-    // const payload = { sub: user.user_id, role: user.role_id };
-    // const token = this.jwtService.sign(payload, { expiresIn: '1h' });
-    //
-    // await this.redisClient.set(`user:${user.user_id}:${deviceType}`, token, {
-    //   EX: 900,
-    // });
-    // await this.sessionsService.createSession({
-    //   userId: user.user_id,
-    //   username: user.username,
-    //   email: user.email,
-    //   token,
-    //   ipAddress: ip,
-    //   deviceType,
-    //   latitude,
-    //   longitude,
-    // });
-    //
-    // return {
-    //   access_token: token,
-    // };
   }
 
   async logout(userId: number, deviceType: string): Promise<void> {

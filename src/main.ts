@@ -7,6 +7,7 @@ import { ElasticsearchService } from './elasticsearch/elasticsearch.service';
 import { UserActivityInterceptor } from './common/interceptor/user-activity.interceptor';
 import * as express from 'express';
 import { UserService } from './users/services/user.service';
+import { initializeSentry } from './instrument';
 
 async function bootstrap() {
   try {
@@ -14,6 +15,7 @@ async function bootstrap() {
     const configService = app.get(ConfigService);
     const port = configService.get<number>('APP_PORT') ?? 3000;
 
+    initializeSentry(configService);
     app.useGlobalInterceptors(new ResponseInterceptor());
     const elasticsearchService = app.get(ElasticsearchService);
     const userService = app.get(UserService);
@@ -24,13 +26,6 @@ async function bootstrap() {
       .getHttpAdapter()
       .getInstance() as express.Application;
     expressApp.set('trust proxy', 1);
-
-    // Enable CORS
-    app.enableCors({
-      origin: '*', // Izinkan semua asal (untuk pengembangan)
-      methods: 'GET,POST,PATCH,DELETE',
-      allowedHeaders: 'Content-Type,Authorization',
-    });
 
     const config = new DocumentBuilder()
       .setTitle('#')

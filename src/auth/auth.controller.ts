@@ -5,6 +5,7 @@ import {
   UseGuards,
   Request,
   UnauthorizedException,
+  Get,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -13,6 +14,11 @@ import * as geoip from 'geoip-lite';
 @Controller()
 export class AuthController {
   constructor(private authService: AuthService) {}
+
+  @Get('/debug')
+  getError() {
+    throw new Error('My first Sentry error!');
+  }
 
   @Post('login')
   async login(

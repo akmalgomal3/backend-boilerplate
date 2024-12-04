@@ -26,7 +26,11 @@ export class UserActivityInterceptor implements NestInterceptor {
     let username = 'Guest';
     let email = 'Guest';
 
-    if (!url.includes('login') && !url.includes('register')) {
+    if (
+      !url.includes('login') &&
+      !url.includes('register') &&
+      !url.includes('debug')
+    ) {
       const user = await this.userService.getUser(req.user?.userId);
 
       if (user) {

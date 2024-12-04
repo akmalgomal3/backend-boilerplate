@@ -9,6 +9,7 @@ import {
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { ApiResponse } from '../types/response.type';
+import * as Sentry from '@sentry/nestjs';
 
 @Injectable()
 export class ResponseInterceptor<T>
@@ -35,8 +36,20 @@ export class ResponseInterceptor<T>
       }),
       catchError((err) => {
         const ctx = context.switchToHttp();
+        const request = ctx.getRequest();
         const statusCode = err?.status || HttpStatus.INTERNAL_SERVER_ERROR;
 
+        Sentry.withScope((scope) => {
+          scope.setTag('url', request.url);
+          scope.setTag('method', request.method);
+          scope.setExtras({
+            query: request.query,
+            params: request.params,
+            body: request.body,
+          });
+
+          Sentry.captureException(err);
+        });
         const errorResponse: ApiResponse<null> = {
           success: false,
           statusCode,
