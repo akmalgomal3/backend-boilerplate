@@ -7,8 +7,18 @@ import { ValidationPipe } from '@nestjs/common';
 import { UserActivityInterceptor } from './common/interceptor/user-activities.interceptor';
 import { UserActivitiesService } from './user-activities/service/user-activities.service';
 import { UserSessionsService } from './user-sessions/service/user-sessions.service';
+import apm from 'elastic-apm-node';
 
 async function bootstrap() {
+  apm.start({
+    serviceName: 'nestjs-apm-example', // Replace with your application name
+    serverUrl: 'http://localhost:8200', // APM server URL
+    environment: 'development', // Environment name
+    // logLevel: 'trace'
+  });
+
+  console.log('APM Agent active:', apm.isStarted());
+
   try {
     const app = await NestFactory.create(AppModule);
     const configService = app.get(ConfigService);

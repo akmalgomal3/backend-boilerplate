@@ -13,6 +13,9 @@ import { UserActivitiesModule } from './user-activities/user-activities.module';
 import { DeviceIdMiddleware } from './common/middleware/device-id.middleware';
 import { UserActivityInterceptor } from './common/interceptor/user-activities.interceptor';
 import { LastActivityInterceptor } from './common/interceptor/user-last-activity.interceptor';
+import { NotificationsModule } from './notifications/notifications.module';
+import { ApmModule } from './apm/apm.module';
+import { ApmMiddleware } from './common/middleware/apm-elastic.middleware';
 
 @Module({
   imports: [
@@ -31,7 +34,9 @@ import { LastActivityInterceptor } from './common/interceptor/user-last-activity
     RolesModule,
     AuthModule,
     UserSessionsModule,
-    UserActivitiesModule
+    UserActivitiesModule,
+    NotificationsModule,
+    ApmModule
   ],
 
   controllers: [],
@@ -51,12 +56,12 @@ import { LastActivityInterceptor } from './common/interceptor/user-last-activity
     {
       provide: APP_INTERCEPTOR,
       useClass: LastActivityInterceptor,
-    },
+    }
   ],
 })
 
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(DeviceIdMiddleware).forRoutes('*');
+    consumer.apply(DeviceIdMiddleware, ApmMiddleware).forRoutes('*');
   }
 }

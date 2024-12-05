@@ -9,7 +9,7 @@ import { RoleEnum } from '../entity/roles.enum';
 import { RolesGuard } from '../guard/roles.guard';
 import { Public } from 'src/common/decorator/public.decorator';
 
-@Controller('roles')
+@Controller('/v1/roles')
 export class RolesController {
     constructor(private rolesService: RolesService) { }
 

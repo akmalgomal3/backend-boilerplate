@@ -19,6 +19,7 @@ import { UserSessionsService } from 'src/user-sessions/service/user-sessions.ser
 import { CreateUserSessionDto } from 'src/user-sessions/dto/create-user-session.dto.js';
 import * as jwt from 'jsonwebtoken';
 import { GetUserDeviceType } from 'src/common/helper/user-device-type.helper';
+import apm from "elastic-apm-node"
 
 @Injectable()
 export class AuthService {
@@ -77,20 +78,21 @@ export class AuthService {
   }
 
   async login(req: any, loginDTO: LoginDTO) {
+    const transaction = apm.startTransaction('login-transaction', 'authentication');
     let { usernameOrEmail, password } = loginDTO;
+    const span = apm.startSpan('login started')
+
     try {
       usernameOrEmail = usernameOrEmail.toLocaleLowerCase();
       const user = await this.usersService.getUserByEmailOrUsername(usernameOrEmail,usernameOrEmail);
       if (!user) {
+        span.setLabel('error', 'email or username not exist');
         throw new BadRequestException(`email or username not exist`);
       }
 
       if(user.is_banned){
+        span.setLabel('error', 'account is banned');
         throw new ForbiddenException(`your account is banned by system, contact admin for help`);
-      }
-
-      if(!user.is_logged_in){
-        await this.usersService.updateIsLoggedInUser(user.id, true)
       }
 
       const isPasswordValid = await this.validatePassword(password, user.password)
@@ -100,9 +102,11 @@ export class AuthService {
 
         if(loginAttempUser === 0){
           await this.usersService.updateBannedUser(user.id, true)
+          span.setLabel('error', 'account banned after incorrect login attempts');
           throw new ForbiddenException(`your account is banned by system, contact admin for help`);
         }
 
+        span.setLabel('error', `incorrect password, attempts left: ${loginAttempUser}`);
         throw new BadRequestException(`password is incorrect, you had ${loginAttempUser} attemp left`);
       }
 
@@ -111,9 +115,10 @@ export class AuthService {
       const deviceType = await GetUserDeviceType(req)
       const existSession = await this.userSessionsService.validateSession(user.id, deviceType)
       if(existSession){
+        span.setLabel('error', 'session already active on another device');
         throw new UnauthorizedException(`session already running in ${deviceType} device`);
       }
-
+      
       const token = await this.getTokens(user.id, user.username, user.role);
       const getExpired = this.getTokenExpiration(token.accessToken)
       await this.userSessionsService.createSession({
@@ -123,12 +128,19 @@ export class AuthService {
         expired_at: getExpired,
         last_activity_at: new Date(),
       });
-      
-      console.log('mari jalan jalans');
+
+      if(!user.is_logged_in){
+        await this.usersService.updateIsLoggedInUser(user.id, true)
+      }
       
       return {...token};
     } catch (e) {
+      span.setLabel('exception', e.message);
+      apm.captureError(e);
       throw e;
+    }finally{
+      transaction.end()
+      span.end()
     }
   }
 
@@ -230,6 +242,8 @@ export class AuthService {
   }
 
   async validatePassword(password:string, userPassword: string): Promise<Boolean> {
+    const transaction = apm.currentTransaction
+    const span = transaction.startSpan('validate password')
     try {
       const decryptedPassword = await this.decryptPassword(password)
       const isValid = await bcrypt.compare(decryptedPassword, userPassword);
@@ -240,6 +254,8 @@ export class AuthService {
       return isValid;
     } catch (e) {
       throw e
+    }finally{
+      span.end()
     }
   }
 

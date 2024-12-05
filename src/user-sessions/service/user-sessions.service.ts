@@ -3,6 +3,7 @@ import { UserSessionsRepository } from './../repository/user-sessions.repository
 import { CreateUserSessionDto } from './../dto/create-user-session.dto';
 import { UserSessions } from '../schema/user-sessions.schema';
 import { error } from 'console';
+import apm from 'elastic-apm-node';
 
 @Injectable()
 export class UserSessionsService {
@@ -34,6 +35,8 @@ export class UserSessionsService {
   }
 
   async validateSession(user_id: string, device_type: string): Promise<UserSessions | null> {
+    const currentTrx = apm.currentTransaction
+    const span = currentTrx.startSpan('validate session')
     try {
       const existingSession = await this.userSessionsRepository.findByUserIdDeviceType(user_id, device_type);
 
@@ -45,17 +48,18 @@ export class UserSessionsService {
         }
       }
       
-      
       return existingSession[0]
     } catch (e) {
       throw e
+    }finally{
+      span.end()
     }
   }
 
   isIdle(lastActivity: Date): boolean {
     const now = Date.now();
     const lastActivityTimestamp = new Date(lastActivity).getTime()
-    const fifteenMinutes = 15 * 60 * 1000;
+    const fifteenMinutes = 1 * 60 * 1000;
     return now - lastActivityTimestamp > fifteenMinutes;
   };
   

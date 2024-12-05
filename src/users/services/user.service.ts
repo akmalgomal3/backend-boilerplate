@@ -5,6 +5,7 @@ import { Users } from "../entity/user.entity";
 import { CreateUserDto } from "../dto/create-user.dto";
 import { RolesRepository } from "src/roles/repository/roles.repository";
 import * as useragent from 'useragent';
+import apm from "elastic-apm-node";
 
 
 @Injectable()
@@ -50,6 +51,8 @@ export class UserService {
     }
 
     async getUserByEmailOrUsername(email: string, username: string): Promise<Users | null>{
+        const transaction = apm.currentTransaction
+        const span = transaction.startSpan('get user by email or username')
         try {
             const result = await this.userRepository.getUserByEmailOrUsername(
                 email,
@@ -59,6 +62,8 @@ export class UserService {
             return result
         } catch (e) {
             throw e
+        }finally{
+            span.end()
         }
     }
     
@@ -82,7 +87,7 @@ export class UserService {
 
     async updateBannedUser(userId: string, isBanned: boolean): Promise<Users> {
         try {
-            const user = await this.userRepository.updateIsLoggedIn(userId, isBanned)
+            const user = await this.userRepository.updateBannedUser(userId, isBanned)
             return user
         } catch (e) {
             throw e
