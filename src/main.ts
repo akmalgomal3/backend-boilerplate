@@ -8,6 +8,8 @@ import { UserActivityInterceptor } from './common/interceptor/user-activities.in
 import { UserActivitiesService } from './user-activities/service/user-activities.service';
 import { UserSessionsService } from './user-sessions/service/user-sessions.service';
 import apm from 'elastic-apm-node';
+import cookieParser from "cookie-parser";
+import { nestCsrf, CsrfFilter } from "ncsrf";
 
 async function bootstrap() {
   apm.start({
@@ -24,11 +26,15 @@ async function bootstrap() {
     const configService = app.get(ConfigService);
 
     const port = configService.get<number>('APP_PORT') ?? 3000;
+
     app.enableCors();
     app.enableCors({
       origin: [`http://localhost:${port}`, configService.get<string>('CLIENT_URL')],
       allowedHeaders: ['ip-address', 'x-forwarded-for']
     });
+
+    app.use(cookieParser());
+    app.use(nestCsrf());
 
     app.useGlobalPipes(new ValidationPipe());
     app.useGlobalInterceptors(new ResponseInterceptor(), new UserActivityInterceptor(app.get(UserActivitiesService), app.get(UserSessionsService)));
@@ -49,6 +55,12 @@ async function bootstrap() {
         required: true,
         name: 'x-forwarded-for',
         schema: { example: '103.78.115.174'}
+      }, 
+      {
+        in: 'header',
+        required: true,
+        name: 'x-csrf-token',
+        schema: { example: '3cLeVyPSAehSDGkz-iqgTxh7JDkZiLvsREMF-hfYXzfQ'}
       } 
     )
 		.build();

@@ -16,6 +16,8 @@ import { LastActivityInterceptor } from './common/interceptor/user-last-activity
 import { NotificationsModule } from './notifications/notifications.module';
 import { ApmModule } from './apm/apm.module';
 import { ApmMiddleware } from './common/middleware/apm-elastic.middleware';
+import { CsrfModule } from './csrf/csrf.module';
+import { Csrf } from 'ncsrf';
 
 @Module({
   imports: [
@@ -36,7 +38,8 @@ import { ApmMiddleware } from './common/middleware/apm-elastic.middleware';
     UserSessionsModule,
     UserActivitiesModule,
     NotificationsModule,
-    ApmModule
+    ApmModule,
+    CsrfModule
   ],
 
   controllers: [],

@@ -8,6 +8,7 @@ import { Roles } from '../guard/roles.decorator';
 import { RoleEnum } from '../entity/roles.enum';
 import { RolesGuard } from '../guard/roles.guard';
 import { Public } from 'src/common/decorator/public.decorator';
+import { Csrf } from 'ncsrf';
 
 @Controller('/v1/roles')
 export class RolesController {
@@ -36,6 +37,7 @@ export class RolesController {
     }
 
     @ApiBearerAuth()
+    @Csrf()
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Post()
     @Roles(RoleEnum.Admin) 
@@ -47,6 +49,7 @@ export class RolesController {
     }
 
     @ApiBearerAuth()
+    @Csrf()
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Patch(':id')
     @Roles(RoleEnum.Admin) 
@@ -61,6 +64,7 @@ export class RolesController {
     }
 
     @ApiBearerAuth()
+    @Csrf()
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Delete(':id')
     @Roles(RoleEnum.Admin) 

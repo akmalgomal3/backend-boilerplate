@@ -59,7 +59,7 @@ export class UserSessionsService {
   isIdle(lastActivity: Date): boolean {
     const now = Date.now();
     const lastActivityTimestamp = new Date(lastActivity).getTime()
-    const fifteenMinutes = 1 * 60 * 1000;
+    const fifteenMinutes = 15 * 60 * 1000;
     return now - lastActivityTimestamp > fifteenMinutes;
   };
   
