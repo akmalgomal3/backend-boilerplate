@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { IpMiddleware } from './common/middlewares/ip.middleware';
+import { MetricsMiddleware } from './common/middlewares/metrics.middleware';
 
 async function bootstrap() {
   try {

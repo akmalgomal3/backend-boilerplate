@@ -28,6 +28,9 @@ export class Sessions {
   @Column({ type: 'varchar', nullable: true })
   user_agent: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  refresh_token: string;
+
   @ManyToOne(
     (): typeof Users => Users,
     (user: Users): Sessions[] => user.sessions,

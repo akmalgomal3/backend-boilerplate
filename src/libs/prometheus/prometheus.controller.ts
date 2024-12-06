@@ -1,4 +1,4 @@
-import { Controller, Get, Res } from '@nestjs/common';
+import { Controller, Get, Post, Req, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { PrometheusService } from './prometheus.service';
 import { Public } from '../../common/decorators/public.decorator';
@@ -13,5 +13,12 @@ export class PrometheusController {
     const metrics = await this.prometheusService.getMetrics();
     res.setHeader('Content-Type', 'text/plain');
     res.send(metrics);
+  }
+
+  @Public()
+  @Post('/webhook-alert')
+  async webhookAlert(@Req() req, @Res() res: Response) {
+    console.log('Webhook alert received', req.body);
+    res.status(200).send();
   }
 }

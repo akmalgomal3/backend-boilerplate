@@ -91,7 +91,7 @@ And this is the flow chart of the project main features:
 
 ### Logging
 
-- **Purpose**: To record every user's activities, it stores time, action type, device information in Elasticsearch.
+- **Purpose**: To record every user's activities, it stores time, action type, device information, IP address, user agent, location, and status in Elasticsearch. This helps in monitoring user behavior, auditing actions, and identifying potential security issues.
 
 ### Security
 
@@ -560,4 +560,3 @@ Base URL: [base_url]/users
           }
         ]
         ```
-      

@@ -1,5 +1,10 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/user.module';
 import { AuthModule } from './auth/auth.module';
 import { SessionModule } from './libs/session/session.module';
@@ -13,6 +18,7 @@ import { SessionInterceptor } from './common/interceptor/session/session.interce
 import { ElasticsearchModule } from './libs/elasticsearch/elasticsearch.module';
 import { HttpExceptionFilter } from './common/exceptions/http-exceptions.filter';
 import { PrometheusModule } from './libs/prometheus/prometheus.module';
+import { MetricsMiddleware } from './common/middlewares/metrics.middleware';
 
 @Module({
   imports: [
@@ -52,4 +58,14 @@ import { PrometheusModule } from './libs/prometheus/prometheus.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): any {
+    consumer
+      .apply(MetricsMiddleware)
+      .exclude({
+        path: '/metrics',
+        method: RequestMethod.GET,
+      })
+      .forRoutes('*');
+  }
+}

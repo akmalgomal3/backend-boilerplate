@@ -11,12 +11,15 @@ import { ApiResponse } from '../types/response.type';
 import { HttpArgumentsHost } from '@nestjs/common/interfaces';
 import { UtilsService } from '../utils/services/utils.service';
 import { CreateLogDto } from '../../libs/elasticsearch/dto/create-log.dto';
+import { PrometheusService } from '../../libs/prometheus/prometheus.service';
 
 @Injectable()
 export class ResponseInterceptor<T>
   implements NestInterceptor<T, ApiResponse<T>>
 {
-  constructor(private readonly utils: UtilsService) {}
+  constructor(
+    private readonly utils: UtilsService,
+  ) {}
 
   intercept(
     context: ExecutionContext,
@@ -32,7 +35,11 @@ export class ResponseInterceptor<T>
         const statusCode =
           data?.statusCode || response.statusCode || HttpStatus.OK;
 
-        if (!isPublic && request.url !== '/users/logged-in') {
+        if (
+          !isPublic &&
+          request.url !== '/users/logged-in' &&
+          request.url !== '/metrics'
+        ) {
           this.utils
             .createUserActivityLog({
               ...logData,
