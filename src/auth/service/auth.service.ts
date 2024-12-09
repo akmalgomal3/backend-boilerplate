@@ -107,7 +107,7 @@ export class AuthService {
         }
 
         span.setLabel('error', `incorrect password, attempts left: ${loginAttempUser}`);
-        throw new BadRequestException(`password is incorrect, you had ${loginAttempUser} attemp left`);
+        throw new UnauthorizedException(`password is incorrect, you had ${loginAttempUser} attemp left`);
       }
 
       await this.usersService.updateLoginAttemp(user.id, this.resetLoginAttemp)

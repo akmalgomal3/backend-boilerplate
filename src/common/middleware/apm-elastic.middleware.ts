@@ -6,7 +6,6 @@ import apm from 'elastic-apm-node';
 export class ApmMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
     const transaction = apm.startTransaction(`${req.method} ${req.url}`, 'request');
-    
     res.on('finish', () => {
       if (transaction) {
         apm.addLabels({

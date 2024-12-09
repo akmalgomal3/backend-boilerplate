@@ -1,3 +1,5 @@
+import "./opentelematry"
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ResponseInterceptor } from './common/interceptor/response.interceptor';
@@ -9,18 +11,19 @@ import { UserActivitiesService } from './user-activities/service/user-activities
 import { UserSessionsService } from './user-sessions/service/user-sessions.service';
 import apm from 'elastic-apm-node';
 import cookieParser from "cookie-parser";
-import { nestCsrf, CsrfFilter } from "ncsrf";
+import { nestCsrf } from "ncsrf";
 
 async function bootstrap() {
   apm.start({
-    serviceName: 'nestjs-apm-example', // Replace with your application name
+    serviceName: 'nest-apm-example', // Replace with your application name
     serverUrl: 'http://localhost:8200', // APM server URL
     environment: 'development', // Environment name
-    // logLevel: 'trace'
+    // logLevel: 'trace', 
+    opentelemetryBridgeEnabled: true // Add otel to capture and management of telemetry data
   });
 
   console.log('APM Agent active:', apm.isStarted());
-
+  
   try {
     const app = await NestFactory.create(AppModule);
     const configService = app.get(ConfigService);
@@ -34,7 +37,9 @@ async function bootstrap() {
     });
 
     app.use(cookieParser());
-    app.use(nestCsrf());
+    app.use(nestCsrf({
+      ttl: 30 * 1000
+    }));
 
     app.useGlobalPipes(new ValidationPipe());
     app.useGlobalInterceptors(new ResponseInterceptor(), new UserActivityInterceptor(app.get(UserActivitiesService), app.get(UserSessionsService)));
@@ -73,4 +78,5 @@ async function bootstrap() {
     console.error('Error during application creation:', error);
   }
 }
+
 bootstrap();

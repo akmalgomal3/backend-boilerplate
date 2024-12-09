@@ -14,10 +14,8 @@ import { DeviceIdMiddleware } from './common/middleware/device-id.middleware';
 import { UserActivityInterceptor } from './common/interceptor/user-activities.interceptor';
 import { LastActivityInterceptor } from './common/interceptor/user-last-activity.interceptor';
 import { NotificationsModule } from './notifications/notifications.module';
-import { ApmModule } from './apm/apm.module';
 import { ApmMiddleware } from './common/middleware/apm-elastic.middleware';
 import { CsrfModule } from './csrf/csrf.module';
-import { Csrf } from 'ncsrf';
 
 @Module({
   imports: [
@@ -38,7 +36,6 @@ import { Csrf } from 'ncsrf';
     UserSessionsModule,
     UserActivitiesModule,
     NotificationsModule,
-    ApmModule,
     CsrfModule
   ],
 

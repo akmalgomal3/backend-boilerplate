@@ -10,7 +10,7 @@ export class CsrfController {
     getCsrfToken(@Req() req): any {
       return {
         data: {
-            csrf_token: req.csrfToken()
+            token: req.csrfToken()
         }
       }
     }
