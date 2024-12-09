@@ -4,6 +4,7 @@ import {
   Query,
   Req,
   Sse,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { ResponseInterceptor } from 'src/common/interceptor/response.interceptor';
@@ -17,6 +18,8 @@ import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { GetUserActivityDto } from '../dto/get-user-activity.dto';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { GetUserAuthDto } from '../dto/get-user-auth.dto';
+import { CsrfGuard } from '../../common/guards/csrf.guard';
+import { IAuthenticatedUser } from '../../common/types/authenticated-user.type';
 
 @ApiBearerAuth()
 @ApiTags('Users')
@@ -25,6 +28,7 @@ import { GetUserAuthDto } from '../dto/get-user-auth.dto';
 export class UserController {
   constructor(private userService: UserService) {}
 
+  @UseGuards(CsrfGuard)
   @Roles(UserRoles.Executive, UserRoles.Admin, UserRoles.Operator)
   @Get('users')
   async getUsers(@Query('page') page: number, @Query('limit') limit: number) {
@@ -35,6 +39,7 @@ export class UserController {
     };
   }
 
+  @UseGuards(CsrfGuard)
   @Roles(UserRoles.Admin)
   @Get('users/banned')
   async getBannedUsers(@Query() getBannedDto: GetBannedUsersDto) {
@@ -82,6 +87,16 @@ export class UserController {
         totalPages: result.totalPages,
         totalItems: result.total,
       },
+    };
+  }
+
+  @Roles(UserRoles.Admin, UserRoles.Executive)
+  @Get('users/csrf-token')
+  async getCsrfToken(@Req() req: IAuthenticatedUser) {
+    const result: string = this.userService.generateCsrfToken(req.user.id);
+
+    return {
+      data: result,
     };
   }
 }

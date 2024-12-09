@@ -19,7 +19,7 @@ import { DeviceType, UserRoles } from '../../common/enums/user.enum';
 import { CreateLogDto } from '../../libs/elasticsearch/dto/create-log.dto';
 import { ElasticsearchService } from '../../libs/elasticsearch/services/elasticsearch.service';
 import { IpType } from '../../common/types/ip.type';
-import { v4 as uuid } from 'uuid';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {

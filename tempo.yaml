@@ -1,0 +1,33 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    jaeger:
+      protocols:
+        grpc:
+        thrift_binary:
+        thrift_compact:
+        thrift_http:
+
+ingester:
+  lifecycler:
+    ring:
+      kvstore:
+        store: inmemory
+  trace_idle_period: 5m
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /etc/tempo/tempo_data
+
+querier:
+  query_timeout: 10s
+
+compactor:
+  compaction:
+    compacted_block_retention: 48h

@@ -17,14 +17,23 @@ import { catchError } from 'rxjs/operators';
 import { ElasticsearchService } from '../../libs/elasticsearch/services/elasticsearch.service';
 import { GetUserActivityDto } from '../dto/get-user-activity.dto';
 import { GetUserAuthDto } from '../dto/get-user-auth.dto';
+import { ConfigService } from '@nestjs/config';
+import { UtilsService } from '../../common/utils/services/utils.service';
 
 @Injectable()
 export class UserService {
+  private csrfTokens: Map<string, string> = new Map<string, string>();
+  private csrfSecret: string;
+
   constructor(
     private userRepository: UserRepository,
     private sessionService: SessionService,
     private elasticClient: ElasticsearchService,
-  ) {}
+    private configService: ConfigService,
+    private utils: UtilsService,
+  ) {
+    this.csrfSecret = configService.get('CSRF_SECRET_KEY');
+  }
 
   async getUsers(dto: PaginationDto): Promise<PaginatedResponseDto<Users>> {
     try {
@@ -222,5 +231,35 @@ export class UserService {
         e.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  generateCsrfToken(userId: string): string {
+    const tokenSecret: string = this.csrfSecret;
+    const tokenData: string = `${userId}:${tokenSecret}`;
+
+    if (this.csrfTokens.has(userId)) {
+      this.csrfTokens.delete(userId);
+    }
+
+    const csrfToken: string = this.utils.encrypt(tokenData);
+
+    this.csrfTokens.set(userId, csrfToken);
+    return csrfToken;
+  }
+
+  validateCsrfToken(id: string, csrfToken: string): boolean {
+    if (!this.csrfTokens.has(id)) {
+      return false;
+    }
+
+    const userExistingToken: string = this.csrfTokens.get(id);
+    const decryptedExistingToken: string =
+      this.utils.decrypt(userExistingToken);
+    const [userId, existingToken] = decryptedExistingToken.split(':');
+
+    const decryptedIncomingToken: string = this.utils.decrypt(csrfToken);
+    const [tokenUserId, tokenValue] = decryptedIncomingToken.split(':');
+
+    return !(tokenUserId !== userId || tokenValue !== existingToken);
   }
 }

@@ -4,4 +4,4 @@ global:
 scrape_configs:
   - job_name: 'nestjs-prometheus'
     static_configs:
-      - targets: [ '8028-139-255-255-242.ngrok-free.app' ]
+      - targets: [ '6edb-139-255-255-242.ngrok-free.app' ]
