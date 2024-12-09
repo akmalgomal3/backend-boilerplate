@@ -23,6 +23,12 @@ export const otelSDK = new NodeSDK({
   instrumentations: [getNodeAutoInstrumentations()],
 });
 
+try {
+  otelSDK.start();
+} catch (e) {
+  console.log(e);
+}
+
 // gracefully shut down the SDK on process exit
 process.on('SIGTERM', () => {
   otelSDK

@@ -242,7 +242,7 @@ export class AuthService {
 
     if (!isPasswordMatch) {
       await this.userService.addFailedLoginAttempts(user.id);
-      throw new BadRequestException('Invalid password');
+      throw new UnauthorizedException('Invalid password');
     }
   }
 
