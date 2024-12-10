@@ -15,13 +15,9 @@ export class MetricsMiddleware implements NestMiddleware {
       const method: string = req.method;
       const path: string = req.originalUrl;
       const [seconds, nanoseconds] = process.hrtime(startTime);
-      const durationInSeconds = seconds + nanoseconds / 1e9;
+      const durationInSeconds: number = seconds + nanoseconds / 1e9;
 
-      if (statusCode >= 200 && statusCode < 400) {
-        this.prometheusService.incSuccessCounter(method, path);
-      } else {
-        this.prometheusService.incFailedCounter(method, path);
-      }
+      this.prometheusService.incRequestTotal(method, path);
 
       this.prometheusService.observeRequestDuration(
         method,

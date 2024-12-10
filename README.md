@@ -1,6 +1,7 @@
 # Backend Probation Challenge 1
 
 ## Table of Contents
+
 - [Description](#description)
 - [Main Features](#main-features)
 - [Architecture](#architecture)
@@ -17,7 +18,6 @@
 - [API Documentation](#api-documentation)
     - [Auth](#auth)
     - [Users](#users)
-
 
 ## Description
 
@@ -41,6 +41,9 @@ page.
     - See banned users.
     - See logged in users.
     - See users log activities.
+- **Monitoring**: This project uses Prometheus and Grafana to monitor the application.
+    - Ensure that the application is monitored by Prometheus.
+    - Ensure that the application metrics can be visualized in Grafana.
 - **Unit Test**: The project has unit tests for the controller to cover certain test cases.
 
 ## Architecture
@@ -57,6 +60,8 @@ maintain, scale, and test.
 - **Docker**: Docker is used to run the PostgreSQL and Elasticsearch services.
 - **Git**: Git is used for version control.
 - **TypeORM**: TypeORM is used to model the data in the PostgreSQL database.
+- **Prometheus**: Prometheus is used to gather metrics from the application.
+- **Grafana**: Grafana is used to visualize the metrics gathered by Prometheus.
 - **Swagger**: Swagger is used to document the API.
 
 ### Diagram of entities
@@ -91,7 +96,18 @@ And this is the flow chart of the project main features:
 
 ### Logging
 
-- **Purpose**: To record every user's activities, it stores time, action type, device information, IP address, user agent, location, and status in Elasticsearch. This helps in monitoring user behavior, auditing actions, and identifying potential security issues.
+- **Purpose**: To record every user's activities, it stores time, action type, device information, IP address, user
+  agent, location, and status in Elasticsearch. This helps in monitoring user behavior, auditing actions, and
+  identifying potential security issues.
+
+### Monitoring 
+- **Prometheus**: Prometheus is used to gather metrics from the application. It collects metrics from monitored targets
+  by scraping metrics HTTP endpoints on these targets. The collected metrics are stored in a time series database which
+  can be queried using PromQL.
+- **Grafana**: Grafana is used to visualize the metrics gathered by Prometheus. It provides a powerful and elegant way
+  to create, explore, and share dashboards and data with your team.
+
+You can access the Prometheus dashboard at [http://<base_url>:<PROMETHEUS_PORT>](http://localhost:9090) and the Grafana dashboard at [http://<base_url>:[GRAFANA_PORT]](http://localhost:3000).
 
 ### Security
 
@@ -122,7 +138,8 @@ Before you start, make sure you have the following installed on your machine:
     ```bash
     git clone https://gitlab.ntx-technology.com/backend/backend-dokumentation/probation-challenge-1.git
     ```
-2. Create .env file in the root directory of the project and fill it with the information available in the [.env.example](./.env.example)
+2. Create .env file in the root directory of the project and fill it with the information available in
+   the [.env.example](./.env.example)
    file.
 3. Install the dependencies.
     ```bash
@@ -132,11 +149,20 @@ Before you start, make sure you have the following installed on your machine:
     ```bash
     docker-compose up -d
     ```
-5. Run the project.
+
+5. Setup prometheus yaml file and set the target url for monitoring the application.
+    ```bash
+    - job_name: 'nestjs'
+      scrape_interval: 5s
+      static_configs:
+        - targets: ['localhost:3000'] // change this to your base url
+    ```
+
+6. Run the project.
     ```bash
     npm run start:dev
     ```
-6. This project uses Swagger for API documentation. You can access the Swagger UI at
+7. This project uses Swagger for API documentation. You can access the Swagger UI at
     ```bash
     [base_url]/docs
     ```
@@ -354,7 +380,7 @@ Base URL: [base_url]/users
         }
         ```
 
-- **GET /logs/activity**: See users activity logs. 
+- **GET /logs/activity**: See users activity logs.
     - Authorize Role: `Admin, Executive`
     - Request Header:
         ```json

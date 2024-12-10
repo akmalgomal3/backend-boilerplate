@@ -1,9 +1,6 @@
 import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import * as process from 'process';
-import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
-import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
-import { NestInstrumentation } from '@opentelemetry/instrumentation-nestjs-core';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { JaegerExporter } from '@opentelemetry/exporter-jaeger';

@@ -5,21 +5,11 @@ import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { IpMiddleware } from './common/middlewares/ip.middleware';
+
 // import './opentelemetery';
-import * as apm from 'elastic-apm-node';
 
 async function bootstrap() {
   try {
-    // apm.start({
-    //   serviceName: 'nestjs-iqbal',
-    //   serverUrl: 'http://10.53.26.159:8200',
-    //   environment: 'development',
-    //   logLevel: 'trace',
-    //   // opentelemetryBridgeEnabled: true,
-    // });
-    //
-    // console.log('APM Agent active:', apm.isStarted());
-
     const app = await NestFactory.create(AppModule);
     const configService = app.get(ConfigService);
     const port: number = configService.get<number>('APP_PORT') ?? 3000;
