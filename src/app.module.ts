@@ -19,6 +19,7 @@ import { ElasticsearchModule } from './libs/elasticsearch/elasticsearch.module';
 import { HttpExceptionFilter } from './common/exceptions/http-exceptions.filter';
 import { PrometheusModule } from './libs/prometheus/prometheus.module';
 import { MetricsMiddleware } from './common/middlewares/metrics.middleware';
+import { EmailModule } from './libs/email/email.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { MetricsMiddleware } from './common/middlewares/metrics.middleware';
     JwtModule,
     ElasticsearchModule,
     PrometheusModule,
+    EmailModule,
   ],
   controllers: [],
   providers: [

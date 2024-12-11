@@ -233,6 +233,14 @@ export class UserService {
     }
   }
 
+  async updateUserPassword(userId: string, password: string): Promise<Users> {
+    try {
+      return await this.userRepository.updateUserPassword(userId, password);
+    } catch (error) {
+      throw error;
+    }
+  }
+
   generateCsrfToken(userId: string): string {
     const tokenSecret: string = this.csrfSecret;
     const tokenData: string = `${userId}:${tokenSecret}`;

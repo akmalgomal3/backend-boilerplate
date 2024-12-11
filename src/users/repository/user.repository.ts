@@ -102,12 +102,27 @@ export class UserRepository {
     }
   }
 
+  async updateUserPassword(userId: string, password: string): Promise<Users> {
+    try {
+      const query = `UPDATE users
+                     SET password = $2
+                     WHERE id = $1
+                     returning *`;
+      const user = await this.repository.query(query, [userId, password]);
+
+      return user[0];
+    } catch (e) {
+      throw e;
+    }
+  }
+
   async createUser(dto: CreateUserDto): Promise<Users> {
     try {
       const { username, email, password, role } = dto;
 
       const query = `INSERT INTO users (username, email, password, role)
-                     VALUES ($1, $2, $3, $4) RETURNING *`;
+                     VALUES ($1, $2, $3, $4)
+                     RETURNING *`;
       const users: Users[] = await this.repository.query(query, [
         username,
         email,

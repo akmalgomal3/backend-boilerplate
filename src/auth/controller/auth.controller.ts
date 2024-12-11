@@ -14,6 +14,8 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRoles } from '../../common/enums/user.enum';
 import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { User } from '../../common/decorators/user.decorator';
+import { ForgetPasswordDto } from '../dto/forget-password.dto';
+import { ResetPasswordDto } from '../dto/reset-password.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -70,6 +72,26 @@ export class AuthController {
     const result = await this.authService.logout(user);
     return {
       data: result,
+    };
+  }
+
+  @Public()
+  @Post('/forget-password')
+  async forgotPassword(
+    @Body() forgetPasswordDto: ForgetPasswordDto,
+  ): Promise<object> {
+    return {
+      data: await this.authService.sendForgetPassword(forgetPasswordDto),
+    };
+  }
+
+  @Public()
+  @Post('/reset-password')
+  async resetPassword(
+    @Body() resetPassswordDto: ResetPasswordDto,
+  ): Promise<object> {
+    return {
+      data: await this.authService.resetPassword(resetPassswordDto),
     };
   }
 }

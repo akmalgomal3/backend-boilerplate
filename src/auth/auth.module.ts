@@ -5,6 +5,7 @@ import { UsersModule } from '../users/user.module';
 import { SessionModule } from '../libs/session/session.module';
 import { LogDataMiddleware } from '../common/middlewares/log-data.middleware';
 import { ElasticsearchModule } from '../libs/elasticsearch/elasticsearch.module';
+import { EmailModule } from '../libs/email/email.module';
 
 @Module({
   providers: [AuthService],

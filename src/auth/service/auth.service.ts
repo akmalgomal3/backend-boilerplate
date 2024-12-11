@@ -20,6 +20,9 @@ import { CreateLogDto } from '../../libs/elasticsearch/dto/create-log.dto';
 import { ElasticsearchService } from '../../libs/elasticsearch/services/elasticsearch.service';
 import { IpType } from '../../common/types/ip.type';
 import { ConfigService } from '@nestjs/config';
+import { EmailService } from '../../libs/email/email.service';
+import { ForgetPasswordDto } from '../dto/forget-password.dto';
+import { ResetPasswordDto } from '../dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -33,6 +36,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly sessionService: SessionService,
     private readonly elasticClient: ElasticsearchService,
+    private readonly emailService: EmailService,
   ) {}
 
   async register(
@@ -72,6 +76,11 @@ export class AuthService {
           `User ${username} has been registered successfully`,
           'success',
         ),
+        this.emailService.sendEmail({
+          html: this.emailService.generateGreetingEmail(username),
+          subject: 'Registration success',
+          to: email,
+        }),
       ]);
 
       return user;
@@ -187,6 +196,76 @@ export class AuthService {
     } catch (e) {
       throw new HttpException(
         e.message || 'Error when user try to logout',
+        e.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async sendForgetPassword(forgetPasswordDto: ForgetPasswordDto) {
+    try {
+      const { email } = forgetPasswordDto;
+
+      const user: Users = await this.userService.getUserByIdentifier(email);
+
+      if (!user) {
+        throw new BadRequestException('User not found');
+      }
+
+      const token: string = this.jwtService.sign(
+        { id: user.id },
+        {
+          expiresIn: '15m',
+        },
+      );
+
+      await this.emailService.sendEmail({
+        html: this.emailService.generatePasswordResetEmail(
+          user.username,
+          token,
+        ),
+        subject: 'Reset Password',
+        to: email,
+      });
+
+      return {
+        message: 'Email has been sent',
+      };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error when user try to forget password',
+        e.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    try {
+      const { token, password, confirmPassword } = resetPasswordDto;
+
+      const { id } = this.jwtService.verify(token) as JwtPayload;
+
+      const user: Users = await this.userService.getUser(id);
+
+      if (!user) {
+        throw new BadRequestException('User not found');
+      }
+
+      const decryptedPassword: string = this.validateConfirmPassword(
+        password,
+        confirmPassword,
+      );
+
+      const hashedPassword: string = await bcrypt.hash(decryptedPassword, 10);
+
+      const updatedUser: Users = await this.userService.updateUserPassword(
+        id,
+        hashedPassword,
+      );
+
+      return updatedUser;
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error when user try to reset password',
         e.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
