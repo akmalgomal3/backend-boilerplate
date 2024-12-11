@@ -2,17 +2,18 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from './users/user.module';
 import { DatabaseModule } from './databases/database.module';
+import { UtilsModule } from './libs/utils/utils.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true
+      isGlobal: true,
     }),
     UsersModule,
-    DatabaseModule
+    DatabaseModule,
+    UtilsModule,
   ],
-
   controllers: [],
   providers: [],
 })
-export class AppModule { }
+export class AppModule {}
