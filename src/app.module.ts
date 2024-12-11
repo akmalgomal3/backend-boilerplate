@@ -5,6 +5,7 @@ import { DatabaseModule } from './databases/database.module';
 import { UtilsModule } from './libs/utils/utils.module';
 import { APP_FILTER } from '@nestjs/core';
 import { HttpExceptionFilter } from './common/exceptions/http-exception.filter';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { HttpExceptionFilter } from './common/exceptions/http-exception.filter';
     UsersModule,
     DatabaseModule,
     UtilsModule,
+    AuthModule,
   ],
   controllers: [],
   providers: [
