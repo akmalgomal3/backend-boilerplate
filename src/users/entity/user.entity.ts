@@ -34,7 +34,7 @@ export class Users {
   role: Roles;
 
   @Column({ type: 'date' })
-  birthdate: Date;
+  birthdate: string;
 
   @Column({ type: 'boolean' })
   active: boolean;
