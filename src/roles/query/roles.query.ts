@@ -1,13 +1,27 @@
 export const RolesQuery = {
   GET_ROLES: `
-        SELECT * FROM roles
-        OFFSET $1 LIMIT $2
+      SELECT role_id as roleId,
+             role_type as roleType,
+             role_name as roleName,
+             created_at as createdAt,
+             updated_at as updatedAt,
+             created_by as createdBy,
+             updated_by as updatedAt
+      FROM roles
+               OFFSET $1 LIMIT $2
     `,
   COUNT_ROLES: `
         SELECT COUNT(*) FROM roles
     `,
   GET_ROLE_BY_ID: `
-        SELECT * FROM roles WHERE role_id = $1
+        SELECT role_id as roleId,
+               role_type as roleType,
+               role_name as roleName,
+               created_at as createdAt,
+               updated_at as updatedAt,
+               created_by as createdBy,
+               updated_by as updatedAt
+        FROM roles WHERE role_id = $1
     `,
   CREATE_ROLE: `
         INSERT INTO roles (
@@ -17,7 +31,7 @@ export const RolesQuery = {
             created_at,
             updated_at
         ) VALUES ($1, $2, $3, NOW(), NOW())
-        RETURNING role_id
+        RETURNING role_id as roleId
     `,
   UPDATE_ROLE: `
         UPDATE roles 
