@@ -6,6 +6,7 @@ import {
 } from 'src/common/dto/pagination.dto';
 import { Users } from '../entity/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
+import { UserWithRole } from '../../common/types/user-with-role.type';
 
 @Injectable()
 export class UserService {

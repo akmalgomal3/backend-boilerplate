@@ -1,10 +1,21 @@
-import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UtilsService } from '../../libs/utils/services/utils.service';
 import { GeneratePasswordDto } from '../dto/generate-password.dto';
 import { RegisterDto } from '../dto/register.dto';
 import { UserService } from '../../users/services/user.service';
 import * as bcrypt from 'bcrypt';
 import { format } from 'date-fns';
+import { LoginDto } from '../dto/login.dto';
+import { JwtService } from '@nestjs/jwt';
+import { Users } from '../../users/entity/user.entity';
+import { JwtPayload } from '../../common/types/jwt-payload.type';
+import { SessionService } from '../../libs/session/service/session.service';
+import { DeviceType } from '../../common/enums/device-type.enum';
 
 @Injectable()
 export class AuthService {
@@ -15,6 +26,8 @@ export class AuthService {
   constructor(
     private readonly utils: UtilsService,
     private readonly userService: UserService,
+    private readonly jwtService: JwtService,
+    private readonly sessionService: SessionService,
   ) {}
 
   generatePassword(generatePasswordDto: GeneratePasswordDto) {
@@ -81,6 +94,129 @@ export class AuthService {
     } catch (e) {
       throw new HttpException(
         e.message || 'Error registering user',
+        e.status || 500,
+      );
+    }
+  }
+
+  async login(loginDto: LoginDto) {
+    try {
+      const { username, password, ipAddress, deviceType } = loginDto;
+
+      const user = await this.userService.getUserByUsername(username);
+
+      if (!user) {
+        throw new BadRequestException('username not found');
+      }
+
+      await this.validateUser(password, user, deviceType);
+
+      const payload: JwtPayload = {
+        userId: user.user_id,
+        username: user.username,
+        email: user.email,
+        roleName: user.role.role_name,
+        roleType: user.role.role_type,
+        ipAddress,
+        deviceType,
+      };
+
+      const accessToken = await this.jwtService.signAsync(payload, {
+        expiresIn: '1h',
+      });
+
+      await this.sessionService.createSession(
+        `session:${user.user_id}:${deviceType}`,
+        accessToken,
+        10,
+      );
+
+      return {
+        accessToken,
+      };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error logging in user',
+        e.status || 500,
+      );
+    }
+  }
+
+  private async validateUser(
+    password: string,
+    user: Users,
+    deviceType: DeviceType,
+  ) {
+    try {
+      /*
+       * TODO:
+       * Validate User Password ✅
+       * Validate User Is Banned Or Not ✅
+       * Validate Active Session ✅
+       * Validate Failed Login
+       * */
+
+      const isPasswordValid = await this.validateUserPassword(password, user);
+      if (!isPasswordValid) {
+        // TODO: Add failed login logic log
+        throw new UnauthorizedException('Invalid password');
+      }
+
+      if (!user.active) {
+        throw new UnauthorizedException('User is already banned !!');
+      }
+
+      const isSessionValid = await this.validateUserSession(
+        user.user_id,
+        deviceType,
+      );
+
+      if (!isSessionValid) {
+        throw new UnauthorizedException(
+          'There is an active session for this user, please logout first !!',
+        );
+      }
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error validating user',
+        e.status || 500,
+      );
+    }
+  }
+
+  private async validateUserPassword(password: string, user: Users) {
+    try {
+      const isPasswordValid = await bcrypt.compare(
+        this.utils.decrypt(password),
+        user.password,
+      );
+      if (!isPasswordValid) {
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error validating user password',
+        e.status || 500,
+      );
+    }
+  }
+
+  private async validateUserSession(userId: string, deviceType: string) {
+    try {
+      const activeSession = await this.sessionService.getSession(
+        `session:${userId}:${deviceType}`,
+      );
+
+      if (activeSession) {
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error validating user session',
         e.status || 500,
       );
     }

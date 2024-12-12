@@ -8,6 +8,7 @@ import { DataSource, Repository } from 'typeorm';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { Users } from '../entity/user.entity';
+import { UserWithRole } from '../../common/types/user-with-role.type';
 
 @Injectable()
 export class UserRepository {
@@ -50,14 +51,26 @@ export class UserRepository {
     }
   }
 
-  async getUserByUsername(username: string): Promise<Users> {
+  async getUserByUsername(username: string): Promise<UserWithRole> {
     try {
-      const query = `SELECT *
-                     FROM users
-                     WHERE username = $1`;
-      const data = await this.repository.query(query, [username]);
+      const query = `
+          SELECT *
+          FROM users
+                   LEFT JOIN roles ON users.role_id = roles.role_id
+          WHERE username = $1
+      `;
+      const [user] = await this.repository.query(query, [username]);
 
-      return data[0];
+      return user
+        ? {
+            ...user,
+            role: {
+              role_id: user.role_id,
+              role_name: user.role_name,
+              role_type: user.role_type,
+            },
+          }
+        : null;
     } catch (error) {
       throw new HttpException(
         error.message || 'Error getting user by username',
