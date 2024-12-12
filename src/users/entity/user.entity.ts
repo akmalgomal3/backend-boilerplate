@@ -1,40 +1,55 @@
-import { Entity, Column, PrimaryGeneratedColumn, Timestamp } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { Roles } from '../../roles/entity/roles.entity';
 
-@Entity()
+@Entity('users')
 export class Users {
-    @PrimaryGeneratedColumn()
-    user_id: string;
+  @PrimaryGeneratedColumn('uuid')
+  user_id: string;
 
-    @Column()
-    username: string;
+  @Column({ type: 'varchar' })
+  username: string;
 
-    @Column()
-    password: string;
+  @Column({ type: 'varchar' })
+  full_name: string;
 
-    @Column()
-    email: string;
+  @Column({ type: 'varchar' })
+  password: string;
 
-    @Column()
-    role_id: string;
+  @Column({ type: 'varchar', unique: true })
+  email: string;
 
-    @Column()
-    full_name: string;
+  @Column({ type: 'varchar' })
+  phone_number: string;
 
-    @Column()
-    active: boolean;
+  @ManyToOne(() => Roles)
+  @JoinColumn({ name: 'role_id' })
+  role: Roles;
 
-    @Column()
-    created_by: string;
+  @Column({ type: 'date' })
+  birthdate: Date;
 
-    @Column()
-    created_at: Date;
+  @Column({ type: 'boolean' })
+  active: boolean;
 
-    @Column()
-    updated_by: string;
+  @CreateDateColumn({ default: () => 'NOW()' })
+  @Column()
+  created_at: Date;
 
-    @Column()
-    updated_at: Date;
+  @UpdateDateColumn({ default: () => 'NOW()' })
+  @Column()
+  updated_at: Date;
 
-    @Column()
-    is_dev: boolean;
+  @Column({ type: 'uuid', nullable: true })
+  created_by: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  updated_by: string;
 }
