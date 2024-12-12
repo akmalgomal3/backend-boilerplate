@@ -128,7 +128,7 @@ export class AuthService {
       await this.sessionService.createSession(
         `session:${user.user_id}:${deviceType}`,
         accessToken,
-        10,
+        900,
       );
 
       return {
