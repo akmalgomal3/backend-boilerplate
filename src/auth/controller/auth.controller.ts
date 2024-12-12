@@ -3,6 +3,7 @@ import { AuthService } from '../services/auth.service';
 import { GeneratePasswordDto } from '../dto/generate-password.dto';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
+import { Public } from '../../common/decorators/public.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -17,6 +18,7 @@ export class AuthController {
     };
   }
 
+  @Public()
   @Post('/register')
   async register(@Body() registerDto: RegisterDto) {
     const data = await this.authService.register(registerDto);
@@ -26,6 +28,7 @@ export class AuthController {
     };
   }
 
+  @Public()
   @Post('/login')
   async login(@Body() loginDto: LoginDto) {
     const data = await this.authService.login(loginDto);
