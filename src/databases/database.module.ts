@@ -16,5 +16,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
   ],
   providers: [...databaseProviders],
   exports: [...databaseProviders],
+  
 })
 export class DatabaseModule {}
