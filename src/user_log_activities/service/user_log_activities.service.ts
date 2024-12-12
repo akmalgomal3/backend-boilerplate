@@ -17,25 +17,26 @@ export class UserLogActivitiesService {
         }
     }
 
-    mappingDescriptionActivity(method: string, path: string){
+    mappingDescriptionActivity(username: string, method: string, page: string){
         const action = this.mappingMethodActivity(method)
-        const route = path.split('/')
-
-        return `${action} ${route[route.length - 1]}`
+        return `${username} ${action} ${page}`
     }
 
     mappingMethodActivity(method: string){
         let action
-
-        switch(method){
-            case ActivityMethod.GET: 
+        switch(true){
+            case ActivityMethod.GET == method: 
                 action = "viewed"
-            case ActivityMethod.POST: 
+                break;
+            case ActivityMethod.POST == method: 
                 action = "created new"
-            case ActivityMethod.PATCH: 
+                break;
+            case ActivityMethod.PATCH == method: 
                 action = "updated"
-            case ActivityMethod.DELETE: 
+                break;
+            case ActivityMethod.DELETE == method: 
                 action = "deleted"
+                break;
             default:
                 action = "action unknown"
         }
@@ -43,4 +44,12 @@ export class UserLogActivitiesService {
         return action
     }
     
+    mappingPageActivity(path: string){
+        let pathArray = path.split('/')
+        pathArray.shift() // Remove the first of array cause it always be ''
+
+        pathArray = pathArray.filter(segment => !segment.includes(':'))
+
+        return pathArray.join(" ").toLocaleLowerCase()
+    }
 }

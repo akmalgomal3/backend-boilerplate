@@ -100,7 +100,6 @@ export class UserRepository {
     isActive: boolean = true,
   ): Promise<Users> {
     try {
-      console.log(createUserDto);
       const user_id = uuidv4();
       const {
         email,

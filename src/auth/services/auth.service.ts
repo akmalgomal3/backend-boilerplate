@@ -125,11 +125,11 @@ export class AuthService {
         expiresIn: '1h',
       });
 
-      await this.sessionService.createSession(
-        `session:${user.user_id}:${deviceType}`,
-        accessToken,
-        900,
-      );
+      // await this.sessionService.createSession(
+      //   `session:${user.user_id}:${deviceType}`,
+      //   accessToken,
+      //   10,
+      // );
 
       return {
         accessToken,

@@ -9,6 +9,7 @@ import { Public } from '../../common/decorators/public.decorator';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Public()
   @Post('/generate-password')
   generatePassword(@Body() generatePasswordDto: GeneratePasswordDto) {
     const data = this.authService.generatePassword(generatePasswordDto);

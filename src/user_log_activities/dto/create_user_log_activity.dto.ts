@@ -25,4 +25,6 @@ export class CreateUserLogActivityDTO {
     device?: Object
 
     auth_details?: Object
+
+    timestamp: Date;
 }
