@@ -75,7 +75,7 @@ export class SessionService implements OnModuleInit, OnModuleDestroy {
 
   // Validate session by userId and deviceType
   async validateSession(userId: string, deviceType: string): Promise<boolean> {
-    const key = `user:${userId}:${deviceType}`;
+    const key = `session:${userId}:${deviceType}`;
     const exists = await this.redisClient.exists(key);
     return exists > 0;
   }
