@@ -1,53 +1,141 @@
-import { Inject, Injectable } from "@nestjs/common";
-import { DataSource, Repository } from "typeorm";
-import { CreateUserDto } from "../dto/create-user.dto";
-import { UpdateUserDto } from "../dto/update-user.dto";
-import { Users } from "../entity/user.entity";
+import {
+  BadRequestException,
+  HttpException,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
+import { DataSource, Repository } from 'typeorm';
+import { CreateUserDto } from '../dto/create-user.dto';
+import { v4 as uuidv4 } from 'uuid';
+import { Users } from '../entity/user.entity';
+import { UserWithRole } from '../../common/types/user-with-role.type';
 
 @Injectable()
 export class UserRepository {
-    private repository: Repository<Users>;
-    constructor(
-        @Inject('DB_POSTGRES')
-        private dataSource: DataSource
-    ) {
-        this.repository = this.dataSource.getRepository(Users);
+  private repository: Repository<Users>;
+
+  constructor(
+    @Inject('DB_POSTGRES')
+    private dataSource: DataSource,
+  ) {
+    this.repository = this.dataSource.getRepository(Users);
+  }
+
+  async getUsers(skip: number, take: number): Promise<[Users[], number]> {
+    try {
+      const result = await this.repository.findAndCount({
+        skip,
+        take,
+        order: {
+          username: 'DESC',
+        },
+      });
+      return result;
+    } catch (error) {
+      throw error;
     }
+  }
 
-    async getUsers(skip: number, take: number): Promise<[Users[], number]> {
-        try {
-            const result = await this.repository.findAndCount({
-                skip,
-                take,
-                order: {
-                    username: 'DESC'
-                }
-            });
-            return result
-        } catch (error) {
-            throw error;
-        }
+  async getUserById(userId: string): Promise<Users> {
+    try {
+      const query = `SELECT *
+                     FROM users
+                     WHERE user_id = $1`;
+      const data = await this.repository.query(query, [userId]);
+      if (!data) {
+        throw new Error('User not found');
+      }
+      return data[0];
+    } catch (error) {
+      throw error;
     }
+  }
 
-    async getUserById(userId: string): Promise<Users | null> {
-        try {
-            // const result = await this.repository.findOne({ where: { user_id: userId } })
-            
-            // contoh raw query
-            const query = `SELECT * FROM users WHERE user_id = $1`
-            const data = await this.repository.query(query, [userId])
-            if (!data) {
-                throw new Error('User not found');
-            }
-            return data
-        } catch (error) {
-            throw error;
-        }
+  async getUserByUsername(username: string): Promise<UserWithRole> {
+    try {
+      const query = `
+          SELECT *
+          FROM users
+                   LEFT JOIN roles ON users.role_id = roles.role_id
+          WHERE username = $1
+      `;
+      const [user] = await this.repository.query(query, [username]);
+
+      return user
+        ? {
+            ...user,
+            role: {
+              role_id: user.role_id,
+              role_name: user.role_name,
+              role_type: user.role_type,
+            },
+          }
+        : null;
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error getting user by username',
+        error.status || 500,
+      );
     }
+  }
 
-    async createUser(dto: CreateUserDto): Promise<void> { }
+  async getUserByEmail(email: string): Promise<Users> {
+    try {
+      const query = `SELECT *
+                     FROM users
+                     WHERE email = $1`;
+      const data = await this.repository.query(query, [email]);
 
-    async updateUser(userId: string, dto: UpdateUserDto): Promise<void> { }
+      return data[0];
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error getting user by email',
+        error.status || 500,
+      );
+    }
+  }
 
-    async deleteUser(userId: string): Promise<void> { }
+  async createUser(
+    createUserDto: CreateUserDto,
+    isActive: boolean = true,
+  ): Promise<Users> {
+    try {
+      console.log(createUserDto);
+      const user_id = uuidv4();
+      const {
+        email,
+        username,
+        full_name,
+        password,
+        role_id,
+        birthdate,
+        phone_number,
+      } = createUserDto;
+
+      const query = `INSERT INTO users (email, username, full_name, password, role_id, birthdate, phone_number, user_id,
+                                        created_by, active, created_at, updated_at)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+                     RETURNING *`;
+
+      const data = await this.repository.query(query, [
+        email,
+        username,
+        full_name,
+        password,
+        role_id,
+        birthdate,
+        phone_number,
+        user_id,
+        user_id,
+        isActive,
+      ]);
+
+      return data[0];
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error creating user',
+        error.status || 500,
+      );
+    }
+  }
 }
