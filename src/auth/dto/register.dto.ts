@@ -1,0 +1,58 @@
+import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsDate,
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  Matches,
+} from 'class-validator';
+
+export class RegisterDto {
+  @ApiProperty({ example: 'kurniawan101' })
+  @IsNotEmpty()
+  @IsString()
+  username: string;
+
+  @ApiProperty({ example: 'Kurniawan Setiadi' })
+  @IsNotEmpty()
+  @IsString()
+  full_name: string;
+
+  @ApiProperty({
+    example: 'U2FsdGVkX1/gocVugyRay89B+O3G1YsjNNCk97m5YwY=',
+    description: 'Encrypted Password',
+  })
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+
+  @ApiProperty({
+    example: 'U2FsdGVkX19fF/O+QynfDl++NBPAD+KEgySp1ALIAq0=',
+    description: 'Encrypted Confirm Password',
+  })
+  @IsString()
+  @IsNotEmpty()
+  confirmPassword: string;
+
+  @ApiProperty({ example: 'kurniawan@gmail.com' })
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @ApiProperty({ example: '081234567890' })
+  @IsString()
+  @IsNotEmpty()
+  phone_number: string;
+
+  @ApiProperty({ example: '019b18cb-7b7a-4f8d-bea1-342b241bc717' })
+  @IsString()
+  @IsNotEmpty()
+  role_id: string;
+
+  @ApiProperty({ example: '1996-11-10' })
+  @IsNotEmpty()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'Birthdate must be in YYYY-MM-DD format',
+  })
+  birthdate: string;
+}
