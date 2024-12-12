@@ -10,25 +10,25 @@ import { RoleType } from '../../common/enums/user-roles.enum';
 @Entity('roles')
 export class Roles {
   @PrimaryGeneratedColumn('uuid')
-  role_id: string;
+  roleId: string;
 
   @Column({ type: 'enum', enum: RoleType })
-  role_type: RoleType;
+  roleType: RoleType;
 
   @Column({ type: 'varchar' })
-  role_name: string;
+  roleName: string;
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'NOW()' })
   @Column()
-  created_at: Date;
+  createdAt: Date;
 
   @UpdateDateColumn({ type: 'timestamp', default: () => 'NOW()' })
   @Column()
-  updated_at: Date;
+  updatedAt: Date;
 
   @Column({ type: 'uuid', nullable: true })
-  created_by: string;
+  createdBy: string;
 
   @Column({ type: 'uuid', nullable: true })
-  updated_by: string;
+  updatedBy: string;
 }

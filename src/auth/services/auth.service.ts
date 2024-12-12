@@ -115,8 +115,10 @@ export class AuthService {
         userId: user.user_id,
         username: user.username,
         email: user.email,
-        roleName: user.role.role_name,
-        roleType: user.role.role_type,
+        // roleName: user.role.role_name,
+        roleName: user.role.roleName,
+        // roleType: user.role.role_type,
+        roleType: user.role.roleType,
         ipAddress,
         deviceType,
       };
