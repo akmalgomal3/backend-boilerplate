@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from './users/user.module';
 import { DatabaseModule } from './databases/database.module';
+import { SessionModule } from './libs/session/session.module';
 import { UtilsModule } from './libs/utils/utils.module';
 import { APP_FILTER } from '@nestjs/core';
 import { HttpExceptionFilter } from './common/exceptions/http-exception.filter';
@@ -15,6 +16,7 @@ import { RolesModule } from './roles/roles.module';
     }),
     UsersModule,
     DatabaseModule,
+    SessionModule,
     UtilsModule,
     AuthModule,
     RolesModule,
