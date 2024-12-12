@@ -1,5 +1,6 @@
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongoClient } from 'mongodb';
+import { Connection } from 'mongoose';
 import { DataSource } from 'typeorm';
 
 export const databaseProviders = [
@@ -21,18 +22,5 @@ export const databaseProviders = [
 
       return dataSource.initialize();
     },
-  },
-  {
-    provide: 'DB_MONGODB',
-    inject: [ConfigService],
-    useFactory: async (configService: ConfigService) => {
-      const client = new MongoClient(configService.get<string>('MONGODB_URL'), {
-        connectTimeoutMS: 10000,
-        socketTimeoutMS: 45000,
-      });
-
-      await client.connect();
-      return client.db(configService.get<string>('MONGODB_DBNAME'));
-    },
-  },
+  }
 ];
