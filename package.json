@@ -50,6 +50,8 @@
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "elastic-apm-node": "^4.8.1",
+    "google-auth-library": "^9.15.0",
+    "googleapis": "^144.0.0",
     "mongodb": "^5.9.2",
     "nodemailer": "^6.9.16",
     "pg": "^8.13.0",

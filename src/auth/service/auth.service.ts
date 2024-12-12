@@ -23,12 +23,16 @@ import { ConfigService } from '@nestjs/config';
 import { EmailService } from '../../libs/email/email.service';
 import { ForgetPasswordDto } from '../dto/forget-password.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
+import { OAuth2Client } from 'google-auth-library';
+import { google } from 'googleapis';
 
 @Injectable()
 export class AuthService {
   private strongPassword: RegExp = new RegExp(
     /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,12}$/,
   );
+
+  private googleAuthClient;
 
   constructor(
     private readonly userService: UserService,
@@ -37,7 +41,14 @@ export class AuthService {
     private readonly sessionService: SessionService,
     private readonly elasticClient: ElasticsearchService,
     private readonly emailService: EmailService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.googleAuthClient = new OAuth2Client(
+      this.configService.get('GOOGLE_CLIENT_ID'),
+      this.configService.get('GOOGLE_CLIENT_SECRET'),
+      this.configService.get('GOOGLE_REDIRECT_URI'),
+    );
+  }
 
   async register(
     registerDto: RegisterDto,
@@ -181,6 +192,49 @@ export class AuthService {
       );
       throw new HttpException(
         e.message || 'Error when user try to login',
+        e.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async loginWithGoogle() {
+    try {
+      const authorizeUrl = await this.googleAuthClient.generateAuthUrl({
+        access_type: 'offline',
+        scope: ['email', 'profile'],
+        prompt: 'consent',
+        include_granted_scopes: true,
+      });
+
+      return authorizeUrl;
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error when user try to login with google',
+        e.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async getClientData(code: string) {
+    try {
+      const tokenData = await this.googleAuthClient.getToken(code);
+
+      const tokens = tokenData.tokens;
+
+      this.googleAuthClient.setCredentials(tokens);
+
+      const googleAuth = google.oauth2({
+        version: 'v2',
+        auth: this.googleAuthClient,
+      });
+
+      const userInfo = await googleAuth.userinfo.get();
+
+      return userInfo.data;
+    } catch (e) {
+      console.log(e);
+      throw new HttpException(
+        e.message || 'Error when user try to login with google',
         e.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

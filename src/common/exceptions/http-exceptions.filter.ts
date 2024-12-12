@@ -60,3 +60,9 @@ export class SessionTimeoutException extends HttpException {
     super(message, HttpStatus.UNAUTHORIZED);
   }
 }
+
+export class InvalidPasswordException extends HttpException {
+  constructor(message: string) {
+    super(message, HttpStatus.UNAUTHORIZED);
+  }
+}
