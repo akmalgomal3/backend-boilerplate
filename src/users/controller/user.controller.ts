@@ -1,11 +1,24 @@
-import { Controller, Get, Param, Query, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+  UseInterceptors,
+} from '@nestjs/common';
 import { ResponseInterceptor } from 'src/common/interceptor/response.interceptor';
 import { UserService } from '../services/user.service';
 import { GetUnapprovedUserDto } from '../dto/get-unapproved-user.dto';
 import { RoleType } from '../../common/enums/user-roles.enum';
 import { AuthorizedRoles } from '../../common/decorators/authorized-roles.decorator';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { User } from '../../common/decorators/user.decorator';
+import { JwtPayload } from '../../common/types/jwt-payload.type';
+import { ApproveUserAuthDto } from '../dto/approve-user-auth.dto';
 
+// @ts-ignore
 @Controller('users')
 @UseInterceptors(ResponseInterceptor)
 export class UserController {
@@ -37,6 +50,25 @@ export class UserController {
     return {
       data: result.data,
       metadata: result.metadata,
+    };
+  }
+
+  @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
+  @Post('/:userAuthId/approve')
+  async approveUser(
+    @Param('userAuthId', ParseUUIDPipe) userId: string,
+    @User() user: JwtPayload,
+    @Body() approveDto: ApproveUserAuthDto,
+  ) {
+    const result = await this.userService.approveUser(
+      userId,
+      user.userId,
+      approveDto.roleId,
+    );
+
+    return {
+      data: result,
     };
   }
 }

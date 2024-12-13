@@ -301,28 +301,38 @@ export class AuthService {
     isApproval = false,
   ) {
     const [userByUsername, userByEmail] = await Promise.all([
-      isApproval
-        ? this.userService.getUserAuthByUsername(username)
-        : this.userService.getUserByUsername(username),
-      isApproval
-        ? this.userService.getUserAuthByEmail(email)
-        : this.userService.getUserByEmail(email),
+      this.userService.getUserByUsername(username),
+      this.userService.getUserByEmail(email),
     ]);
 
     if (userByUsername) {
       throw new BadRequestException(
-        isApproval
-          ? 'Username already registered, Please wait for approval or contact admin'
-          : 'Username already exists',
+        'Username is registered in our system, please use another username',
       );
     }
 
     if (userByEmail) {
       throw new BadRequestException(
-        isApproval
-          ? 'Email already registered, Please wait for approval or contact admin'
-          : 'Email already exists',
+        'Email is registered in our system, please use another email',
       );
+    }
+
+    if (isApproval) {
+      const userAuthByUsername =
+        await this.userService.getUserAuthByUsername(username);
+      const userAuthByEmail = await this.userService.getUserAuthByEmail(email);
+
+      if (userAuthByUsername) {
+        throw new BadRequestException(
+          'Username already registered, Please wait for approval or contact admin',
+        );
+      }
+
+      if (userAuthByEmail) {
+        throw new BadRequestException(
+          'Email already registered, Please wait for approval or contact admin',
+        );
+      }
     }
   }
 }

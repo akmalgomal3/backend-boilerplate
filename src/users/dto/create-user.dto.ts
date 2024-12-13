@@ -6,4 +6,6 @@ export class CreateUserDto {
   readonly phoneNumber: string;
   readonly birthdate: string;
   readonly roleId?: string;
+  readonly createdBy?: string;
+  readonly updatedBy?: string;
 }

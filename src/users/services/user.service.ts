@@ -8,6 +8,8 @@ import { Users } from '../entity/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { RolesService } from '../../roles/service/roles.service';
 import { GetUnapprovedUserDto } from '../dto/get-unapproved-user.dto';
+import { format } from 'date-fns';
+import { UsersAuth } from '../entity/user-auth.entity';
 
 @Injectable()
 export class UserService {
@@ -172,6 +174,29 @@ export class UserService {
       throw new HttpException(
         error.message || 'Error getting unapproved users',
         error.status || 500,
+      );
+    }
+  }
+
+  async approveUser(userAuthId: string, approverId: string, roleId: string) {
+    try {
+      const newUser: Users = await this.userRepository.approveUser(
+        userAuthId,
+        approverId,
+        roleId,
+      );
+
+      return {
+        userId: newUser.userId,
+        username: newUser.username,
+        email: newUser.email,
+        fullName: newUser.fullName,
+        phoneNumber: newUser.phoneNumber,
+      };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error approving user',
+        e.status || 500,
       );
     }
   }
