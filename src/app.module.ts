@@ -11,6 +11,7 @@ import { RolesModule } from './roles/roles.module';
 import { JwtModule } from './libs/jwt/jwt.module';
 import { AuthGuard } from './common/guard/auth.guard';
 import { RolesGuard } from './common/guard/roles.guard';
+import { FeaturesModule } from './features/features.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { RolesGuard } from './common/guard/roles.guard';
     AuthModule,
     RolesModule,
     JwtModule,
+    FeaturesModule,
   ],
   controllers: [],
   providers: [
