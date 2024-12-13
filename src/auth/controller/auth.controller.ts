@@ -4,6 +4,10 @@ import { GeneratePasswordDto } from '../dto/generate-password.dto';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
 import { Public } from '../../common/decorators/public.decorator';
+import { User } from '../../common/decorators/user.decorator';
+import { JwtPayload } from '../../common/types/jwt-payload.type';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { RefreshTokenDto } from '../dto/refresh-token.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -45,6 +49,23 @@ export class AuthController {
   @Post('/login')
   async login(@Body() loginDto: LoginDto) {
     const data = await this.authService.login(loginDto);
+
+    return {
+      data,
+    };
+  }
+
+  @HttpCode(200)
+  @ApiBearerAuth()
+  @Post('/refresh-token')
+  async refreshToken(
+    @User() user: JwtPayload,
+    @Body() refreshTokenDto: RefreshTokenDto,
+  ) {
+    const data = await this.authService.refreshToken(
+      user,
+      refreshTokenDto.token,
+    );
 
     return {
       data,
