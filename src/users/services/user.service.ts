@@ -7,10 +7,14 @@ import {
 import { Users } from '../entity/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UserWithRole } from '../../common/types/user-with-role.type';
+import { RolesService } from '../../roles/service/roles.service';
 
 @Injectable()
 export class UserService {
-  constructor(private userRepository: UserRepository) {}
+  constructor(
+    private userRepository: UserRepository,
+    private rolesService: RolesService,
+  ) {}
 
   async getUsers(dto: PaginationDto): Promise<PaginatedResponseDto<Users>> {
     try {
@@ -77,7 +81,18 @@ export class UserService {
 
   async createUser(createUserDto: CreateUserDto) {
     try {
-      return this.userRepository.createUser(createUserDto);
+      let roleId: string = createUserDto.roleId;
+
+      if (!roleId) {
+        roleId = await this.rolesService.getBaseRole();
+      }
+      return this.userRepository.createUser(
+        {
+          ...createUserDto,
+          roleId,
+        },
+        !!createUserDto.roleId,
+      );
     } catch (error) {
       throw new HttpException(
         error.message || 'Error creating user',

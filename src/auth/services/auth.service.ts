@@ -54,11 +54,11 @@ export class AuthService {
       const {
         password,
         confirmPassword,
-        role_id,
+        roleId,
         birthdate,
-        phone_number,
+        phoneNumber,
         username,
-        full_name,
+        fullName,
         email,
       } = registerDto;
 
@@ -73,22 +73,22 @@ export class AuthService {
 
       const [user] = await Promise.all([
         this.userService.createUser({
-          full_name,
+          fullName,
           birthdate,
-          role_id,
+          roleId,
           email,
           username,
           password: hashedPassword,
-          phone_number,
+          phoneNumber,
         }),
       ]);
 
       return {
-        user_id: user.user_id,
+        userId: user.userId,
         username: user.username,
         email: user.email,
-        full_name: user.full_name,
-        phone_number: user.phone_number,
+        fullName: user.fullName,
+        phoneNumber: user.phoneNumber,
         birthdate: format(new Date(user.birthdate), 'yyyy-MM-dd'),
       };
     } catch (e) {
@@ -112,7 +112,7 @@ export class AuthService {
       await this.validateUser(password, user, deviceType);
 
       const payload: JwtPayload = {
-        userId: user.user_id,
+        userId: user.userId,
         username: user.username,
         email: user.email,
         // roleName: user.role.role_name,
@@ -128,7 +128,7 @@ export class AuthService {
       });
 
       await this.sessionService.createSession(
-        `session:${user.user_id}:${deviceType}`,
+        `session:${user.userId}:${deviceType}`,
         accessToken,
         900,
       );
@@ -169,7 +169,7 @@ export class AuthService {
       }
 
       const isSessionValid = await this.validateUserSession(
-        user.user_id,
+        user.userId,
         deviceType,
       );
 

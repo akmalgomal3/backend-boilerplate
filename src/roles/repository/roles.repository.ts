@@ -8,6 +8,7 @@ import { RolesQuery } from '../query/roles.query';
 @Injectable()
 export class RolesRepository {
   private repository: Repository<Roles>;
+
   constructor(
     @Inject('DB_POSTGRES')
     private dataSource: DataSource,
@@ -70,6 +71,16 @@ export class RolesRepository {
   async deleteRole(roleId: string): Promise<void> {
     try {
       await this.repository.query(RolesQuery.DELETE_ROLE, [roleId]);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getBaseRole(): Promise<Roles | null> {
+    try {
+      const data = await this.repository.query(RolesQuery.GET_BASE_ROLE);
+
+      return data.length > 0 ? data[0] : null;
     } catch (error) {
       throw error;
     }
