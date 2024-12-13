@@ -71,4 +71,15 @@ export class AuthController {
       data,
     };
   }
+
+  @HttpCode(200)
+  @ApiBearerAuth()
+  @Post('/logout')
+  async logout(@User() user: JwtPayload) {
+    const data = await this.authService.logout(user);
+
+    return {
+      data,
+    };
+  }
 }
