@@ -8,6 +8,4 @@ export type JwtPayload = {
   roleType: RoleType;
   ipAddress: string;
   deviceType: string;
-  latitude?: Number,
-  longitude?: Number,
 };

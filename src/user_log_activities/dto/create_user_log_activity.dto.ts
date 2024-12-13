@@ -2,13 +2,13 @@ import { IsNotEmpty } from "class-validator";
 
 export class CreateUserLogActivityDTO {
     @IsNotEmpty()
-    user_id: string
+    userId?: string
 
     @IsNotEmpty()
     username: string
 
     @IsNotEmpty()
-    activity_type: string;
+    activityType: string;
 
     @IsNotEmpty()
     method: string;
@@ -17,14 +17,22 @@ export class CreateUserLogActivityDTO {
     path: string;
 
     @IsNotEmpty()
-    status_code: string;
+    statusCode: string;
 
     @IsNotEmpty()
     description: string;
 
-    device?: Object
+    device?: {
+        type?: string, 
+        info?: {
+            ipAddress: string, 
+            latitude?: Number, 
+            longitude?: Number
+        }
+    }
 
-    auth_details?: Object
-
-    timestamp: Date;
+    authDetails?: {
+        loginTime?: Date;
+        logoutTime?: Date;
+    }
 }

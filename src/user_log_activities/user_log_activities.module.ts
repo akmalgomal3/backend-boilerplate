@@ -4,9 +4,13 @@ import { UserLogActivitiesController } from './controller/user_log_activities.co
 import { UserLogActivitiesRepository } from './repository/user_log_activities.repository';
 import { UserLogActivities, UserLogActivitiesSchema } from './entity/user_log_activities.entity';
 import { MongooseModule } from '@nestjs/mongoose';
+import { UsersModule } from 'src/users/user.module';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: UserLogActivities.name, schema: UserLogActivitiesSchema }])],
+  imports: [
+    MongooseModule.forFeature([{ name: UserLogActivities.name, schema: UserLogActivitiesSchema }]), 
+    UsersModule
+  ],
   providers: [UserLogActivitiesService, UserLogActivitiesRepository],
   controllers: [UserLogActivitiesController],
   exports: [UserLogActivitiesService]

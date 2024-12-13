@@ -1,10 +1,10 @@
-import { Body, Controller, Get, HttpException, HttpStatus, ParseBoolPipe, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, HttpStatus, ParseBoolPipe, Post, Query, Req } from '@nestjs/common';
 import { UserLogActivitiesService } from '../service/user_log_activities.service';
 import { CreateUserLogActivityDTO } from '../dto/create_user_log_activity.dto';
 import { ConfigService } from '@nestjs/config';
 import { config } from 'process';
 
-@Controller('/v1/user-log-activities')
+@Controller('/user-log-activities')
 export class UserLogActivitiesController {
     constructor(
         private userLogActivitiesService: UserLogActivitiesService,
@@ -17,13 +17,10 @@ export class UserLogActivitiesController {
     }
 
     @Get()
-    async getAll(
-        @Query('isBanned', ParseBoolPipe) isBanned: string
-    ){
-        if(isBanned){
-            throw new HttpException("error get all", HttpStatus.BAD_REQUEST)
+    async getUserActivityDescription(@Req() req: any, @Query('description') description: string ){
+        const user = req?.user
+        return {
+            data: await this.userLogActivitiesService.getUserActivityByDescription(user?.userId, description)
         }
-        
-        return { data: 'success' }
     }
 }
