@@ -2,6 +2,7 @@ import { HttpException, Injectable } from '@nestjs/common';
 import * as CryptoJS from 'crypto-js';
 import { ConfigService } from '@nestjs/config';
 import * as geoip from 'geoip-lite';
+import { result } from 'lodash';
 
 @Injectable()
 export class UtilsService {
@@ -28,8 +29,12 @@ export class UtilsService {
     return CryptoJS.AES.encrypt(str, this.secretKey).toString();
   }
 
-  snakeCase(key: string) {
+  snakeCase(key: string): string {
     return key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+  }
+
+  camelCase(key: string): string {
+    return key.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
   }
   
   isInstanceOf(val: any, type: Function): boolean {
@@ -41,7 +46,6 @@ export class UtilsService {
       return obj.map((item) => this.camelToSnake(item));
     } else if (obj !== null && typeof obj === 'object' && !this.isInstanceOf(obj, Date)) {
       return Object.keys(obj).reduce((acc, key) => {
-        
         const newKey = this.snakeCase(key);
         acc[newKey] = this.camelToSnake(obj[key])
         return acc;
@@ -51,6 +55,23 @@ export class UtilsService {
     return obj;
   }
 
+  snakeToCamel(obj: any): any {
+    if (Array.isArray(obj)) {
+      return obj.map((item) => {
+        item = item?._doc || item
+        return this.snakeToCamel(item)
+      });
+    } else if (obj !== null && typeof obj === 'object' && !this.isInstanceOf(obj, Date)) {
+      return Object.keys(obj).reduce((acc, key) => {
+        const newKey = key == '_id' ? '_id' : this.camelCase(key);
+        acc[newKey] = key == '_id' ? obj[key] : this.snakeToCamel(obj[key])
+        return acc;
+      }, {});
+    }
+  
+    return obj;
+  }
+  
   getGeoIp(ipAddress: string): {latitude: number, longitude: number}{
     const geo = geoip.lookup(ipAddress);
 
