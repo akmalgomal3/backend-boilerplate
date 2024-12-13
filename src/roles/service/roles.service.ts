@@ -59,10 +59,31 @@ export class RolesService {
     }
   }
 
-  async createRole(createRoleDto: CreateRoleDto): Promise<string> {
+  async getRoleByName(roleName: string): Promise<Roles> {
+    try {
+      const role = await this.roleRepository.getRoleByName(roleName);
+
+      if (!role) {
+        throw new NotFoundException(`Role with name ${roleName} not found`);
+      }
+
+      return role;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new ConflictException('Failed to retrieve role');
+    }
+  }
+
+  async createRole(
+    createRoleDto: CreateRoleDto,
+    userId: string,
+  ): Promise<string> {
     try {
       const newRole = await this.roleRepository.createRole({
         ...createRoleDto,
+        createdBy: userId,
       });
       return newRole;
     } catch (error) {
@@ -73,10 +94,14 @@ export class RolesService {
   async updateRole(
     roleId: string,
     updateRoleDto: UpdateRoleDto,
+    userId: string,
   ): Promise<void> {
     try {
+      await this.getRoleById(roleId);
+
       await this.roleRepository.updateRole(roleId, {
         ...updateRoleDto,
+        updatedBy: userId,
       });
     } catch (error) {
       if (error instanceof NotFoundException) {
