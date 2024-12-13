@@ -384,8 +384,6 @@ export class UserRepository {
         ],
       );
 
-      console.log('newUser', newUser);
-
       await queryRunner.commitTransaction();
 
       return newUser;
@@ -397,6 +395,22 @@ export class UserRepository {
       );
     } finally {
       await queryRunner.release();
+    }
+  }
+
+  async banUser(userId: string, bannerId?: string): Promise<void> {
+    try {
+      const query = `UPDATE users
+                     SET active     = false,
+                         updated_by = $1,
+                         updated_at = NOW()
+                     WHERE user_id = $2`;
+      await this.repository.query(query, [bannerId || userId, userId]);
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error banning user',
+        error.status || 500,
+      );
     }
   }
 }

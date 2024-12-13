@@ -172,23 +172,85 @@ export class AuthService {
         deviceType,
       };
 
-      console.log(payload);
       const accessToken = await this.jwtService.signAsync(payload, {
         expiresIn: '1h',
       });
 
-      await this.sessionService.createSession(
-        `session:${user.userId}:${deviceType}`,
+      const refreshToken = await this.jwtService.signAsync(payload, {
+        expiresIn: '3d',
+      });
+
+      await Promise.all([
+        this.sessionService.createSession(
+          `session:${user.userId}:${deviceType}`,
+          accessToken,
+          15 * 60,
+        ),
+        this.sessionService.createSession(
+          `refresh:${user.userId}:${deviceType}`,
+          refreshToken,
+          3 * 24 * 60 * 60, // 3 days
+        ),
+      ]);
+
+      return {
         accessToken,
-        900,
+        refreshToken,
+      };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error logging in user',
+        e.status || 500,
       );
+    }
+  }
+
+  async refreshToken(user: JwtPayload, token: string) {
+    try {
+      const refreshToken = await this.sessionService.getSession(
+        `refresh:${user.userId}:${user.deviceType}`,
+      );
+
+      if (!refreshToken) {
+        throw new UnauthorizedException('Refresh token expired');
+      }
+
+      if (refreshToken !== token) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      const payload: JwtPayload = {
+        userId: user.userId,
+        username: user.username,
+        email: user.email,
+        roleName: user.roleName,
+        roleType: user.roleType,
+        ipAddress: user.ipAddress,
+        deviceType: user.deviceType,
+      };
+
+      const accessToken = await this.jwtService.signAsync(payload, {
+        expiresIn: '1h',
+      });
+
+      await this.sessionService.deleteSession(
+        `session:${user.userId}:${user.deviceType}`,
+      );
+
+      await Promise.all([
+        this.sessionService.createSession(
+          `session:${user.userId}:${user.deviceType}`,
+          accessToken,
+          15 * 60,
+        ),
+      ]);
 
       return {
         accessToken,
       };
     } catch (e) {
       throw new HttpException(
-        e.message || 'Error logging in user',
+        e.message || 'Error refreshing token',
         e.status || 500,
       );
     }

@@ -42,37 +42,78 @@ export class RolesRepository {
     }
   }
 
-  async createRole(dto: CreateRoleDto): Promise<string> {
+  async getRoleByName(roleName: string): Promise<Roles | null> {
     try {
-      const newRole = await this.repository.query(RolesQuery.CREATE_ROLE, [
-        dto.roleType,
-        dto.roleName,
-        dto.createdBy || null,
+      const data = await this.repository.query(RolesQuery.GET_ROLE_BY_NAME, [
+        roleName,
       ]);
-      return newRole[0];
+
+      return data.length > 0 ? data[0] : null;
     } catch (error) {
       throw error;
     }
   }
 
-  async updateRole(roleId: string, dto: UpdateRoleDto): Promise<void> {
+  async createRole(dto: CreateRoleDto): Promise<string> {
+    const queryRunner = this.repository.manager.connection.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
-      await this.repository.query(RolesQuery.UPDATE_ROLE, [
+      const newRole = await queryRunner.query(RolesQuery.CREATE_ROLE, [
+        dto.roleType,
+        dto.roleName,
+        dto.createdBy || null,
+      ]);
+
+      await queryRunner.commitTransaction();
+      return newRole[0];
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async updateRole(roleId: string, dto: UpdateRoleDto): Promise<void> {
+    const queryRunner = this.repository.manager.connection.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      await queryRunner.query(RolesQuery.UPDATE_ROLE, [
         dto.roleType || null,
         dto.roleName || null,
         dto.updatedBy || null,
         roleId,
       ]);
+
+      await queryRunner.commitTransaction();
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       throw error;
+    } finally {
+      await queryRunner.release();
     }
   }
 
   async deleteRole(roleId: string): Promise<void> {
+    const queryRunner = this.repository.manager.connection.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
-      await this.repository.query(RolesQuery.DELETE_ROLE, [roleId]);
+      await queryRunner.query(RolesQuery.DELETE_ROLE, [roleId]);
+      await queryRunner.commitTransaction();
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       throw error;
+    } finally {
+      await queryRunner.release();
     }
   }
 

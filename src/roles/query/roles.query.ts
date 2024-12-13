@@ -1,12 +1,12 @@
 export const RolesQuery = {
   GET_ROLES: `
-      SELECT role_id as roleId,
-             role_type as roleType,
-             role_name as roleName,
-             created_at as createdAt,
-             updated_at as updatedAt,
-             created_by as createdBy,
-             updated_by as updatedAt
+      SELECT role_id as "roleId",
+             role_type as "roleType",
+             role_name as "roleName",
+             created_at as "createdAt",
+             updated_at as "updatedAt",
+             created_by as "createdBy",
+             updated_by as "updatedAt"
       FROM roles
                OFFSET $1 LIMIT $2
     `,
@@ -14,14 +14,24 @@ export const RolesQuery = {
         SELECT COUNT(*) FROM roles
     `,
   GET_ROLE_BY_ID: `
-        SELECT role_id as roleId,
-               role_type as roleType,
-               role_name as roleName,
-               created_at as createdAt,
-               updated_at as updatedAt,
-               created_by as createdBy,
-               updated_by as updatedAt
+        SELECT role_id as "roleId",
+               role_type as "roleType",
+               role_name as "roleName",
+               created_at as "createdAt",
+               updated_at as "updatedAt",
+               created_by as "createdBy",
+               updated_by as "updatedAt"
         FROM roles WHERE role_id = $1
+    `,
+  GET_ROLE_BY_NAME: `
+        SELECT role_id as "roleId",
+               role_type as "roleType",
+               role_name as "roleName",
+               created_at as "createdAt",
+               updated_at as "updatedAt",
+               created_by as "createdBy",
+               updated_by as "updatedAt"
+        FROM roles WHERE role_name = $1
     `,
   CREATE_ROLE: `
         INSERT INTO roles (
@@ -31,7 +41,7 @@ export const RolesQuery = {
             created_at,
             updated_at
         ) VALUES ($1, $2, $3, NOW(), NOW())
-        RETURNING role_id as roleId
+        RETURNING role_id as "roleId"
     `,
   UPDATE_ROLE: `
         UPDATE roles 
@@ -51,5 +61,5 @@ export const RolesQuery = {
       WHERE role_type = 'Operator'
         AND role_name = 'Base Operator'
       LIMIT 1
-  `
+  `,
 };

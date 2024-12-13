@@ -12,6 +12,8 @@ import { RolesService } from '../service/roles.service';
 import { CreateRoleDto } from '../dto/create-roles.dto';
 import { UpdateRoleDto } from '../dto/update-roles.dto';
 import { Roles } from '../entity/roles.entity';
+import { JwtPayload } from '../../common/types/jwt-payload.type';
+import { User } from '../../common/decorators/user.decorator';
 
 @Controller('roles')
 export class RolesController {
@@ -37,9 +39,25 @@ export class RolesController {
     };
   }
 
+  @Get('name/:roleName')
+  async getRoleByName(
+    @Param('roleName') roleName: string,
+  ): Promise<{ data: Roles }> {
+    const result = await this.rolesService.getRoleByName(roleName);
+    return {
+      data: result,
+    };
+  }
+
   @Post()
-  async createRole(@Body() createRoleDto: CreateRoleDto) {
-    const result = await this.rolesService.createRole(createRoleDto);
+  async createRole(
+    @Body() createRoleDto: CreateRoleDto,
+    @User() user: JwtPayload,
+  ) {
+    const result = await this.rolesService.createRole(
+      createRoleDto,
+      user.userId,
+    );
     return {
       data: result,
     };
@@ -49,10 +67,12 @@ export class RolesController {
   async updateRole(
     @Param('roleId') roleId: string,
     @Body() updateRoleDto: UpdateRoleDto,
+    @User() user: JwtPayload,
   ) {
     const result = await this.rolesService.updateRole(
       roleId,
       updateRoleDto,
+      user.userId,
     );
     return {
       data: result,

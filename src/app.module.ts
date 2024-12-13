@@ -13,6 +13,7 @@ import { UserLogAcitivitiesInterceptor } from './common/interceptor/user_log_act
 import { JwtModule } from './libs/jwt/jwt.module';
 import { AuthGuard } from './common/guard/auth.guard';
 import { RolesGuard } from './common/guard/roles.guard';
+import { FeaturesModule } from './features/features.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { RolesGuard } from './common/guard/roles.guard';
     RolesModule,
     UserLogActivitiesModule,
     JwtModule,
+    FeaturesModule,
   ],
   controllers: [],
   providers: [
