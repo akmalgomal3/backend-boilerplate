@@ -256,6 +256,28 @@ export class AuthService {
     }
   }
 
+  async logout(user: JwtPayload) {
+    try {
+      await Promise.all([
+        this.sessionService.deleteSession(
+          `session:${user.userId}:${user.deviceType}`,
+        ),
+        this.sessionService.deleteSession(
+          `refresh:${user.userId}:${user.deviceType}`,
+        ),
+      ]);
+
+      return {
+        message: 'Logout success',
+      };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error logging out user',
+        e.status || 500,
+      );
+    }
+  }
+
   private async validateUser(
     password: string,
     user: Users,
