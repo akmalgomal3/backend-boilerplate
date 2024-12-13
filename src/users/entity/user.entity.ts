@@ -12,13 +12,13 @@ import { Roles } from '../../roles/entity/roles.entity';
 @Entity('users')
 export class Users {
   @PrimaryGeneratedColumn('uuid')
-  user_id: string;
+  userId: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', unique: true })
   username: string;
 
   @Column({ type: 'varchar' })
-  full_name: string;
+  fullName: string;
 
   @Column({ type: 'varchar' })
   password: string;
@@ -27,7 +27,7 @@ export class Users {
   email: string;
 
   @Column({ type: 'varchar' })
-  phone_number: string;
+  phoneNumber: string;
 
   @ManyToOne(() => Roles)
   @JoinColumn({ name: 'role_id' })
@@ -41,15 +41,15 @@ export class Users {
 
   @CreateDateColumn({ default: () => 'NOW()' })
   @Column()
-  created_at: Date;
+  createdAt: Date;
 
   @UpdateDateColumn({ default: () => 'NOW()' })
   @Column()
-  updated_at: Date;
+  updatedAt: Date;
 
   @Column({ type: 'uuid', nullable: true })
-  created_by: string;
+  createdBy: string;
 
   @Column({ type: 'uuid', nullable: true })
-  updated_by: string;
+  updatedBy: string;
 }

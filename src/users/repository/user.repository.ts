@@ -105,26 +105,26 @@ export class UserRepository {
       const {
         email,
         username,
-        full_name,
+        fullName,
         password,
-        role_id,
+        roleId,
         birthdate,
-        phone_number,
+        phoneNumber,
       } = createUserDto;
 
       const query = `INSERT INTO users (email, username, full_name, password, role_id, birthdate, phone_number, user_id,
                                         created_by, active, created_at, updated_at)
                      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
-                     RETURNING *`;
+                     RETURNING user_id as "userId", username, email, full_name as "fullName", phone_number as "phoneNumber", birthdate`;
 
       const data = await this.repository.query(query, [
         email,
         username,
-        full_name,
+        fullName,
         password,
-        role_id,
+        roleId,
         birthdate,
-        phone_number,
+        phoneNumber,
         user_id,
         user_id,
         isActive,
