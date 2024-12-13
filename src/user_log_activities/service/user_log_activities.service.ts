@@ -19,7 +19,7 @@ export class UserLogActivitiesService {
 
     /** 
      TODO: 
-    - Token expired log
+        - Token expired log
     */
 
     async create(createUserLogActivitiyDTO: CreateUserLogActivityDTO){
@@ -92,11 +92,14 @@ export class UserLogActivitiesService {
             }
         
             const [data, totalItems] = await this.userActivityRepository.getUserFilter(filter)
-            return { data, totalItems }
+            const dataCamelCase = this.utilsService.snakeToCamel(data)
+            return { data: dataCamelCase, totalItems }
         } catch (e) {
             throw e
         }
     }
+
+    async deleteUserActivityByDescription(userId: string, description: string = 'Invalid password'){}
 
     mappingDescriptionActivity(createDescriptionActivity: CreateDescriptionActivity){
         const {username, method, page, params } = createDescriptionActivity
