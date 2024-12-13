@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  HttpException,
 } from '@nestjs/common';
 import { RolesRepository } from '../repository/roles.repository';
 import { CreateRoleDto } from '../dto/create-roles.dto';
@@ -95,6 +96,19 @@ export class RolesService {
         throw error;
       }
       throw new ConflictException('Failed to delete role');
+    }
+  }
+
+  async getBaseRole(): Promise<string> {
+    try {
+      const role: Roles = await this.roleRepository.getBaseRole();
+
+      return role.roleId;
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error getting base role',
+        error.status || 500,
+      );
     }
   }
 }

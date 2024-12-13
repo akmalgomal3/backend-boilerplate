@@ -9,8 +9,9 @@ import {
 } from 'typeorm';
 import { Roles } from '../../roles/entity/roles.entity';
 
-@Entity('users')
-export class Users {
+// user auth is for temporary user who is not approved by admin
+@Entity('users_auth')
+export class UsersAuth {
   @PrimaryGeneratedColumn('uuid')
   userId: string;
 

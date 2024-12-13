@@ -45,4 +45,11 @@ export const RolesQuery = {
   DELETE_ROLE: `
         DELETE FROM roles WHERE role_id = $1
     `,
+  GET_BASE_ROLE: `
+      SELECT role_id as "roleId"
+      FROM roles
+      WHERE role_type = 'Operator'
+        AND role_name = 'Base Operator'
+      LIMIT 1
+  `
 };

@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsDate,
   IsEmail,
-  IsNotEmpty,
+  IsNotEmpty, IsOptional,
   IsString,
   Matches,
 } from 'class-validator';
@@ -16,7 +16,7 @@ export class RegisterDto {
   @ApiProperty({ example: 'Kurniawan Setiadi' })
   @IsNotEmpty()
   @IsString()
-  full_name: string;
+  fullName: string;
 
   @ApiProperty({
     example: 'U2FsdGVkX1/gocVugyRay89B+O3G1YsjNNCk97m5YwY=',
@@ -42,12 +42,12 @@ export class RegisterDto {
   @ApiProperty({ example: '081234567890' })
   @IsString()
   @IsNotEmpty()
-  phone_number: string;
+  phoneNumber: string;
 
   @ApiProperty({ example: '019b18cb-7b7a-4f8d-bea1-342b241bc717' })
   @IsString()
-  @IsNotEmpty()
-  role_id: string;
+  @IsOptional()
+  roleId?: string;
 
   @ApiProperty({ example: '1996-11-10' })
   @IsNotEmpty()

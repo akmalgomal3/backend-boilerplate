@@ -6,11 +6,17 @@ import {
 } from 'src/common/dto/pagination.dto';
 import { Users } from '../entity/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
-import { UserWithRole } from '../../common/types/user-with-role.type';
+import { RolesService } from '../../roles/service/roles.service';
+import { GetUnapprovedUserDto } from '../dto/get-unapproved-user.dto';
+import { format } from 'date-fns';
+import { UsersAuth } from '../entity/user-auth.entity';
 
 @Injectable()
 export class UserService {
-  constructor(private userRepository: UserRepository) {}
+  constructor(
+    private userRepository: UserRepository,
+    private rolesService: RolesService,
+  ) {}
 
   async getUsers(dto: PaginationDto): Promise<PaginatedResponseDto<Users>> {
     try {
@@ -62,6 +68,32 @@ export class UserService {
     }
   }
 
+  async getUserAuthByUsername(username: string) {
+    try {
+      const result = await this.userRepository.getUserAuthByUsername(username);
+
+      return result;
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error getting user by username',
+        error.status || 500,
+      );
+    }
+  }
+
+  async getUserAuthByEmail(email: string) {
+    try {
+      const result = await this.userRepository.getUserAuthByEmail(email);
+
+      return result;
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error getting user by email',
+        error.status || 500,
+      );
+    }
+  }
+
   async getUserByEmail(email: string) {
     try {
       const result = await this.userRepository.getUserByEmail(email);
@@ -77,11 +109,94 @@ export class UserService {
 
   async createUser(createUserDto: CreateUserDto) {
     try {
-      return this.userRepository.createUser(createUserDto);
+      let roleId: string = createUserDto.roleId;
+
+      if (!roleId) {
+        roleId = await this.rolesService.getBaseRole();
+      }
+      return this.userRepository.createUser(
+        {
+          ...createUserDto,
+          roleId,
+        },
+        !!createUserDto.roleId,
+      );
     } catch (error) {
       throw new HttpException(
         error.message || 'Error creating user',
         error.status || 500,
+      );
+    }
+  }
+
+  async createUserAuth(createUserDto: CreateUserDto) {
+    try {
+      const roleId =
+        createUserDto?.roleId || (await this.rolesService.getBaseRole());
+      return this.userRepository.createUserAuth(
+        { ...createUserDto, roleId },
+        true,
+      );
+    } catch (error) {
+      throw new HttpException(
+        error.message ?? 'Error creating user',
+        error.status ?? 500,
+      );
+    }
+  }
+
+  async getUnapprovedUsers(getUnapprovedDto: GetUnapprovedUserDto) {
+    try {
+      const {
+        page = 1,
+        limit: take = 10,
+        sortByDate,
+        search,
+      } = getUnapprovedDto;
+      const skip: number = (page - 1) * take;
+      const [data, total] = await this.userRepository.getUnapprovedUsers(
+        take,
+        skip,
+        search,
+        sortByDate,
+      );
+
+      return {
+        data,
+        metadata: {
+          page: Number(page),
+          limit: Number(take),
+          total: Number(total),
+          totalPages: Number(Math.ceil(total / take)),
+        },
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error getting unapproved users',
+        error.status || 500,
+      );
+    }
+  }
+
+  async approveUser(userAuthId: string, approverId: string, roleId: string) {
+    try {
+      const newUser: Users = await this.userRepository.approveUser(
+        userAuthId,
+        approverId,
+        roleId,
+      );
+
+      return {
+        userId: newUser.userId,
+        username: newUser.username,
+        email: newUser.email,
+        fullName: newUser.fullName,
+        phoneNumber: newUser.phoneNumber,
+      };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error approving user',
+        e.status || 500,
       );
     }
   }
