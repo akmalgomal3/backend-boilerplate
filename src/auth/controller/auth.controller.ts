@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
 import { GeneratePasswordDto } from '../dto/generate-password.dto';
 import { RegisterDto } from '../dto/register.dto';
@@ -19,6 +19,7 @@ export class AuthController {
     };
   }
 
+  // directly create a new user
   @Public()
   @Post('/register')
   async register(@Body() registerDto: RegisterDto) {
@@ -30,6 +31,17 @@ export class AuthController {
   }
 
   @Public()
+  @Post('/register-approval')
+  async registerApproval(@Body() registerDto: RegisterDto) {
+    const data = await this.authService.registerApproval(registerDto);
+
+    return {
+      data,
+    };
+  }
+
+  @Public()
+  @HttpCode(200)
   @Post('/login')
   async login(@Body() loginDto: LoginDto) {
     const data = await this.authService.login(loginDto);

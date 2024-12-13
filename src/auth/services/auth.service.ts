@@ -99,6 +99,57 @@ export class AuthService {
     }
   }
 
+  async registerApproval(registerDto: RegisterDto) {
+    try {
+      const {
+        password,
+        confirmPassword,
+        roleId,
+        birthdate,
+        phoneNumber,
+        username,
+        fullName,
+        email,
+      } = registerDto;
+
+      const decryptedPassword = this.validateConfirmPassword(
+        password,
+        confirmPassword,
+      );
+
+      await this.validateUsernameEmail(username, email, true);
+
+      const hashedPassword: string = await bcrypt.hash(decryptedPassword, 10);
+
+      const [user] = await Promise.all([
+        this.userService.createUserAuth({
+          fullName,
+          birthdate,
+          roleId,
+          email,
+          username,
+          password: hashedPassword,
+          phoneNumber,
+        }),
+      ]);
+
+      return {
+        userId: user.userId,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
+        phoneNumber: user.phoneNumber,
+        birthdate: format(new Date(user.birthdate), 'yyyy-MM-dd'),
+      };
+    } catch (e) {
+      console.log(e);
+      throw new HttpException(
+        e.message || 'Error registering user',
+        e.status || 500,
+      );
+    }
+  }
+
   async login(loginDto: LoginDto) {
     try {
       const { username, password, ipAddress, deviceType } = loginDto;
@@ -115,14 +166,13 @@ export class AuthService {
         userId: user.userId,
         username: user.username,
         email: user.email,
-        // roleName: user.role.role_name,
         roleName: user.role.roleName,
-        // roleType: user.role.role_type,
         roleType: user.role.roleType,
         ipAddress,
         deviceType,
       };
 
+      console.log(payload);
       const accessToken = await this.jwtService.signAsync(payload, {
         expiresIn: '1h',
       });
@@ -245,18 +295,44 @@ export class AuthService {
     return decryptedPassword;
   }
 
-  private async validateUsernameEmail(username: string, email: string) {
+  private async validateUsernameEmail(
+    username: string,
+    email: string,
+    isApproval = false,
+  ) {
     const [userByUsername, userByEmail] = await Promise.all([
       this.userService.getUserByUsername(username),
       this.userService.getUserByEmail(email),
     ]);
 
     if (userByUsername) {
-      throw new BadRequestException('Username already exists');
+      throw new BadRequestException(
+        'Username is registered in our system, please use another username',
+      );
     }
 
     if (userByEmail) {
-      throw new BadRequestException('Email already exists');
+      throw new BadRequestException(
+        'Email is registered in our system, please use another email',
+      );
+    }
+
+    if (isApproval) {
+      const userAuthByUsername =
+        await this.userService.getUserAuthByUsername(username);
+      const userAuthByEmail = await this.userService.getUserAuthByEmail(email);
+
+      if (userAuthByUsername) {
+        throw new BadRequestException(
+          'Username already registered, Please wait for approval or contact admin',
+        );
+      }
+
+      if (userAuthByEmail) {
+        throw new BadRequestException(
+          'Email already registered, Please wait for approval or contact admin',
+        );
+      }
     }
   }
 }
