@@ -18,7 +18,7 @@ export class UserLogActivitiesRepository {
     }
   }
 
-  async getUserFilter(filter: any): Promise<[UserLogActivities[], number]>{
+  async getByUserFilter(filter: Partial<UserLogActivities>): Promise<[UserLogActivities[], number]>{
     try {
       const data = await this.userActivitiesModel.find(filter).exec();
       const totalItems = await this.userActivitiesModel.countDocuments(filter).exec()
@@ -29,27 +29,22 @@ export class UserLogActivitiesRepository {
     }
   }
 
-  async updateByDescriptionAndDate(deviceType: string, description: string, date: string, updateData: Partial<UserLogActivities>): Promise<UserLogActivities | null> {
+  async updateByUserFilter(filter: Partial<UserLogActivities>, updateData: Partial<UserLogActivities>): Promise<number> {
     try {
-      const startDate = new Date(date);
-      const endDate = new Date(date);
-      endDate.setDate(endDate.getDate() + 1); // Include the entire day range
-  
-      return this.userActivitiesModel
-        .findOneAndUpdate(
-          {
-            device: {
-              type: deviceType
-            } ,
-            description,
-            timestamp: { $gte: startDate, $lt: endDate }, 
-          },
-          { $set: updateData },
-          { new: true, sort: { timestamp: -1 } },
-        )
-        .exec();
+      const result = await this.userActivitiesModel.updateMany(filter, { $set: updateData}).exec();
+      return result.modifiedCount || 0;
     } catch (e) {
-        throw e
+      throw e
     }
   }
+
+  async softDeleteByUserFilter(filter: Partial<UserLogActivities>): Promise<number> {
+    try {
+      const result = await this.userActivitiesModel.updateMany(filter, { $set: {is_deleted: true}}).exec();
+      return result.modifiedCount || 0;
+    } catch (e) {
+      throw e
+    }
+  }
+
 }
