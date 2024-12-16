@@ -200,4 +200,15 @@ export class UserService {
       );
     }
   }
+
+  async banUser(userId: string, bannedBy: string) {
+    try {
+      return await this.userRepository.banUser(userId, bannedBy);
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error banning user',
+        e.status || 500,
+      );
+    }
+  }
 }
