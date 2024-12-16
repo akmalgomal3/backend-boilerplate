@@ -440,7 +440,7 @@ export class UserRepository {
       const dto =  {
         ...updateUserDto, 
         role: role, 
-        updatedAt: () => 'NOW()'
+        updatedAt: new Date()
       }
 
       await this.repository.update(userId, dto)
