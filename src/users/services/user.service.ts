@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { UserRepository } from '../repository/user.repository';
 import {
   PaginatedResponseDto,
@@ -8,14 +14,16 @@ import { Users } from '../entity/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { RolesService } from '../../roles/service/roles.service';
 import { GetUnapprovedUserDto } from '../dto/get-unapproved-user.dto';
-import { format } from 'date-fns';
-import { UsersAuth } from '../entity/user-auth.entity';
+import * as bcrypt from 'bcrypt';
+import { UpdatePasswordDto } from '../dto/update-password.dto';
+import { UtilsService } from '../../libs/utils/services/utils.service';
 
 @Injectable()
 export class UserService {
   constructor(
     private userRepository: UserRepository,
     private rolesService: RolesService,
+    private utilsService: UtilsService,
   ) {}
 
   async getUsers(dto: PaginationDto): Promise<PaginatedResponseDto<Users>> {
@@ -210,5 +218,61 @@ export class UserService {
         e.status || 500,
       );
     }
+  }
+
+  async updatePassword(userId: string, updatePasswordDto: UpdatePasswordDto) {
+    try {
+      const { oldPassword, newPassword, confirmPassword } = updatePasswordDto;
+
+      const user = await this.userRepository.getUserById(userId);
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      const isMatch = await bcrypt.compare(
+        this.utilsService.decrypt(oldPassword),
+        user.password,
+      );
+      if (!isMatch) {
+        throw new BadRequestException('Invalid old password');
+      }
+
+      const password = this.validatePassword(newPassword, confirmPassword, oldPassword);
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      await this.userRepository.updateUserPassword(user.userId, hashedPassword);
+
+      return {
+        message: `User ${user.username} password updated successfully`,
+      };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error updating password',
+        e.status || 500,
+      );
+    }
+  }
+
+  private validatePassword(
+    newPassword: string,
+    confirmPassword: string,
+    oldPassword: string,
+  ) {
+    const decryptedPassword = this.utilsService.decrypt(newPassword);
+    const decryptedConfirmPassword = this.utilsService.decrypt(confirmPassword);
+    const decryptedOldPassword = this.utilsService.decrypt(oldPassword);
+
+    if (decryptedPassword !== decryptedConfirmPassword) {
+      throw new BadRequestException('Passwords do not match');
+    }
+
+    if (decryptedPassword === decryptedOldPassword) {
+      throw new BadRequestException(
+        'New password cannot be the same as old password',
+      );
+    }
+
+    return decryptedPassword;
   }
 }

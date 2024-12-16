@@ -413,4 +413,21 @@ export class UserRepository {
       );
     }
   }
+
+  async updateUserPassword(userId: string, password: string): Promise<Users> {
+    try {
+      const query = `UPDATE users
+                     SET password = $2, updated_by = $3, updated_at = NOW()
+                     WHERE user_id = $1
+                     RETURNING user_id as "userId", username, email, full_name as "fullName", phone_number as "phoneNumber", birthdate`;
+      const user = await this.repository.query(query, [userId, password, userId]);
+
+      return user[0];
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error updating user password',
+        error.status || 500,
+      );
+    }
+  }
 }
