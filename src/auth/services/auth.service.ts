@@ -432,7 +432,7 @@ export class AuthService {
         );
 
       if (failedLogin.totalItems >= 4) {
-        // await this.userService.banUser(userId, userId);
+        await this.userService.banUser(userId, userId);
         return false;
       }
 
