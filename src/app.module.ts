@@ -14,6 +14,7 @@ import { JwtModule } from './libs/jwt/jwt.module';
 import { AuthGuard } from './common/guard/auth.guard';
 import { RolesGuard } from './common/guard/roles.guard';
 import { FeaturesModule } from './features/features.module';
+import { MenusModule } from './menus/menus.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { FeaturesModule } from './features/features.module';
     UserLogActivitiesModule,
     JwtModule,
     FeaturesModule,
+    MenusModule,
   ],
   controllers: [],
   providers: [
