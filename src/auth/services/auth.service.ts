@@ -16,6 +16,8 @@ import { Users } from '../../users/entity/user.entity';
 import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { SessionService } from '../../libs/session/service/session.service';
 import { DeviceType } from '../../common/enums/device-type.enum';
+import { UserLogActivitiesService } from '../../user_log_activities/service/user_log_activities.service';
+import { RolesService } from '../../roles/service/roles.service';
 
 @Injectable()
 export class AuthService {
@@ -28,6 +30,8 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly sessionService: SessionService,
+    private readonly userLogActivitiesService: UserLogActivitiesService,
+    private readonly roleService: RolesService,
   ) {}
 
   generatePassword(generatePasswordDto: GeneratePasswordDto) {
@@ -61,6 +65,13 @@ export class AuthService {
         fullName,
         email,
       } = registerDto;
+
+      if (roleId) {
+        const checkRole = await this.roleService.getRoleById(roleId);
+        if (!checkRole) {
+          throw new BadRequestException('Role id not found');
+        }
+      }
 
       const decryptedPassword = this.validateConfirmPassword(
         password,
@@ -191,6 +202,9 @@ export class AuthService {
           refreshToken,
           3 * 24 * 60 * 60, // 3 days
         ),
+        this.userLogActivitiesService.deleteUserActivityByDescription(
+          user.userId,
+        ),
       ]);
 
       return {
@@ -284,22 +298,20 @@ export class AuthService {
     deviceType: DeviceType,
   ) {
     try {
-      /*
-       * TODO:
-       * Validate User Password ✅
-       * Validate User Is Banned Or Not ✅
-       * Validate Active Session ✅
-       * Validate Failed Login
-       * */
+      if (!user.active) {
+        throw new UnauthorizedException('User is already banned !!');
+      }
+
+      const isAttemptValid = await this.validateLoginAttemptLog(user.userId);
+      if (!isAttemptValid) {
+        throw new UnauthorizedException(
+          'Failed to login due to 5 failed attempt !!',
+        );
+      }
 
       const isPasswordValid = await this.validateUserPassword(password, user);
       if (!isPasswordValid) {
-        // TODO: Add failed login logic log
         throw new UnauthorizedException('Invalid password');
-      }
-
-      if (!user.active) {
-        throw new UnauthorizedException('User is already banned !!');
       }
 
       const isSessionValid = await this.validateUserSession(
@@ -417,6 +429,28 @@ export class AuthService {
           'Email already registered, Please wait for approval or contact admin',
         );
       }
+    }
+  }
+
+  private async validateLoginAttemptLog(userId: string) {
+    try {
+      const failedLogin =
+        await this.userLogActivitiesService.getUserActivityByDescription(
+          userId,
+          'Invalid password',
+        );
+
+      if (failedLogin.totalItems >= 4) {
+        await this.userService.banUser(userId, userId);
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error validating login attempt log',
+        e.status || 500,
+      );
     }
   }
 }
