@@ -199,14 +199,12 @@ export class AuthService {
 
   async loginWithGoogle() {
     try {
-      const authorizeUrl = await this.googleAuthClient.generateAuthUrl({
+      return this.googleAuthClient.generateAuthUrl({
         access_type: 'offline',
         scope: ['email', 'profile'],
         prompt: 'consent',
         include_granted_scopes: true,
       });
-
-      return authorizeUrl;
     } catch (e) {
       throw new HttpException(
         e.message || 'Error when user try to login with google',
