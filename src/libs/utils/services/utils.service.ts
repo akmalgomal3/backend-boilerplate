@@ -62,6 +62,7 @@ export class UtilsService {
         return this.snakeToCamel(item)
       });
     } else if (obj !== null && typeof obj === 'object' && !this.isInstanceOf(obj, Date)) {
+      obj = obj?._doc || obj
       return Object.keys(obj).reduce((acc, key) => {
         const newKey = key == '_id' ? '_id' : this.camelCase(key);
         acc[newKey] = key == '_id' ? obj[key] : this.snakeToCamel(obj[key])

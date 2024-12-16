@@ -8,147 +8,194 @@ import { UserService } from 'src/users/services/user.service';
 import { JwtPayload } from 'src/common/types/jwt-payload.type';
 import { CreateUserLogActivityByUserDTO } from '../dto/create_user_log_activity_by_user.dto';
 import { UtilsService } from 'src/libs/utils/services/utils.service';
+import { UserActivity } from '../types/user_activitity.type';
 
 @Injectable()
 export class UserLogActivitiesService {
-    constructor(
-        private readonly userActivityRepository: UserLogActivitiesRepository, 
-        private readonly userService: UserService, 
-        private readonly utilsService: UtilsService
-    ) {}
+  constructor(
+    private readonly userActivityRepository: UserLogActivitiesRepository,
+    private readonly userService: UserService,
+    private readonly utilsService: UtilsService,
+  ) {}
 
-    /** 
-     TODO: 
-        - Token expired log
-    */
+  /** 
+    TODO: 
+      - Token expired log
+  */
 
-    async create(createUserLogActivitiyDTO: CreateUserLogActivityDTO){
-        try {
-            const createModel = this.utilsService.camelToSnake(createUserLogActivitiyDTO)
-            const result = await this.userActivityRepository.create(createModel) 
-            return result
-        } catch (e) {
-            throw e
-        }
+  async create(createUserLogActivitiyDTO: CreateUserLogActivityDTO): Promise<UserActivity> {
+    try {
+      const createModel = this.utilsService.camelToSnake(createUserLogActivitiyDTO);
+      const result = await this.userActivityRepository.create(createModel);
+      return this.utilsService.snakeToCamel(result);
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async createByUser(
+    user: JwtPayload,
+    createUserLogActivitiyByUserDTO: CreateUserLogActivityByUserDTO,
+  ): Promise<UserActivity>{
+    if (!user) {
+      return;
     }
 
-    async createByUser(user: JwtPayload, createUserLogActivitiyByUserDTO: CreateUserLogActivityByUserDTO){
-        if(!user){
-            return
-        }
-        
-        try {
-            if(!user?.userId && user?.username){
-                const { userId } = await this.userService.getUserByUsername(user.username)
-                user.userId = userId
-            }
-            
-            let {userId, username, deviceType, ipAddress} = user
-            let {method, url, path, params, statusCode, description} = createUserLogActivitiyByUserDTO
-            let {latitude, longitude} = this.utilsService.getGeoIp(ipAddress)
+    try {
+      if (!user?.userId && user?.username) {
+        const { userId } = await this.userService.getUserByUsername(
+          user.username,
+        );
+        user.userId = userId;
+      }
 
-            const page = this.mappingPageActivity(path)
-            const activityType = page.includes("auth") ? ActivityType.AUTH : ActivityType.ACTIVITY
+      let { userId, username, deviceType, ipAddress } = user;
+      let { method, url, path, params, statusCode, description } =
+        createUserLogActivitiyByUserDTO;
+      let { latitude, longitude } = this.utilsService.getGeoIp(ipAddress);
 
-            if(!description){
-                description = this.mappingDescriptionActivity({username, method, page, params})
-            }
+      const page = this.mappingPageActivity(path);
+      const activityType = page.includes('auth')
+        ? ActivityType.AUTH
+        : ActivityType.ACTIVITY;
 
-            let createDto: CreateUserLogActivityDTO = {
-               userId, 
-               username, 
-               activityType, 
-               method, 
-               path: url, 
-               statusCode,
-               description, 
-               device: {
-                type: deviceType, 
-                info: {
-                    ipAddress, 
-                    latitude, 
-                    longitude
-                }
-               }
-            }
+      if (!description) {
+        description = this.mappingDescriptionActivity({
+          username,
+          method,
+          page,
+          params,
+        });
+      }
 
-            if(page.includes('login')){
-                createDto.authDetails = {
-                    loginTime: new Date(), 
-                }
-            }
+      let createDto: CreateUserLogActivityDTO = {
+        userId,
+        username,
+        activityType,
+        method,
+        path: url,
+        statusCode,
+        description,
+        device: {
+          type: deviceType,
+          info: {
+            ipAddress,
+            latitude,
+            longitude,
+          },
+        },
+      };
 
-            return await this.create(createDto)
-        } catch (e) {
-            throw e
-        }
+      if (page.includes('login')) {
+        createDto.authDetails = {
+          loginTime: new Date(),
+        };
+      } else if (page.includes('logout')){
+        createDto.authDetails = {
+          logoutTime: new Date(),
+        };
+      }
+
+      return await this.create(createDto);
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async getUserActivityByDescription(
+    userId: string,
+    description: string = 'Invalid password',
+  ): Promise<{ data: UserActivity[], totalItems: number}> {
+    try {
+      const filter = {
+        ...(userId && { user_id: userId }),
+        ...(description && { description }),
+        is_deleted: false
+      };
+
+      const [data, totalItems] = await this.userActivityRepository.getByUserFilter(filter);
+      return { data: this.utilsService.snakeToCamel(data), totalItems };
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async UpdateUserByFilter(userId: string, description: string = 'Invalid password'){
+    try {
+      
+    } catch (error) {
+      
+    }
+  }
+
+  async deleteUserActivityByDescription(
+    userId: string,
+    description: string = 'Invalid password',
+  ): Promise<{ deletedNumber: number }> {
+    try {
+      const filter = {
+        ...(userId && { user_id: userId }),
+        ...(description && { description }),
+        is_deleted: false
+      };
+
+      const deletedCount = await this.userActivityRepository.softDeleteByUserFilter(filter);
+      return { deletedNumber: deletedCount };
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  mappingDescriptionActivity(
+    createDescriptionActivity: CreateDescriptionActivity,
+  ) {
+    const { username, method, page, params } = createDescriptionActivity;
+    const isAuth = page.includes('auth');
+    const action = this.mappingMethodActivity(method, isAuth);
+
+    let desc = `${username} ${action} ${page}`;
+
+    if (Object.keys(params).length > 0) {
+      for (const key in params) {
+        desc += ` with ${key} ${params[key]}`;
+      }
     }
 
-    async getUserActivityByDescription(userId: string, description: string = 'Invalid password'): Promise<{}>{
-        try {
-            const filter = {
-                ...(userId && { user_id: userId }),
-                ...(description && { description}),
-            }
-        
-            const [data, totalItems] = await this.userActivityRepository.getUserFilter(filter)
-            const dataCamelCase = this.utilsService.snakeToCamel(data)
-            return { data: dataCamelCase, totalItems }
-        } catch (e) {
-            throw e
-        }
-    }
+    return desc;
+  }
 
-    async deleteUserActivityByDescription(userId: string, description: string = 'Invalid password'){}
-
-    mappingDescriptionActivity(createDescriptionActivity: CreateDescriptionActivity){
-        const {username, method, page, params } = createDescriptionActivity
-        const isAuth = page.includes("auth")
-        const action = this.mappingMethodActivity(method, isAuth)
-
-        let desc = `${username} ${action} ${page}`
-
-        if(Object.keys(params).length > 0){
-            for (const key in params){
-                desc += ` with ${key} ${params[key]}`
-            }
+  mappingMethodActivity(method: string, isAuth: boolean) {
+    let action;
+    switch (true) {
+      case ActivityMethod.GET == method:
+        action = 'viewed';
+        break;
+      case ActivityMethod.POST == method:
+        action = 'created new';
+        if (isAuth) {
+          action = 'attemped to';
         }
 
-        return desc
+        break;
+      case ActivityMethod.PATCH == method:
+        action = 'updated';
+        break;
+      case ActivityMethod.DELETE == method:
+        action = 'deleted';
+        break;
+      default:
+        action = 'action unknown';
     }
 
-    mappingMethodActivity(method: string, isAuth: boolean){
-        let action
-        switch(true){
-            case ActivityMethod.GET == method: 
-                action = "viewed"
-                break;
-            case ActivityMethod.POST == method: 
-                action = "created new"
-                if(isAuth){
-                    action = "attemped to"
-                }
+    return action;
+  }
 
-                break;
-            case ActivityMethod.PATCH == method: 
-                action = "updated"
-                break;
-            case ActivityMethod.DELETE == method: 
-                action = "deleted"
-                break;
-            default:
-                action = "action unknown"
-        }
+  mappingPageActivity(path: string) {
+    let pathArray = path.split('/');
+    pathArray.shift(); // Remove the first of array cause it always be ''
 
-        return action
-    }
-    
-    mappingPageActivity(path: string){
-        let pathArray = path.split('/')
-        pathArray.shift() // Remove the first of array cause it always be ''
+    pathArray = pathArray.filter((segment) => !segment.includes(':'));
 
-        pathArray = pathArray.filter(segment => !segment.includes(':'))
-
-        return pathArray.join(" ").toLocaleLowerCase()
-    }
+    return pathArray.join(' ').toLocaleLowerCase();
+  }
 }

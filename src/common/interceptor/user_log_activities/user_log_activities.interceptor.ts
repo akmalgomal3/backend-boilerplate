@@ -1,13 +1,8 @@
 import { CallHandler, ExecutionContext, HttpStatus, Injectable, NestInterceptor } from "@nestjs/common";
-import { catchError, Observable, tap } from "rxjs";
+import { Observable, tap } from "rxjs";
 import { JwtPayload } from "src/common/types/jwt-payload.type";
-import { CreateUserLogActivityDTO } from "src/user_log_activities/dto/create_user_log_activity.dto";
 import { CreateUserLogActivityByUserDTO } from "src/user_log_activities/dto/create_user_log_activity_by_user.dto";
-import { ActivityType } from "src/user_log_activities/enum/user_log_activities.enum";
 import { UserLogActivitiesService } from "src/user_log_activities/service/user_log_activities.service";
-import { UserService } from "src/users/services/user.service";
-import { AuthorizeUserType } from "src/users/types/authorize_user.type";
-
 @Injectable()
 export class UserLogAcitivitiesInterceptor implements NestInterceptor{
     constructor(
