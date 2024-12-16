@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   UseInterceptors,
@@ -17,6 +18,7 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { User } from '../../common/decorators/user.decorator';
 import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { ApproveUserAuthDto } from '../dto/approve-user-auth.dto';
+import { UpdatePasswordDto } from '../dto/update-password.dto';
 
 // @ts-ignore
 @Controller('users')
@@ -67,6 +69,21 @@ export class UserController {
       approveDto.roleId,
     );
 
+    return {
+      data: result,
+    };
+  }
+
+  @ApiBearerAuth()
+  @Patch('/:userId/password')
+  async updatePassword(
+    @Body() updatePasswordDto: UpdatePasswordDto,
+    @User() user: JwtPayload,
+  ) {
+    const result = await this.userService.updatePassword(
+      user.userId,
+      updatePasswordDto,
+    );
     return {
       data: result,
     };
