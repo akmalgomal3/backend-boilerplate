@@ -78,7 +78,7 @@ export class AuthService {
         confirmPassword,
       );
 
-      await this.validateUsernameEmail(username, email);
+      await this.userService.validateUsernameEmail(username, email);
 
       const hashedPassword: string = await bcrypt.hash(decryptedPassword, 10);
 
@@ -128,7 +128,7 @@ export class AuthService {
         confirmPassword,
       );
 
-      await this.validateUsernameEmail(username, email, true);
+      await this.userService.validateUsernameEmail(username, email, true);
 
       const hashedPassword: string = await bcrypt.hash(decryptedPassword, 10);
 
@@ -389,47 +389,6 @@ export class AuthService {
     }
 
     return decryptedPassword;
-  }
-
-  private async validateUsernameEmail(
-    username: string,
-    email: string,
-    isApproval = false,
-  ) {
-    const [userByUsername, userByEmail] = await Promise.all([
-      this.userService.getUserByUsername(username),
-      this.userService.getUserByEmail(email),
-    ]);
-
-    if (userByUsername) {
-      throw new BadRequestException(
-        'Username is registered in our system, please use another username',
-      );
-    }
-
-    if (userByEmail) {
-      throw new BadRequestException(
-        'Email is registered in our system, please use another email',
-      );
-    }
-
-    if (isApproval) {
-      const userAuthByUsername =
-        await this.userService.getUserAuthByUsername(username);
-      const userAuthByEmail = await this.userService.getUserAuthByEmail(email);
-
-      if (userAuthByUsername) {
-        throw new BadRequestException(
-          'Username already registered, Please wait for approval or contact admin',
-        );
-      }
-
-      if (userAuthByEmail) {
-        throw new BadRequestException(
-          'Email already registered, Please wait for approval or contact admin',
-        );
-      }
-    }
   }
 
   private async validateLoginAttemptLog(userId: string) {

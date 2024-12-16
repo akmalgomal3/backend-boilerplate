@@ -17,6 +17,7 @@ import { GetUnapprovedUserDto } from '../dto/get-unapproved-user.dto';
 import * as bcrypt from 'bcrypt';
 import { UpdatePasswordDto } from '../dto/update-password.dto';
 import { UtilsService } from '../../libs/utils/services/utils.service';
+import { UpdateUserDto } from '../dto/update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -26,7 +27,7 @@ export class UserService {
     private utilsService: UtilsService,
   ) {}
 
-  async getUsers(dto: PaginationDto): Promise<PaginatedResponseDto<Users>> {
+  async getUsers(dto: PaginationDto): Promise<PaginatedResponseDto<Partial<Users>>> {
     try {
       const { page = 1, limit = 10 } = dto;
       const skip = (page - 1) * limit;
@@ -51,7 +52,7 @@ export class UserService {
     }
   }
 
-  async getUser(userId: string) {
+  async getUser(userId: string): Promise<Users> {
     try {
       const result = await this.userRepository.getUserById(userId);
       if (!result) {
@@ -220,6 +221,38 @@ export class UserService {
     }
   }
 
+  async updateUserByUserId(updateUserDto: UpdateUserDto): Promise<Users>{
+    try { 
+      const getUserUpdatedById = await this.getUser(updateUserDto.updatedBy)
+      if(!getUserUpdatedById){
+        throw new HttpException('User updated not found', HttpStatus.NOT_FOUND)
+      }
+
+      const getUserById = await this.getUser(updateUserDto.userId)
+      if(!getUserById){
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND)
+      }
+
+      if(getUserById.username != updateUserDto.username){
+        await this.validateUsernameEmail(updateUserDto.username)
+      }
+
+      const getRoleByRoleId = await this.rolesService.getRoleById(updateUserDto.roleId)
+      if(!getRoleByRoleId){
+        throw new HttpException('Role not found', HttpStatus.NOT_FOUND)
+      }
+
+      const { roleId, userId, ...updatedDto } = updateUserDto;
+      const updateUser = await this.userRepository.updateUserById(userId, updatedDto, getRoleByRoleId)
+      return updateUser
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error update user',
+        e.status || 500,
+      );
+    }
+  }
+
   async updatePassword(userId: string, updatePasswordDto: UpdatePasswordDto) {
     try {
       const { oldPassword, newPassword, confirmPassword } = updatePasswordDto;
@@ -254,6 +287,23 @@ export class UserService {
     }
   }
 
+  async deleteUserByUserId(userId: string): Promise<Number>{
+    try {
+      /*
+        TO DO: 
+          - Delete user activity with user relations
+      */
+
+      const deleteUser = await this.userRepository.deleteByUserId(userId)
+      return deleteUser
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error delete user',
+        e.status || 500,
+      );
+    }
+  }
+
   private validatePassword(
     newPassword: string,
     confirmPassword: string,
@@ -274,5 +324,46 @@ export class UserService {
     }
 
     return decryptedPassword;
+  }
+
+  async validateUsernameEmail(
+    username: string,
+    email: string | null = null,
+    isApproval = false,
+  ) {
+    const [userByUsername, userByEmail] = await Promise.all([
+      this.getUserByUsername(username),
+      this.getUserByEmail(email),
+    ]);
+
+    if (username && userByUsername) {
+      throw new BadRequestException(
+        'Username is registered in our system, please use another username',
+      );
+    }
+
+    if (email && userByEmail) {
+      throw new BadRequestException(
+        'Email is registered in our system, please use another email',
+      );
+    }
+
+    if (isApproval) {
+      const userAuthByUsername =
+        await this.getUserAuthByUsername(username);
+      const userAuthByEmail = await this.getUserAuthByEmail(email);
+
+      if (userAuthByUsername) {
+        throw new BadRequestException(
+          'Username already registered, Please wait for approval or contact admin',
+        );
+      }
+
+      if (userAuthByEmail) {
+        throw new BadRequestException(
+          'Email already registered, Please wait for approval or contact admin',
+        );
+      }
+    }
   }
 }
