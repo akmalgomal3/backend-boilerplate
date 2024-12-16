@@ -17,6 +17,7 @@ import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { SessionService } from '../../libs/session/service/session.service';
 import { DeviceType } from '../../common/enums/device-type.enum';
 import { UserLogActivitiesService } from '../../user_log_activities/service/user_log_activities.service';
+import { RolesService } from '../../roles/service/roles.service';
 
 @Injectable()
 export class AuthService {
@@ -30,6 +31,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly sessionService: SessionService,
     private readonly userLogActivitiesService: UserLogActivitiesService,
+    private readonly roleService: RolesService,
   ) {}
 
   generatePassword(generatePasswordDto: GeneratePasswordDto) {
@@ -63,6 +65,13 @@ export class AuthService {
         fullName,
         email,
       } = registerDto;
+
+      if (roleId) {
+        const checkRole = await this.roleService.getRoleById(roleId);
+        if (!checkRole) {
+          throw new BadRequestException('Role id not found');
+        }
+      }
 
       const decryptedPassword = this.validateConfirmPassword(
         password,
