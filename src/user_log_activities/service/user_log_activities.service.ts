@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { UserLogActivitiesRepository } from '../repository/user_log_activities.repository';
 import { UserLogActivities } from '../entity/user_log_activities.entity';
 import { CreateUserLogActivityDTO } from '../dto/create_user_log_activity.dto';
@@ -9,6 +9,11 @@ import { JwtPayload } from 'src/common/types/jwt-payload.type';
 import { CreateUserLogActivityByUserDTO } from '../dto/create_user_log_activity_by_user.dto';
 import { UtilsService } from 'src/libs/utils/services/utils.service';
 import { UserActivity } from '../types/user_activitity.type';
+import { GetUserActivityDto } from '../dto/get_user_activity_current.dto';
+import { PaginatedResponseDto } from 'src/common/dto/pagination.dto';
+import { ObjectId } from 'mongodb';
+import mongoose from 'mongoose';
+import { update } from 'lodash';
 
 @Injectable()
 export class UserLogActivitiesService {
@@ -29,7 +34,7 @@ export class UserLogActivitiesService {
       const result = await this.userActivityRepository.create(createModel);
       return this.utilsService.snakeToCamel(result);
     } catch (e) {
-      throw e;
+      throw new InternalServerErrorException(e?.message)
     }
   }
 
@@ -37,21 +42,22 @@ export class UserLogActivitiesService {
     user: JwtPayload,
     createUserLogActivitiyByUserDTO: CreateUserLogActivityByUserDTO,
   ): Promise<UserActivity>{
-    if (!user) {
-      return;
-    }
-
     try {
+      if (!user || !user?.username) {
+        return;
+      }
+
       if (!user?.userId && user?.username) {
-        const { userId } = await this.userService.getUserByUsername(
-          user.username,
-        );
-        user.userId = userId;
+        const userData = await this.userService.getUserByUsername(user.username);
+        if(!userData?.userId){
+          return;
+        }
+
+        user.userId = userData.userId;
       }
 
       let { userId, username, deviceType, ipAddress } = user;
-      let { method, url, path, params, statusCode, description } =
-        createUserLogActivitiyByUserDTO;
+      let { method, url, path, params, statusCode, description } = createUserLogActivitiyByUserDTO;
       let { latitude, longitude } = this.utilsService.getGeoIp(ipAddress);
 
       const page = this.mappingPageActivity(path);
@@ -86,25 +92,93 @@ export class UserLogActivitiesService {
         },
       };
 
-      if (page.includes('login')) {
+      if (page.includes("auth") && page.includes('login')) {
         createDto.authDetails = {
           loginTime: new Date(),
         };
-      } else if (page.includes('logout')){
+      } else if (page.includes("auth") && page.includes('logout')){
         createDto.authDetails = {
           logoutTime: new Date(),
         };
+
+        await this.updateActivityLogoutTimeByUser(userId)
       }
 
       return await this.create(createDto);
     } catch (e) {
-      throw e;
+      throw new InternalServerErrorException(e?.message)
+    }
+  }
+
+  async getUserActivityCurrentUser(userId: string = null, getUserActivityCurrentUserDto: GetUserActivityDto): Promise<PaginatedResponseDto<UserActivity>>{
+    try {
+      if(!userId){
+        throw new BadRequestException('User id is required')
+      }
+
+      const {page = 1, limit = 10 } = getUserActivityCurrentUserDto
+      const skip = (page - 1) * limit;
+
+      const { activityType, search, startDate, endDate} = getUserActivityCurrentUserDto
+      const filter: any = {
+        ...(userId && { user_id: userId }),
+        ...(search && { description: { $regex: search, $options: 'i' } }),
+        ...(activityType && {activity_type: activityType}),
+        ...(startDate && { timestamp: { $gte: new Date(startDate) } }),
+        ...(endDate && { timestamp: { $lte: new Date(endDate) }}),
+        is_deleted: false
+      };
+
+      const [data, totalItems] = await this.userActivityRepository.getUserActivitiesByCurrentUser(skip, limit, filter);
+      const totalPages = Math.ceil(totalItems / limit);
+      
+      return {
+        data: this.utilsService.snakeToCamel(data), 
+        metadata: {
+          page: Number(page),
+          limit: Number(limit),
+          totalPages: Number(totalPages),
+          totalItems: Number(totalItems),
+        },
+      }
+    } catch (e) {
+      throw new InternalServerErrorException(e?.message)
+    }
+  }
+
+  async getUsersLoggedIn(getUserActivityCurrentUserDto: GetUserActivityDto): Promise<PaginatedResponseDto<UserActivity>>{
+    try {
+      const {page = 1, limit = 10, search, statusCode = "200", startDate, endDate } = getUserActivityCurrentUserDto
+      const skip = (page - 1) * limit;
+
+      console.log(startDate, endDate, "ends");
+      
+      const filter: any = {
+        ...(statusCode && { status_code: statusCode }),
+        ...(search && { username: { $regex: search, $options: 'i' } }), 
+        ...((startDate && endDate) && { timestamp: { $gte: new Date(startDate), $lte: new Date(endDate)} }),
+      };
+
+      const [data, totalItems] = await this.userActivityRepository.getUserActivityLoggedIn(Number(skip), Number(limit), filter);
+      const totalPages = Math.ceil(totalItems / limit);
+
+      return {
+        data: this.utilsService.snakeToCamel(data), 
+        metadata: {
+          page: Number(page),
+          limit: Number(limit),
+          totalPages: Number(totalPages),
+          totalItems: Number(totalItems),
+        },
+      }
+    } catch (e) {
+      throw new InternalServerErrorException(e?.message)
     }
   }
 
   async getUserActivityByDescription(
     userId: string,
-    description: string = 'Invalid password',
+    description: string = 'Invalid password'
   ): Promise<{ data: UserActivity[], totalItems: number}> {
     try {
       const filter = {
@@ -113,18 +187,32 @@ export class UserLogActivitiesService {
         is_deleted: false
       };
 
-      const [data, totalItems] = await this.userActivityRepository.getByUserFilter(filter);
+      const [data, totalItems] = await this.userActivityRepository.getUserActivityByFilter(filter);
       return { data: this.utilsService.snakeToCamel(data), totalItems };
     } catch (e) {
       throw e;
     }
   }
 
-  async UpdateUserByFilter(userId: string, description: string = 'Invalid password'){
+  async updateActivityLogoutTimeByUser(userId: string){
     try {
-      
-    } catch (error) {
-      
+      const filter: any = {
+        user_id: userId ,
+        path: "/auth/login",
+        status_code: "200",
+        description: { $regex: 'attemped to auth login', $options: 'i' },
+        timestamp: {
+          $gte: new Date(new Date().setHours(0, 0, 0, 0)),
+          $lte: new Date(new Date().setHours(23, 59, 59, 999)) 
+        },
+        is_deleted: false
+      };
+
+      const [ getActivityLoggedIn ] : any  = await this.userActivityRepository.getUserActivityByFilter(filter)
+      const updatedCount = await this.userActivityRepository.updateUserLogoutTimeByUser(getActivityLoggedIn[0]._id)
+      return updatedCount
+    } catch (e) {
+      throw new InternalServerErrorException(e?.message)
     }
   }
 
@@ -139,10 +227,10 @@ export class UserLogActivitiesService {
         is_deleted: false
       };
 
-      const deletedCount = await this.userActivityRepository.softDeleteByUserFilter(filter);
+      const deletedCount = await this.userActivityRepository.softDeleteUserActivityByFilter(filter);
       return { deletedNumber: deletedCount };
     } catch (e) {
-      throw e;
+      throw new InternalServerErrorException(e?.message)
     }
   }
 

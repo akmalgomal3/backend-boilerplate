@@ -1,8 +1,7 @@
-import { Body, Controller, Delete, Get, HttpException, HttpStatus, ParseBoolPipe, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, ParseBoolPipe, ParseEnumPipe, ParseIntPipe, Post, Query, Req } from '@nestjs/common';
 import { UserLogActivitiesService } from '../service/user_log_activities.service';
 import { CreateUserLogActivityDTO } from '../dto/create_user_log_activity.dto';
-import { ConfigService } from '@nestjs/config';
-import { config } from 'process';
+import { ActivityType } from '../enum/user_log_activities.enum';
 
 @Controller('/user-log-activities')
 export class UserLogActivitiesController {
@@ -10,25 +9,37 @@ export class UserLogActivitiesController {
         private userLogActivitiesService: UserLogActivitiesService,
     ){}
 
-    @Post()
-    async create(@Body() createUserLogActivity: CreateUserLogActivityDTO){
-        const result = await this.userLogActivitiesService.create(createUserLogActivity)
-        return { data: result }
-    }
-
-    @Get()
-    async getUserActivityDescription(@Req() req: any, @Query('description') description: string ){
+    @Get('/user')
+    async getUserActivitiesLoggedInUser(
+        @Req() req: any, 
+        @Query('page') page: number, 
+        @Query('limit') limit: number,
+        @Query('search') search: string,
+        @Query('activityType') activityType: ActivityType,
+        @Query('startDate') startDate: Date, 
+        @Query('endDate') endDate: Date, 
+    ){
         const user = req?.user
+        const result = await this.userLogActivitiesService.getUserActivityCurrentUser(user.userId, {page, limit, search, activityType, startDate, endDate})
         return {
-            data: await this.userLogActivitiesService.getUserActivityByDescription(user?.userId, description)
+            data: result.data, 
+            metadata: result.metadata
         }
     }
 
-    @Delete()
-    async deleteUserActivityDescription(@Req() req: any, @Query('description') description: string ){
-        const user = req?.user
+    @Get('/logged-in')
+    async getActivityLoggedInUsers(
+        @Query('page') page: number, 
+        @Query('limit') limit: number,
+        @Query('search') search: string,
+        @Query('statusCode') statusCode: string,
+        @Query('startDate') startDate: Date, 
+        @Query('endDate') endDate: Date, 
+    ){
+        const result = await this.userLogActivitiesService.getUsersLoggedIn({page, limit, search, statusCode, startDate, endDate})
         return {
-            data: await this.userLogActivitiesService.deleteUserActivityByDescription(user?.userId, description)
+            data: result.data, 
+            metadata: result.metadata
         }
     }
 }
