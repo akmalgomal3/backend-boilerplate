@@ -1,5 +1,5 @@
 import { CallHandler, ExecutionContext, HttpStatus, Injectable, NestInterceptor } from "@nestjs/common";
-import { Observable, tap } from "rxjs";
+import { catchError, map, Observable, throwError } from "rxjs";
 import { JwtPayload } from "src/common/types/jwt-payload.type";
 import { CreateUserLogActivityByUserDTO } from "src/user_log_activities/dto/create_user_log_activity_by_user.dto";
 import { UserLogActivitiesService } from "src/user_log_activities/service/user_log_activities.service";
@@ -16,13 +16,14 @@ export class UserLogAcitivitiesInterceptor implements NestInterceptor{
 
         let user: JwtPayload = req?.user
         const url = req?.url
-
+        const path = req?.route?.path
+        
         return next.handle().pipe(
-            tap(async (data) => {
-                if(url.includes("register")){
-                    user = data?.data
-                } else if (url.includes("login")){
-                    user = req.body
+            map(async (data) => {
+                if(path.includes("register") && path.includes("auth")){
+                    user = data?.data || null
+                } else if (path.includes("login") && path.includes("auth")){
+                    user = req.body || null
                 }
 
                 const userLogActivity :CreateUserLogActivityByUserDTO = {
@@ -34,9 +35,9 @@ export class UserLogAcitivitiesInterceptor implements NestInterceptor{
                 }
 
                 await this.userLogActivitiesService.createByUser(user, userLogActivity)
-            }), 
+                return data
+            })
         )
-
     }
 
 }

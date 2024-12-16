@@ -11,7 +11,7 @@ export class UserLogActivities {
   username: string;
 
   @Prop({ required: true, enum: ActivityType })
-  activity_type: string;
+  activity_type: ActivityType;
 
   @Prop({ required: true, enum: ActivityMethod })
   method: string;
@@ -40,8 +40,8 @@ export class UserLogActivities {
 
   @Prop({ type: Object })
   auth_details?: {
-    login_time: Date | null;
-    logout_time: Date | null;
+    login_time?: Date | null;
+    logout_time?: Date | null;
   } | null;
 
   @Prop({ default: false })
