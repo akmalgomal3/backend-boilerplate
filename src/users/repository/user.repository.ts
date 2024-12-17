@@ -1,10 +1,12 @@
-import { HttpException, Inject, Injectable } from '@nestjs/common';
+import { HttpException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource, Like, Repository } from 'typeorm';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { Users } from '../entity/user.entity';
 import { UsersAuth } from '../entity/user-auth.entity';
 import { format } from 'date-fns';
+import { Roles } from 'src/roles/entity/roles.entity';
+import { UpdateUserDto } from '../dto/update-user.dto';
 
 @Injectable()
 export class UserRepository {
@@ -22,6 +24,8 @@ export class UserRepository {
   async getUsers(skip: number, take: number): Promise<[Users[], number]> {
     try {
       const result = await this.repository.findAndCount({
+        select: { userId: true, username: true, email: true, fullName: true, phoneNumber: true, role: { roleName: true } },
+        relations: {role: true},
         skip,
         take,
         order: {
@@ -426,6 +430,36 @@ export class UserRepository {
     } catch (error) {
       throw new HttpException(
         error.message || 'Error updating user password',
+        error.status || 500,
+      );
+    }
+  }
+
+  async updateUserById(userId: string, updateUserDto: UpdateUserDto, role: Roles): Promise<Users>{
+    try {
+      const dto =  {
+        ...updateUserDto, 
+        role: role, 
+        updatedAt: new Date()
+      }
+
+      await this.repository.update(userId, dto)
+      return await this.getUserById(userId)
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error updating user',
+        error.status || 500,
+      );
+    }
+  }
+
+  async deleteByUserId(userId: string): Promise<Number> {
+    try {
+      const deleteUser = await this.repository.delete(userId)
+      return deleteUser?.affected
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error delete user',
         error.status || 500,
       );
     }

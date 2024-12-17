@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -19,6 +20,7 @@ import { User } from '../../common/decorators/user.decorator';
 import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { ApproveUserAuthDto } from '../dto/approve-user-auth.dto';
 import { UpdatePasswordDto } from '../dto/update-password.dto';
+import { UpdateUserDto } from '../dto/update-user.dto';
 
 // @ts-ignore
 @Controller('users')
@@ -36,9 +38,9 @@ export class UserController {
   }
 
   @Get('/:userId')
-  async getUser(@Param('userId') userId: string) {
+  async getUser(@Param('userId', ParseUUIDPipe) userId: string) {
     const result = await this.userService.getUser(userId);
-    return result;
+    return { data: result };
   }
 
   @ApiBearerAuth()
@@ -84,6 +86,38 @@ export class UserController {
       user.userId,
       updatePasswordDto,
     );
+    return {
+      data: result,
+    };
+  }
+
+  @ApiBearerAuth()
+  @Patch('/:userId')
+  async updateUser(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Body() updateUserDto: UpdateUserDto,
+    @User() user: JwtPayload,
+  ) {
+    const result = await this.userService.updateUserByUserId(
+      {
+        ...updateUserDto,
+        userId: userId,
+        updatedBy: user?.userId, 
+      }
+    );
+
+    return {
+      data: result,
+    };
+  }
+
+  @ApiBearerAuth()
+  @Delete('/:userId')
+  async deleteUser(
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ) {
+    const result = await this.userService.deleteUserByUserId(userId);
+
     return {
       data: result,
     };
