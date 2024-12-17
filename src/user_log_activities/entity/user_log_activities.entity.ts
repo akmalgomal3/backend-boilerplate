@@ -47,7 +47,7 @@ export class UserLogActivities {
   @Prop({ default: false })
   is_deleted: boolean;
 
-  @Prop({ required: true, default: new Date()})
+  @Prop({ required: true, default: Date.now })
   timestamp: Date;
 }
 
