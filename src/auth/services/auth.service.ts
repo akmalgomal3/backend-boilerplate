@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   HttpException,
+  HttpStatus,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -22,12 +23,18 @@ import { RolesService } from '../../roles/service/roles.service';
 import { EmailService } from '../../libs/email/services/email.service';
 import { SessionTimeoutException } from '../../common/exceptions/http-exception.filter';
 import { UsersAuth } from '../../users/entity/user-auth.entity';
+import { OAuth2Client } from 'google-auth-library';
+import { google } from 'googleapis';
+import { ConfigService } from '@nestjs/config';
+import e from 'express';
 
 @Injectable()
 export class AuthService {
   private strongPassword: RegExp = new RegExp(
     /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,12}$/,
   );
+
+  private googleAuthClient: OAuth2Client;
 
   constructor(
     private readonly utils: UtilsService,
@@ -37,7 +44,14 @@ export class AuthService {
     private readonly userLogActivitiesService: UserLogActivitiesService,
     private readonly roleService: RolesService,
     private readonly emailService: EmailService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.googleAuthClient = new OAuth2Client(
+      this.configService.get('GOOGLE_CLIENT_ID'),
+      this.configService.get('GOOGLE_CLIENT_SECRET'),
+      this.configService.get('GOOGLE_REDIRECT_URI'),
+    );
+  }
 
   generatePassword(generatePasswordDto: GeneratePasswordDto) {
     try {
@@ -176,7 +190,7 @@ export class AuthService {
         throw new BadRequestException('username not found');
       }
 
-      await this. validateUser(password, user, deviceType);
+      await this.validateUser(password, user, deviceType);
 
       const payload: JwtPayload = {
         userId: user.userId,
@@ -220,6 +234,115 @@ export class AuthService {
       throw new HttpException(
         e.message || 'Error logging in user',
         e.status || 500,
+      );
+    }
+  }
+
+  async loginWithGoogle(ipAddress: string, deviceType: string) {
+    try {
+      const state: string = this.utils.encrypt(
+        JSON.stringify({
+          ipAddress,
+          deviceType,
+        }),
+      );
+
+      return this.googleAuthClient.generateAuthUrl({
+        access_type: 'offline',
+        scope: ['email', 'profile'],
+        prompt: 'consent',
+        include_granted_scopes: true,
+        state,
+      });
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error when user try to login with google',
+        e.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async handleGoogleLoginCallback(code: string, state: string) {
+    try {
+      const { ipAddress, deviceType } = JSON.parse(this.utils.decrypt(state));
+      const { tokens } = await this.googleAuthClient.getToken(code);
+      this.googleAuthClient.setCredentials(tokens);
+
+      const oauth2 = google.oauth2({
+        auth: this.googleAuthClient,
+        version: 'v2',
+      });
+
+      const { data } = await oauth2.userinfo.get();
+
+      const user = await this.userService.getUserByEmail(data.email);
+
+      if (!user) {
+        throw new BadRequestException('User not found');
+      }
+
+      const isAttemptValid = await this.validateLoginAttemptLog(user.userId);
+      if (!isAttemptValid) {
+        throw new UnauthorizedException(
+          'Failed to login due to 5 failed attempt !!',
+        );
+      }
+
+      if (!user.active) {
+        throw new BadRequestException('Account is not active');
+      }
+
+      const isSessionValid = await this.validateUserSession(
+        user.userId,
+        deviceType,
+      );
+      if (!isSessionValid) {
+        throw new UnauthorizedException(
+          'There is an active session for this user, please logout first !!',
+        );
+      }
+
+      const payload: JwtPayload = {
+        userId: user.userId,
+        username: user.username,
+        email: user.email,
+        roleName: user.role.roleName,
+        roleType: user.role.roleType,
+        ipAddress,
+        deviceType,
+      };
+
+      const accessToken = await this.jwtService.signAsync(payload, {
+        expiresIn: '1h',
+      });
+      const refreshToken = await this.jwtService.signAsync(payload, {
+        expiresIn: '3d',
+      });
+
+      await Promise.all([
+        this.sessionService.createSession(
+          `session:${user.userId}:${deviceType}`,
+          accessToken,
+          15 * 60,
+        ),
+        this.sessionService.createSession(
+          `refresh:${user.userId}:${deviceType}`,
+          refreshToken,
+          3 * 24 * 60 * 60, // 3 days
+        ),
+        this.userLogActivitiesService.deleteUserActivityByDescription(
+          user.userId,
+        ),
+      ]);
+
+      return {
+        accessToken,
+        refreshToken,
+      };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error when user try to login with google',
+        e.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -455,12 +578,6 @@ export class AuthService {
     deviceType: DeviceType,
   ) {
     try {
-      if(!user.active){
-        throw new BadRequestException(
-          'Account is not active',
-        );
-      }
-
       if (!password.startsWith('U2F')) {
         throw new BadRequestException(
           'Invalid password format, must be encrypted',
@@ -472,6 +589,10 @@ export class AuthService {
         throw new UnauthorizedException(
           'Failed to login due to 5 failed attempt !!',
         );
+      }
+
+      if (!user.active) {
+        throw new BadRequestException('Account is not active');
       }
 
       const isPasswordValid = await this.validateUserPassword(password, user);

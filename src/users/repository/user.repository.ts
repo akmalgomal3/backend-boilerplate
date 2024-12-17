@@ -220,9 +220,18 @@ export class UserRepository {
                      FROM users
                               LEFT JOIN roles ON users.role_id = roles.role_id
                      WHERE email = $1`;
-      const data = await this.repository.query(query, [email]);
+      const [user] = await this.repository.query(query, [email]);
 
-      return data[0];
+      return user
+        ? {
+            ...user,
+            role: {
+              roleId: user.roleId,
+              roleName: user.roleName,
+              roleType: user.roleType,
+            },
+          }
+        : null;
     } catch (error) {
       throw new HttpException(
         error.message || 'Error getting user by email',
@@ -436,14 +445,22 @@ export class UserRepository {
     }
   }
 
-  async banUser(userId: string, bannerId?: string, isActive: boolean = false): Promise<void> {
+  async banUser(
+    userId: string,
+    bannerId?: string,
+    isActive: boolean = false,
+  ): Promise<void> {
     try {
       const query = `UPDATE users
                      SET active     = $3,
                          updated_by = $1,
                          updated_at = NOW()
                      WHERE user_id = $2`;
-      await this.repository.query(query, [bannerId || userId, userId, isActive]);
+      await this.repository.query(query, [
+        bannerId || userId,
+        userId,
+        isActive,
+      ]);
     } catch (error) {
       throw new HttpException(
         error.message || 'Error banning user',
