@@ -436,14 +436,14 @@ export class UserRepository {
     }
   }
 
-  async banUser(userId: string, bannerId?: string): Promise<void> {
+  async banUser(userId: string, bannerId?: string, isActive: boolean = false): Promise<void> {
     try {
       const query = `UPDATE users
-                     SET active     = false,
+                     SET active     = $3,
                          updated_by = $1,
                          updated_at = NOW()
                      WHERE user_id = $2`;
-      await this.repository.query(query, [bannerId || userId, userId]);
+      await this.repository.query(query, [bannerId || userId, userId, isActive]);
     } catch (error) {
       throw new HttpException(
         error.message || 'Error banning user',

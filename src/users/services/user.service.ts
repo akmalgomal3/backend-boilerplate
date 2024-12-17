@@ -1,7 +1,9 @@
 import {
   BadRequestException,
+  forwardRef,
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -18,11 +20,14 @@ import * as bcrypt from 'bcrypt';
 import { UpdatePasswordDto } from '../dto/update-password.dto';
 import { UtilsService } from '../../libs/utils/services/utils.service';
 import { UpdateUserDto } from '../dto/update-user.dto';
+import { UserLogActivitiesService } from 'src/user_log_activities/service/user_log_activities.service';
 
 @Injectable()
 export class UserService {
   constructor(
     private userRepository: UserRepository,
+    @Inject(forwardRef(() => UserLogActivitiesService))
+    private userLogActivitiesService: UserLogActivitiesService,
     private rolesService: RolesService,
     private utilsService: UtilsService,
   ) {}
@@ -259,6 +264,25 @@ export class UserService {
         e.status || 500,
       );
     }
+  }
+
+  async updateBanUser(userId: string, bannerId: string, isActive: boolean): Promise<Users>{
+    try {
+      await this.userRepository.banUser(userId, bannerId, isActive)
+
+      if(isActive){
+        await this.userLogActivitiesService.deleteUserActivityByDescription(
+          userId
+        )
+      }
+      return this.getUser(userId)
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error update ban user ',
+        e.status || 500,
+      );
+    }
+
   }
 
   async updatePassword(userId: string, updatePasswordDto: UpdatePasswordDto) {
