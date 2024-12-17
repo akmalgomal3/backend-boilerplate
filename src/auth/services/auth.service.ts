@@ -2,6 +2,7 @@ import {
   BadRequestException,
   HttpException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { UtilsService } from '../../libs/utils/services/utils.service';
@@ -376,6 +377,10 @@ export class AuthService {
       const userAuth = await this.userService.getUserAuthById(
         tokenPayload.userAuthId,
       );
+
+      if (!userAuth) {
+        throw new NotFoundException('User auth not found');
+      }
 
       await this.userService.validateUsernameEmail(
         userAuth.username,
