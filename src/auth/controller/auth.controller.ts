@@ -8,6 +8,7 @@ import { User } from '../../common/decorators/user.decorator';
 import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
+import { LoginGoogleDto } from '../dto/login-google.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -71,6 +72,33 @@ export class AuthController {
   @Post('/login')
   async login(@Body() loginDto: LoginDto) {
     const data = await this.authService.login(loginDto);
+
+    return {
+      data,
+    };
+  }
+
+  @Public()
+  @HttpCode(200)
+  @Post('/login-google')
+  async loginGoogle(@Body() loginDto: LoginGoogleDto) {
+    const data = await this.authService.loginWithGoogle(
+      loginDto.ipAddress,
+      loginDto.deviceType,
+    );
+
+    return {
+      data,
+    };
+  }
+
+  @Public()
+  @Get('/google/callback')
+  async googleCallback(
+    @Query('code') code: string,
+    @Query('state') state: string,
+  ) {
+    const data = await this.authService.handleGoogleLoginCallback(code, state);
 
     return {
       data,
