@@ -15,6 +15,7 @@ import { AuthGuard } from './common/guard/auth.guard';
 import { RolesGuard } from './common/guard/roles.guard';
 import { FeaturesModule } from './features/features.module';
 import { MenusModule } from './menus/menus.module';
+import { EmailModule } from './libs/email/email.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { MenusModule } from './menus/menus.module';
     JwtModule,
     FeaturesModule,
     MenusModule,
+    EmailModule,
   ],
   controllers: [],
   providers: [
