@@ -128,7 +128,7 @@ export class UserService {
           ...createUserDto,
           roleId,
         },
-        !!createUserDto.roleId,
+        true,
       );
     } catch (error) {
       throw new HttpException(

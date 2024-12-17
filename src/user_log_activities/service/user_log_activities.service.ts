@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { UserLogActivitiesRepository } from '../repository/user_log_activities.repository';
 import { UserLogActivities } from '../entity/user_log_activities.entity';
 import { CreateUserLogActivityDTO } from '../dto/create_user_log_activity.dto';
@@ -34,7 +34,10 @@ export class UserLogActivitiesService {
       const result = await this.userActivityRepository.create(createModel);
       return this.utilsService.snakeToCamel(result);
     } catch (e) {
-      throw new InternalServerErrorException(e?.message)
+      throw new HttpException(
+        e.message || 'Error create user log activity',
+        e.status || 500,
+      );
     }
   }
 
@@ -106,7 +109,10 @@ export class UserLogActivitiesService {
 
       return await this.create(createDto);
     } catch (e) {
-      throw new InternalServerErrorException(e?.message)
+      throw new HttpException(
+        e.message || 'Error create user log by user',
+        e.status || 500,
+      );
     }
   }
 
@@ -124,8 +130,7 @@ export class UserLogActivitiesService {
         ...(userId && { user_id: userId }),
         ...(search && { description: { $regex: search, $options: 'i' } }),
         ...(activityType && {activity_type: activityType}),
-        ...(startDate && { timestamp: { $gte: new Date(startDate) } }),
-        ...(endDate && { timestamp: { $lte: new Date(endDate) }}),
+        ...((startDate && endDate) && { timestamp: { $gte: new Date(startDate), $lte: new Date(endDate) } }),
         is_deleted: false
       };
 
@@ -142,7 +147,10 @@ export class UserLogActivitiesService {
         },
       }
     } catch (e) {
-      throw new InternalServerErrorException(e?.message)
+      throw new HttpException(
+        e.message || 'Error get user log activity by current user',
+        e.status || 500,
+      );
     }
   }
 
@@ -159,7 +167,7 @@ export class UserLogActivitiesService {
         ...((startDate && endDate) && { timestamp: { $gte: new Date(startDate), $lte: new Date(endDate)} }),
       };
 
-      const [data, totalItems] = await this.userActivityRepository.getUserActivityLoggedIn(Number(skip), Number(limit), filter);
+      const [data, totalItems] = await this.userActivityRepository.getUserActivityLoggedInUser(Number(skip), Number(limit), filter);
       const totalPages = Math.ceil(totalItems / limit);
 
       return {
@@ -172,7 +180,10 @@ export class UserLogActivitiesService {
         },
       }
     } catch (e) {
-      throw new InternalServerErrorException(e?.message)
+      throw new HttpException(
+        e.message || 'Error get user log list user logged in',
+        e.status || 500,
+      );
     }
   }
 
@@ -190,7 +201,10 @@ export class UserLogActivitiesService {
       const [data, totalItems] = await this.userActivityRepository.getUserActivityByFilter(filter);
       return { data: this.utilsService.snakeToCamel(data), totalItems };
     } catch (e) {
-      throw e;
+      throw new HttpException(
+        e.message || 'Error get user activity by description',
+        e.status || 500,
+      );
     }
   }
 
@@ -212,7 +226,10 @@ export class UserLogActivitiesService {
       const updatedCount = await this.userActivityRepository.updateUserLogoutTimeByUser(getActivityLoggedIn[0]._id)
       return updatedCount
     } catch (e) {
-      throw new InternalServerErrorException(e?.message)
+      throw new HttpException(
+        e.message || 'Error update user log activity by description',
+        e.status || 500,
+      );
     }
   }
 
@@ -230,7 +247,10 @@ export class UserLogActivitiesService {
       const deletedCount = await this.userActivityRepository.softDeleteUserActivityByFilter(filter);
       return { deletedNumber: deletedCount };
     } catch (e) {
-      throw new InternalServerErrorException(e?.message)
+      throw new HttpException(
+        e.message || 'Error delete user log activity by description',
+        e.status || 500,
+      );
     }
   }
 

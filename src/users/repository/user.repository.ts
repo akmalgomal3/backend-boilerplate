@@ -390,7 +390,7 @@ export class UserRepository {
 
       await queryRunner.commitTransaction();
 
-      return newUser;
+      return newUser[0];
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw new HttpException(
