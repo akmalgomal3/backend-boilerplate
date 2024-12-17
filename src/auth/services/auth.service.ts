@@ -18,6 +18,9 @@ import { SessionService } from '../../libs/session/service/session.service';
 import { DeviceType } from '../../common/enums/device-type.enum';
 import { UserLogActivitiesService } from '../../user_log_activities/service/user_log_activities.service';
 import { RolesService } from '../../roles/service/roles.service';
+import { EmailService } from '../../libs/email/services/email.service';
+import { SessionTimeoutException } from '../../common/exceptions/http-exception.filter';
+import { UsersAuth } from '../../users/entity/user-auth.entity';
 
 @Injectable()
 export class AuthService {
@@ -32,6 +35,7 @@ export class AuthService {
     private readonly sessionService: SessionService,
     private readonly userLogActivitiesService: UserLogActivitiesService,
     private readonly roleService: RolesService,
+    private readonly emailService: EmailService,
   ) {}
 
   generatePassword(generatePasswordDto: GeneratePasswordDto) {
@@ -287,6 +291,154 @@ export class AuthService {
     } catch (e) {
       throw new HttpException(
         e.message || 'Error logging out user',
+        e.status || 500,
+      );
+    }
+  }
+
+  async registerWithEmailVerification(registerDto: RegisterDto) {
+    try {
+      const {
+        password,
+        confirmPassword,
+        roleId,
+        email,
+        username,
+        fullName,
+        phoneNumber,
+        birthdate,
+      } = registerDto;
+
+      if (roleId && !(await this.roleService.getRoleById(roleId))) {
+        throw new BadRequestException('Role id not found');
+      }
+
+      const decryptedPassword: string = this.validateConfirmPassword(
+        password,
+        confirmPassword,
+      );
+      const hashedPassword: string = await bcrypt.hash(decryptedPassword, 10);
+
+      const existingUserAuth: UsersAuth = await this.validateRegisterWithEmail(
+        email,
+        username,
+      );
+
+      let userAuthId: string;
+      if (existingUserAuth) {
+        userAuthId = existingUserAuth.userId;
+      } else {
+        const userAuth = await this.userService.createUserAuth({
+          fullName,
+          birthdate,
+          roleId,
+          email,
+          username,
+          password: hashedPassword,
+          phoneNumber,
+        });
+
+        userAuthId = userAuth.userId;
+      }
+
+      const token = await this.jwtService.signAsync(
+        {
+          userAuthId,
+        },
+        {
+          expiresIn: '1d',
+        },
+      );
+      const emailTemplate = this.emailService.generateVerificationEmail(
+        fullName,
+        token,
+      );
+
+      await this.emailService.sendEmail({
+        to: email,
+        subject: 'Email Verification',
+        html: emailTemplate,
+      });
+
+      return { message: 'Email verification has been sent' };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error registering user',
+        e.status || 500,
+      );
+    }
+  }
+
+  async createUserByToken(token: string) {
+    try {
+      const tokenPayload = await this.jwtService.verifyAsync(token);
+
+      const userAuth = await this.userService.getUserAuthById(
+        tokenPayload.userAuthId,
+      );
+
+      await this.userService.validateUsernameEmail(
+        userAuth.username,
+        userAuth.email,
+      );
+
+      return await this.userService.approveUser(
+        userAuth.userId,
+        userAuth.userId,
+        userAuth.role.roleId,
+      );
+    } catch (e) {
+      if (e.name === 'TokenExpiredError') {
+        throw new SessionTimeoutException(
+          'Link has been expired, please register again',
+        );
+      }
+
+      throw new HttpException(
+        e.message || 'Error creating user by token',
+        e.status || 500,
+      );
+    }
+  }
+
+  private async validateRegisterWithEmail(
+    email: string,
+    username: string,
+  ): Promise<UsersAuth> {
+    try {
+      const [checkEmail, checkUsername] = await Promise.all([
+        this.userService.getUserByEmail(email),
+        this.userService.getUserByUsername(username),
+      ]);
+
+      if (checkUsername) {
+        throw new BadRequestException(
+          'Username already registered, please use another username',
+        );
+      }
+
+      if (checkEmail) {
+        throw new BadRequestException(
+          'Email already registered, please use another email',
+        );
+      }
+
+      const [checkEmailAuth, checkUsernameAuth] = await Promise.all([
+        this.userService.getUserAuthByEmail(email),
+        this.userService.getUserAuthByUsername(username),
+      ]);
+
+      if (checkUsernameAuth) {
+        await this.userService.updateUserAuthEmail(
+          checkUsernameAuth.userId,
+          email,
+        );
+      }
+
+      return checkUsernameAuth || checkEmailAuth;
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error validating register with email',
         e.status || 500,
       );
     }
