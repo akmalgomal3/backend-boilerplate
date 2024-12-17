@@ -119,7 +119,7 @@ export class UserController {
     const result = await this.userService.deleteUserByUserId(userId);
 
     return {
-      data: result,
+      data: {effected: result},
     };
   }
 }
