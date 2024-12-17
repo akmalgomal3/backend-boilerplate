@@ -298,8 +298,10 @@ export class AuthService {
     deviceType: DeviceType,
   ) {
     try {
-      if (!user.active) {
-        throw new UnauthorizedException('User is already banned !!');
+      if (!password.startsWith('U2F')) {
+        throw new BadRequestException(
+          'Invalid password format, must be encrypted',
+        );
       }
 
       const isAttemptValid = await this.validateLoginAttemptLog(user.userId);
