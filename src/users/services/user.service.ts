@@ -27,7 +27,9 @@ export class UserService {
     private utilsService: UtilsService,
   ) {}
 
-  async getUsers(dto: PaginationDto): Promise<PaginatedResponseDto<Partial<Users>>> {
+  async getUsers(
+    dto: PaginationDto,
+  ): Promise<PaginatedResponseDto<Partial<Users>>> {
     try {
       const { page = 1, limit = 10 } = dto;
       const skip = (page - 1) * limit;
@@ -221,30 +223,36 @@ export class UserService {
     }
   }
 
-  async updateUserByUserId(updateUserDto: UpdateUserDto): Promise<Users>{
-    try { 
-      const getUserUpdatedById = await this.getUser(updateUserDto.updatedBy)
-      if(!getUserUpdatedById){
-        throw new HttpException('User updated not found', HttpStatus.NOT_FOUND)
+  async updateUserByUserId(updateUserDto: UpdateUserDto): Promise<Users> {
+    try {
+      const getUserUpdatedById = await this.getUser(updateUserDto.updatedBy);
+      if (!getUserUpdatedById) {
+        throw new HttpException('User updated not found', HttpStatus.NOT_FOUND);
       }
 
-      const getUserById = await this.getUser(updateUserDto.userId)
-      if(!getUserById){
-        throw new HttpException('User not found', HttpStatus.NOT_FOUND)
+      const getUserById = await this.getUser(updateUserDto.userId);
+      if (!getUserById) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
 
-      if(getUserById.username != updateUserDto.username){
-        await this.validateUsernameEmail(updateUserDto.username)
+      if (getUserById.username != updateUserDto.username) {
+        await this.validateUsernameEmail(updateUserDto.username);
       }
 
-      const getRoleByRoleId = await this.rolesService.getRoleById(updateUserDto.roleId)
-      if(!getRoleByRoleId){
-        throw new HttpException('Role not found', HttpStatus.NOT_FOUND)
+      const getRoleByRoleId = await this.rolesService.getRoleById(
+        updateUserDto.roleId,
+      );
+      if (!getRoleByRoleId) {
+        throw new HttpException('Role not found', HttpStatus.NOT_FOUND);
       }
 
       const { roleId, userId, ...updatedDto } = updateUserDto;
-      const updateUser = await this.userRepository.updateUserById(userId, updatedDto, getRoleByRoleId)
-      return updateUser
+      const updateUser = await this.userRepository.updateUserById(
+        userId,
+        updatedDto,
+        getRoleByRoleId,
+      );
+      return updateUser;
     } catch (e) {
       throw new HttpException(
         e.message || 'Error update user',
@@ -270,7 +278,11 @@ export class UserService {
         throw new BadRequestException('Invalid old password');
       }
 
-      const password = this.validatePassword(newPassword, confirmPassword, oldPassword);
+      const password = this.validatePassword(
+        newPassword,
+        confirmPassword,
+        oldPassword,
+      );
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -287,15 +299,44 @@ export class UserService {
     }
   }
 
-  async deleteUserByUserId(userId: string): Promise<Number>{
+  async updateUserAuthEmail(userId: string, email: string) {
+    try {
+      const result = await this.userRepository.updateUserAuthEmail(
+        userId,
+        email,
+      );
+
+      return result;
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error updating email',
+        e.status || 500,
+      );
+    }
+  }
+
+  async getUserAuthById(userId: string) {
+    try {
+      const result = await this.userRepository.getUserAuthById(userId);
+
+      return result;
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error getting user by id',
+        e.status || 500,
+      );
+    }
+  }
+
+  async deleteUserByUserId(userId: string): Promise<Number> {
     try {
       /*
         TO DO: 
           - Delete user activity with user relations
       */
 
-      const deleteUser = await this.userRepository.deleteByUserId(userId)
-      return deleteUser
+      const deleteUser = await this.userRepository.deleteByUserId(userId);
+      return deleteUser;
     } catch (e) {
       throw new HttpException(
         e.message || 'Error delete user',
@@ -349,8 +390,7 @@ export class UserService {
     }
 
     if (isApproval) {
-      const userAuthByUsername =
-        await this.getUserAuthByUsername(username);
+      const userAuthByUsername = await this.getUserAuthByUsername(username);
       const userAuthByEmail = await this.getUserAuthByEmail(email);
 
       if (userAuthByUsername) {

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
 import { GeneratePasswordDto } from '../dto/generate-password.dto';
 import { RegisterDto } from '../dto/register.dto';
@@ -38,6 +38,28 @@ export class AuthController {
   @Post('/register-approval')
   async registerApproval(@Body() registerDto: RegisterDto) {
     const data = await this.authService.registerApproval(registerDto);
+
+    return {
+      data,
+    };
+  }
+
+  @HttpCode(200)
+  @Public()
+  @Post('/register-email-verification')
+  async registerWithEmailVerification(@Body() registerDto: RegisterDto) {
+    const data =
+      await this.authService.registerWithEmailVerification(registerDto);
+
+    return {
+      data,
+    };
+  }
+
+  @Public()
+  @Get('verify-email')
+  async verifyEmail(@Query('token') token: string) {
+    const data = await this.authService.createUserByToken(token);
 
     return {
       data,
