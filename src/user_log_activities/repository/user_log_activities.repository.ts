@@ -43,7 +43,7 @@ export class UserLogActivitiesRepository {
     }
   }
 
-  async getUserActivityLoggedIn(skip: number, take: number, filter: Partial<UserLogActivities>): Promise<[String[], number]>{
+  async getUserActivityLoggedInUser(skip: number, take: number, filter: Partial<UserLogActivities>): Promise<[String[], number]>{
     try {
       const aggregationPipeline = [
         {
