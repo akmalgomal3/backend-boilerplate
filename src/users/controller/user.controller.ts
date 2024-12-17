@@ -21,6 +21,7 @@ import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { ApproveUserAuthDto } from '../dto/approve-user-auth.dto';
 import { UpdatePasswordDto } from '../dto/update-password.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
+import { UpdateBanUserDto } from '../dto/update-ban-user.dto';
 
 // @ts-ignore
 @Controller('users')
@@ -86,6 +87,24 @@ export class UserController {
       user.userId,
       updatePasswordDto,
     );
+    return {
+      data: result,
+    };
+  }
+
+  @ApiBearerAuth()
+  @Patch('/banned/:userId')
+  async updateBanUser(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Body() updateBanUserDto: UpdateBanUserDto,
+    @User() user: JwtPayload,
+  ) {
+    const result = await this.userService.updateBanUser(
+      userId, 
+      user?.userId, 
+      updateBanUserDto?.active
+    );
+
     return {
       data: result,
     };

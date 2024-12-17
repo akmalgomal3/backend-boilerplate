@@ -1,6 +1,5 @@
-import { BadRequestException, HttpException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, forwardRef, HttpException, Inject, Injectable } from '@nestjs/common';
 import { UserLogActivitiesRepository } from '../repository/user_log_activities.repository';
-import { UserLogActivities } from '../entity/user_log_activities.entity';
 import { CreateUserLogActivityDTO } from '../dto/create_user_log_activity.dto';
 import { ActivityMethod, ActivityType } from '../enum/user_log_activities.enum';
 import { CreateDescriptionActivity } from '../dto/create_description_activity.dto';
@@ -11,15 +10,13 @@ import { UtilsService } from 'src/libs/utils/services/utils.service';
 import { UserActivity } from '../types/user_activitity.type';
 import { GetUserActivityDto } from '../dto/get_user_activity_current.dto';
 import { PaginatedResponseDto } from 'src/common/dto/pagination.dto';
-import { ObjectId } from 'mongodb';
-import mongoose from 'mongoose';
-import { update } from 'lodash';
 
 @Injectable()
 export class UserLogActivitiesService {
   constructor(
     private readonly userActivityRepository: UserLogActivitiesRepository,
-    private readonly userService: UserService,
+    @Inject(forwardRef(() => UserService))
+    private userService: UserService,
     private readonly utilsService: UtilsService,
   ) {}
 

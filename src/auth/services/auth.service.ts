@@ -176,7 +176,7 @@ export class AuthService {
         throw new BadRequestException('username not found');
       }
 
-      await this.validateUser(password, user, deviceType);
+      await this. validateUser(password, user, deviceType);
 
       const payload: JwtPayload = {
         userId: user.userId,
@@ -455,6 +455,12 @@ export class AuthService {
     deviceType: DeviceType,
   ) {
     try {
+      if(!user.active){
+        throw new BadRequestException(
+          'Account is not active',
+        );
+      }
+
       if (!password.startsWith('U2F')) {
         throw new BadRequestException(
           'Invalid password format, must be encrypted',
