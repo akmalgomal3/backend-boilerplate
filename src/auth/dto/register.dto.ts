@@ -2,7 +2,8 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsDate,
   IsEmail,
-  IsNotEmpty, IsOptional,
+  IsNotEmpty,
+  IsOptional,
   IsString,
   Matches,
 } from 'class-validator';
@@ -35,13 +36,16 @@ export class RegisterDto {
   confirmPassword: string;
 
   @ApiProperty({ example: 'kurniawan@gmail.com' })
-  @IsEmail()
+  @IsEmail({}, { message: 'Please input valid email format' })
   @IsNotEmpty()
   email: string;
 
   @ApiProperty({ example: '081234567890' })
   @IsString()
   @IsNotEmpty()
+  @Matches(/^(\+62|62)?[\s-]?0?8[1-9]{1}\d{1}[\s-]?\d{4}[\s-]?\d{2,5}$/, {
+    message: 'Please input valid indonesian phone number',
+  })
   phoneNumber: string;
 
   @ApiProperty({ example: '019b18cb-7b7a-4f8d-bea1-342b241bc717' })

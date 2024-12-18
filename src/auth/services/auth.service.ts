@@ -26,14 +26,9 @@ import { UsersAuth } from '../../users/entity/user-auth.entity';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import { ConfigService } from '@nestjs/config';
-import e from 'express';
 
 @Injectable()
 export class AuthService {
-  private strongPassword: RegExp = new RegExp(
-    /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,12}$/,
-  );
-
   private googleAuthClient: OAuth2Client;
 
   constructor(
@@ -668,11 +663,19 @@ export class AuthService {
       throw new BadRequestException('Password does not match');
     }
 
-    if (!this.strongPassword.test(decryptedPassword)) {
+    if (!password.startsWith('U2F')) {
       throw new BadRequestException(
-        'Password must be 8 to 12 characters long, contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+        'Invalid password format, must be encrypted',
       );
     }
+
+    if (!confirmPassword.startsWith('U2F')) {
+      throw new BadRequestException(
+        'Invalid password format, must be encrypted',
+      );
+    }
+
+    this.validateStrongPassword(decryptedPassword);
 
     return decryptedPassword;
   }
@@ -694,6 +697,45 @@ export class AuthService {
     } catch (e) {
       throw new HttpException(
         e.message || 'Error validating login attempt log',
+        e.status || 500,
+      );
+    }
+  }
+
+  private validateStrongPassword(decryptedPassword: string) {
+    try {
+      if (decryptedPassword.length < 8 || decryptedPassword.length > 12) {
+        throw new BadRequestException(
+          'Password must be between 8 to 12 characters long.',
+        );
+      }
+
+      if (!/[A-Z]/.test(decryptedPassword)) {
+        throw new BadRequestException(
+          'Password must contain at least one uppercase letter.',
+        );
+      }
+
+      if (!/[a-z]/.test(decryptedPassword)) {
+        throw new BadRequestException(
+          'Password must contain at least one lowercase letter.',
+        );
+      }
+
+      if (!/\d/.test(decryptedPassword)) {
+        throw new BadRequestException(
+          'Password must contain at least one number.',
+        );
+      }
+
+      if (!/[!@#$%^&*(),.?":{}|<>]/.test(decryptedPassword)) {
+        throw new BadRequestException(
+          'Password must contain at least one special character.',
+        );
+      }
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error validating strong password',
         e.status || 500,
       );
     }
