@@ -266,23 +266,26 @@ export class UserService {
     }
   }
 
-  async updateBanUser(userId: string, bannerId: string, isActive: boolean): Promise<Users>{
+  async updateBanUser(
+    userId: string,
+    bannerId: string,
+    isActive: boolean,
+  ): Promise<Users> {
     try {
-      await this.userRepository.banUser(userId, bannerId, isActive)
+      await this.userRepository.banUser(userId, bannerId, isActive);
 
-      if(isActive){
+      if (isActive) {
         await this.userLogActivitiesService.deleteUserActivityByDescription(
-          userId
-        )
+          userId,
+        );
       }
-      return this.getUser(userId)
+      return this.getUser(userId);
     } catch (e) {
       throw new HttpException(
         e.message || 'Error update ban user ',
         e.status || 500,
       );
     }
-
   }
 
   async updatePassword(userId: string, updatePasswordDto: UpdatePasswordDto) {
@@ -315,6 +318,17 @@ export class UserService {
       return {
         message: `User ${user.username} password updated successfully`,
       };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error updating password',
+        e.status || 500,
+      );
+    }
+  }
+
+  async setPassword(userId: string, hashedPassword: string) {
+    try {
+      return this.userRepository.updateUserPassword(userId, hashedPassword);
     } catch (e) {
       throw new HttpException(
         e.message || 'Error updating password',

@@ -10,6 +10,7 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import { LoginGoogleDto } from '../dto/login-google.dto';
 import { SendForgotPasswordDto } from '../dto/send-forgot-password.dto';
+import { SetPasswordDto } from '../dto/set-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -143,6 +144,16 @@ export class AuthController {
     const data = await this.authService.sendForgotPasswordEmail(
       sendForgotPasswordDto.email,
     );
+
+    return {
+      data,
+    };
+  }
+
+  @Public()
+  @Post('/reset-password')
+  async resetPassword(@Body() resetPasswordDto: SetPasswordDto) {
+    const data = await this.authService.setPassword(resetPasswordDto);
 
     return {
       data,
