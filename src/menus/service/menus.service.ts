@@ -2,6 +2,8 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { MenusRepository } from '../repository/menus.repository';
 import { CreateMenuDto } from '../dto/create-menu.dto';
@@ -37,7 +39,10 @@ export class MenusService {
         },
       };
     } catch (error) {
-      throw new ConflictException('Failed to retrieve menus', error);
+      throw new HttpException(
+        `Failed to retrieve menus, ${error}`,
+        HttpStatus.CONFLICT,
+      );
     }
   }
 
@@ -54,7 +59,10 @@ export class MenusService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new ConflictException('Failed to retrieve menu');
+      throw new HttpException(
+        `Failed to retrieve menus, ${error}`,
+        HttpStatus.CONFLICT,
+      );
     }
   }
 
@@ -71,7 +79,10 @@ export class MenusService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new ConflictException('Failed to retrieve menu');
+      throw new HttpException(
+        `Failed to retrieve menus, ${error}`,
+        HttpStatus.CONFLICT,
+      );
     }
   }
 
@@ -80,6 +91,29 @@ export class MenusService {
     userId: string,
   ): Promise<string> {
     try {
+      const nameAlreadyAvailable = await this.menusRepository.getMenuByName(
+        createMenuDto.menuName,
+      );
+
+      if (nameAlreadyAvailable) {
+        throw new HttpException(
+          `Menu with name ${createMenuDto.menuName} already available!`,
+          HttpStatus.CONFLICT,
+        );
+      }
+
+      if (createMenuDto.parentMenuId != null) {
+        const isParentExist = await this.menusRepository.getMenuById(
+          createMenuDto.parentMenuId,
+        );
+
+        if (!isParentExist) {
+          throw new NotFoundException(
+            `Parent menu with id ${createMenuDto.parentMenuId} not exist!`,
+          );
+        }
+      }
+
       const newMenu = await this.menusRepository.createMenu(
         {
           ...createMenuDto,
@@ -89,7 +123,7 @@ export class MenusService {
       );
       return newMenu;
     } catch (error) {
-      throw new ConflictException('Failed to create menu', error);
+      throw error;
     }
   }
 
@@ -99,7 +133,36 @@ export class MenusService {
     userId: string,
   ): Promise<void> {
     try {
-      await this.getMenuById(menuId);
+      const isExist = await this.getMenuById(menuId);
+
+      if (!isExist) {
+        throw new NotFoundException(`Menu with id ${menuId} not exist!`);
+      }
+
+      if (updateMenuDto.menuName != null) {
+        const nameAlreadyAvailable = await this.menusRepository.getMenuByName(
+          updateMenuDto.menuName,
+        );
+
+        if (nameAlreadyAvailable) {
+          throw new HttpException(
+            `Menu with name ${updateMenuDto.menuName} already available!`,
+            HttpStatus.CONFLICT,
+          );
+        }
+      }
+
+      if (updateMenuDto.parentMenuId != null) {
+        const isParentExist = await this.menusRepository.getMenuById(
+          updateMenuDto.parentMenuId,
+        );
+
+        if (!isParentExist) {
+          throw new NotFoundException(
+            `Parent menu with id ${updateMenuDto.parentMenuId} not exist!`,
+          );
+        }
+      }
 
       await this.menusRepository.updateMenu(menuId, updateMenuDto, userId);
     } catch (error) {
