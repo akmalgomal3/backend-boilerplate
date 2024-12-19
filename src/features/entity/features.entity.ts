@@ -33,7 +33,7 @@ export class Features {
     type: 'timestamp',
     default: () => 'NOW()',
   })
-  updated_At: Date;
+  updatedAt: Date;
 
   @Column({ type: 'uuid', nullable: true })
   createdBy: string;
