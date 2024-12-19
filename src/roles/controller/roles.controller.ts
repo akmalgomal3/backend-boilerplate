@@ -14,11 +14,15 @@ import { UpdateRoleDto } from '../dto/update-roles.dto';
 import { Roles } from '../entity/roles.entity';
 import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { User } from '../../common/decorators/user.decorator';
+import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 
+@ApiBearerAuth()
 @Controller('roles')
 export class RolesController {
   constructor(private rolesService: RolesService) {}
 
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
   @Get()
   async getRoles(
     @Query('page') page: number = 1,
