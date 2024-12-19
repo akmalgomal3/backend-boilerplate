@@ -2,7 +2,10 @@ import { HttpException, Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
 import { SendEmailDto } from '../dto/send-email.dto';
-import { verificationEmailTemplate } from '../templates/email.templates';
+import {
+  sendForgotPasswordEmailTemplate,
+  verificationEmailTemplate,
+} from '../templates/email.templates';
 
 @Injectable()
 export class EmailService {
@@ -39,5 +42,9 @@ export class EmailService {
 
   generateVerificationEmail(name: string, token: string) {
     return verificationEmailTemplate(name, token);
+  }
+
+  generateSendForgotPasswordEmail(name: string, token: string) {
+    return sendForgotPasswordEmailTemplate(name, token);
   }
 }

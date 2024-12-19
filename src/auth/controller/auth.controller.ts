@@ -9,6 +9,8 @@ import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import { LoginGoogleDto } from '../dto/login-google.dto';
+import { SendForgotPasswordDto } from '../dto/send-forgot-password.dto';
+import { SetPasswordDto } from '../dto/set-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -127,6 +129,31 @@ export class AuthController {
   @Post('/logout')
   async logout(@User() user: JwtPayload) {
     const data = await this.authService.logout(user);
+
+    return {
+      data,
+    };
+  }
+
+  @HttpCode(200)
+  @Public()
+  @Post('/send-forgot-password')
+  async sendForgotPassword(
+    @Body() sendForgotPasswordDto: SendForgotPasswordDto,
+  ) {
+    const data = await this.authService.sendForgotPasswordEmail(
+      sendForgotPasswordDto.email,
+    );
+
+    return {
+      data,
+    };
+  }
+
+  @Public()
+  @Post('/reset-password')
+  async resetPassword(@Body() resetPasswordDto: SetPasswordDto) {
+    const data = await this.authService.setPassword(resetPasswordDto);
 
     return {
       data,

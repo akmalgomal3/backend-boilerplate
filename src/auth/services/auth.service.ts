@@ -26,6 +26,7 @@ import { UsersAuth } from '../../users/entity/user-auth.entity';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import { ConfigService } from '@nestjs/config';
+import { SetPasswordDto } from '../dto/set-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -519,6 +520,102 @@ export class AuthService {
 
       throw new HttpException(
         e.message || 'Error creating user by token',
+        e.status || 500,
+      );
+    }
+  }
+
+  async sendForgotPasswordEmail(email: string) {
+    try {
+      const user = await this.userService.getUserByEmail(email);
+
+      if (!user) {
+        throw new NotFoundException('This email is not registered as a user');
+      }
+
+      const token: string = await this.jwtService.signAsync(
+        {
+          userId: user.userId,
+        },
+        {
+          expiresIn: '15m',
+        },
+      );
+
+      const emailTemplate: string =
+        this.emailService.generateSendForgotPasswordEmail(user.fullName, token);
+
+      await Promise.all([
+        this.emailService.sendEmail({
+          to: email,
+          subject: 'Forgot Password',
+          html: emailTemplate,
+        }),
+        this.sessionService.createSession(
+          `reset-password:${user.userId}`,
+          token,
+          15 * 60,
+        ),
+      ]);
+
+      return { message: 'Forgot password email has been sent' };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error sending forgot password email',
+        e.status || 500,
+      );
+    }
+  }
+
+  async setPassword(setPasswordDto: SetPasswordDto) {
+    try {
+      const { password, confirmPassword, token } = setPasswordDto;
+
+      const decryptedPassword = this.validateConfirmPassword(
+        password,
+        confirmPassword,
+      );
+
+      const tokenPayload = await this.jwtService.verifyAsync(token);
+
+      const isTokenValid = await this.sessionService.getSession(
+        `reset-password:${tokenPayload.userId}`,
+      );
+
+      if (!isTokenValid) {
+        throw new UnauthorizedException(
+          'Link has been expired, please reset password again',
+        );
+      }
+
+      const user: Users = await this.userService.getUser(tokenPayload.userId);
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      const hashedPassword: string = await bcrypt.hash(decryptedPassword, 10);
+
+      await Promise.all([
+        await this.userService.setPassword(user.userId, hashedPassword),
+        await this.sessionService.deleteSession(
+          `reset-password:${user.userId}`,
+        ),
+      ]);
+
+      return {
+        message: 'Password has been set',
+        userId: user.userId,
+      };
+    } catch (e) {
+      if (e.name === 'TokenExpiredError') {
+        throw new SessionTimeoutException(
+          'Link has been expired, please reset password again',
+        );
+      }
+
+      throw new HttpException(
+        e.message || 'Error setting password',
         e.status || 500,
       );
     }
