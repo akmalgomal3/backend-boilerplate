@@ -7,3 +7,16 @@ export const verificationEmailTemplate = (name: string, token: string) => {
     </div>
   `;
 };
+
+export const sendForgotPasswordEmailTemplate = (
+  name: string,
+  token: string,
+) => {
+  return `
+    <div>
+      <h1>Hello, ${name}</h1>
+      <p>We received a request to reset your password. To reset your password, please click the link below:</p>
+      <a href="http://localhost:3001/auth/reset-password?token=${token}">Reset password</a>
+    </div>
+  `;
+};

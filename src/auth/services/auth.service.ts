@@ -524,6 +524,43 @@ export class AuthService {
     }
   }
 
+  async sendForgotPasswordEmail(email: string) {
+    try {
+      const user = await this.userService.getUserByEmail(email);
+
+      if (!user) {
+        throw new NotFoundException('This email is not registered as a user');
+      }
+
+      const token: string = await this.jwtService.signAsync(
+        {
+          userId: user.userId,
+        },
+        {
+          expiresIn: '15m',
+        },
+      );
+
+      const emailTemplate = this.emailService.generateSendForgotPasswordEmail(
+        user.fullName,
+        token,
+      );
+
+      await this.emailService.sendEmail({
+        to: email,
+        subject: 'Forgot Password',
+        html: emailTemplate,
+      });
+
+      return { message: 'Forgot password email has been sent' };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error sending forgot password email',
+        e.status || 500,
+      );
+    }
+  }
+
   private async validateRegisterWithEmail(
     email: string,
     username: string,
