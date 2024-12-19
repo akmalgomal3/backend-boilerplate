@@ -21,6 +21,10 @@ import { UpdatePasswordDto } from '../dto/update-password.dto';
 import { UtilsService } from '../../libs/utils/services/utils.service';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserLogActivitiesService } from 'src/user_log_activities/service/user_log_activities.service';
+import { JwtService } from '@nestjs/jwt';
+import { EmailService } from '../../libs/email/services/email.service';
+import { SessionService } from '../../libs/session/service/session.service';
+import { JwtPayload } from '../../common/types/jwt-payload.type';
 
 @Injectable()
 export class UserService {
@@ -30,6 +34,9 @@ export class UserService {
     private userLogActivitiesService: UserLogActivitiesService,
     private rolesService: RolesService,
     private utilsService: UtilsService,
+    private jwtService: JwtService,
+    private emailService: EmailService,
+    private sessionService: SessionService,
   ) {}
 
   async getUsers(
@@ -332,6 +339,121 @@ export class UserService {
     } catch (e) {
       throw new HttpException(
         e.message || 'Error updating password',
+        e.status || 500,
+      );
+    }
+  }
+
+  async sendUpdateEmail(email: string, user: JwtPayload) {
+    try {
+      const checkUser: Users = await this.getUserByEmail(email);
+
+      if (checkUser) {
+        throw new NotFoundException(
+          'Email already registered, please use another email',
+        );
+      }
+
+      console.log(user);
+
+      const token: string = await this.jwtService.signAsync(
+        {
+          userId: user.userId,
+          email,
+        },
+        {
+          expiresIn: '15m',
+        },
+      );
+
+      const emailTemplate: string = this.emailService.generateSendUpdateEmail(
+        user.username,
+        token,
+      );
+
+      const isTokenExist = await this.sessionService.getSession(
+        `update-email:${user.userId}`,
+      );
+
+      if (isTokenExist) {
+        await this.sessionService.deleteSession(`update-email:${user.userId}`);
+      }
+
+      await Promise.all([
+        this.emailService.sendEmail({
+          to: email,
+          subject: 'Update Email',
+          html: emailTemplate,
+        }),
+        this.sessionService.createSession(
+          `update-email:${user.userId}`,
+          token,
+          15 * 60,
+        ),
+      ]);
+
+      return { message: 'Update email email has been sent' };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error sending update email email',
+        e.status || 500,
+      );
+    }
+  }
+
+  async updateEmailByToken(token: string) {
+    try {
+      const payload: JwtPayload = await this.jwtService.verifyAsync(token);
+      if (!payload) {
+        throw new BadRequestException('Invalid token');
+      }
+
+      const isTokenExist = await this.sessionService.getSession(
+        `update-email:${payload.userId}`,
+      );
+
+      if (!isTokenExist) {
+        throw new BadRequestException(
+          'Link has been expired, please reset password again',
+        );
+      }
+
+      const user = await this.getUser(payload.userId);
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      await Promise.all([
+        this.updateUserEmail(user.userId, payload.email),
+        this.sessionService.deleteSession(`update-email:${user.userId}`),
+      ]);
+
+      return {
+        message: 'Email updated successfully',
+      };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error updating email by token',
+        e.status || 500,
+      );
+    }
+  }
+
+  async updateUserEmail(userId: string, email: string) {
+    try {
+      const user = await this.getUser(userId);
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      await this.userRepository.updateUserEmail(userId, email);
+
+      return {
+        message: 'Email updated successfully',
+      };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error updating email',
         e.status || 500,
       );
     }
