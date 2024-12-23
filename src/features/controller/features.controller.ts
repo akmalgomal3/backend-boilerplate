@@ -14,6 +14,8 @@ import { UpdateFeatureDto } from '../dto/update-features.dto';
 import { User } from '../../common/decorators/user.decorator';
 import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { CreateAccessFeatureDto } from '../dto/create-access-feature.dto';
+import { UpdateAccessFeatureDto } from '../dto/update-access-feature.dto';
 
 @Controller('features')
 export class FeaturesController {
@@ -83,5 +85,51 @@ export class FeaturesController {
   @ApiBearerAuth()
   async deleteFeature(@Param('featureId') featureId: string): Promise<void> {
     return this.featuresService.deleteFeature(featureId);
+  }
+
+  @Post('/accessFeature')
+  @ApiBearerAuth()
+  async createAccessFeature(
+    @Body() createAccessFeature: CreateAccessFeatureDto,
+    @User() user: JwtPayload,
+  ) {
+    const result = await this.featuresService.createAccessFeature({
+      createdBy: user?.userId,
+      ...createAccessFeature,
+    });
+
+    return {
+      data: result,
+    };
+  }
+
+  @Patch('/accessFeature/:accessFeatureId')
+  @ApiBearerAuth()
+  async updateAccessFeature(
+    @Param('accessFeatureId') accessFeatureId: string,
+    @Body() updateAccessFeatureDto: UpdateAccessFeatureDto,
+    @User() user: JwtPayload,
+  ) {
+    const result = await this.featuresService.updateAccessFeatureById(
+      accessFeatureId,
+      {
+        updatedBy: user?.userId,
+        ...updateAccessFeatureDto,
+      },
+    );
+
+    return {
+      data: result,
+    };
+  }
+
+  @Delete('/accessFeature/:accessFeatureId')
+  @ApiBearerAuth()
+  async deleteAccessFeature(@Param('accessFeatureId') accessFeatureId: string) {
+    const result = await this.featuresService.deleteAccessFeatureById(accessFeatureId);
+
+    return {
+      data: result,
+    };
   }
 }
