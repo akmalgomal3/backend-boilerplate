@@ -13,12 +13,14 @@ import { CreateFeatureDto } from '../dto/create-features.dto';
 import { UpdateFeatureDto } from '../dto/update-features.dto';
 import { User } from '../../common/decorators/user.decorator';
 import { JwtPayload } from '../../common/types/jwt-payload.type';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('features')
 export class FeaturesController {
   constructor(private featuresService: FeaturesService) {}
 
   @Get()
+  @ApiBearerAuth()
   async getFeatures(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
@@ -31,6 +33,7 @@ export class FeaturesController {
   }
 
   @Get(':featureId')
+  @ApiBearerAuth()
   async getFeatureById(@Param('featureId') featureId: string) {
     const result = await this.featuresService.getFeatureById(featureId);
     return {
@@ -39,6 +42,7 @@ export class FeaturesController {
   }
 
   @Get('name/:featureName')
+  @ApiBearerAuth()
   async getFeatureByName(@Param('featureName') featureName: string) {
     const result = await this.featuresService.getFeatureByName(featureName);
     return {
@@ -47,6 +51,7 @@ export class FeaturesController {
   }
 
   @Post()
+  @ApiBearerAuth()
   async createFeature(
     @Body() createFeatureDto: CreateFeatureDto,
     @User() user: JwtPayload,
@@ -61,6 +66,7 @@ export class FeaturesController {
   }
 
   @Patch(':featureId')
+  @ApiBearerAuth()
   async updateFeature(
     @Param('featureId') featureId: string,
     @Body() updateFeatureDto: UpdateFeatureDto,
@@ -74,6 +80,7 @@ export class FeaturesController {
   }
 
   @Delete(':featureId')
+  @ApiBearerAuth()
   async deleteFeature(@Param('featureId') featureId: string): Promise<void> {
     return this.featuresService.deleteFeature(featureId);
   }

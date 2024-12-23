@@ -4,16 +4,31 @@ import {
   NotFoundException,
   HttpException,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { MenusRepository } from '../repository/menus.repository';
 import { CreateMenuDto } from '../dto/create-menu.dto';
 import { UpdateMenuDto } from '../dto/update-menu.dto';
 import { Menu } from '../entity/menus.entity';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { CreateAccessMenuDto } from '../dto/create-access-menu.dto';
+import { RolesService } from 'src/roles/service/roles.service';
+import { UserService } from 'src/users/services/user.service';
+import { UpdateAccessMenuDto } from '../dto/update-access-menu.dto';
+import { FeaturesService } from 'src/features/service/features.service';
+import { Features } from 'src/features/entity/features.entity';
+import { features } from 'process';
+import { AccessFeature } from 'src/features/entity/access_feature.entity';
+import { AccessMenu } from '../entity/access_menu.entity';
 
 @Injectable()
 export class MenusService {
-  constructor(private menusRepository: MenusRepository) {}
+  constructor(
+    private menusRepository: MenusRepository,
+    private featuresService: FeaturesService,
+    private roleService: RolesService,
+    private userService: UserService,
+  ) {}
 
   async getMenus(
     page: number = 1,
@@ -27,7 +42,7 @@ export class MenusService {
       );
       const totalPages = Math.ceil(totalItems / limit);
 
-      const hierarchicalMenus = this.buildMenuHierarchy(menus);
+      const hierarchicalMenus = await this.buildMenuHierarchy(menus);
 
       return {
         data: hierarchicalMenus,
@@ -186,24 +201,162 @@ export class MenusService {
     }
   }
 
-  private buildMenuHierarchy(menus: Menu[]): Menu[] {
-    const menuMap = new Map(
-      menus.map((menu) => [menu.menuId, { ...menu, children: [] }]),
-    );
-
-    const rootMenus: Menu[] = [];
-
-    for (const menu of menuMap.values()) {
-      if (menu.parentMenuId) {
-        const parentMenu = menuMap.get(menu.parentMenuId);
-        if (parentMenu) {
-          parentMenu.children.push(menu);
-        }
-      } else {
-        rootMenus.push(menu);
+  async getAccessMenuById(accessMenuId: string) {
+    try {
+      const accessMenu =
+        await this.menusRepository.getAccessMenuById(accessMenuId);
+      if (!accessMenu) {
+        throw new NotFoundException('Access menu not found');
       }
-    }
 
-    return rootMenus;
+      return accessMenu;
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error get access menu by id',
+        error.status || 500,
+      );
+    }
+  }
+
+  async getAccessMenuByRoleId(
+    roleId: string,
+  ): Promise<PaginatedResponseDto<Menu>> {
+    try {
+      const getAccessMenu =
+        await this.menusRepository.getAccessMenuByRoleId(roleId);
+      const formatMenu = await this.buildMenuHierarchy(getAccessMenu, roleId);
+
+      return {
+        data: formatMenu,
+        metadata: null,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error get access menu by role',
+        error.status || 500,
+      );
+    }
+  }
+
+  async createAccessMenu(createAccessMenuDto: CreateAccessMenuDto) {
+    try {
+      const { roleId, menuId, createdBy } = createAccessMenuDto;
+
+      await Promise.all([
+        this.userService.getUser(createdBy),
+        this.roleService.getRoleById(roleId),
+        this.getMenuById(menuId),
+      ]);
+
+      const validateAccessMenu =
+        await this.menusRepository.getAccessMenuByRoleMenuId(roleId, menuId);
+      if (validateAccessMenu) {
+        throw new BadRequestException('Access menu already exist');
+      }
+
+      return await this.menusRepository.createAccessMenu(createAccessMenuDto);
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error create access menu',
+        error.status || 500,
+      );
+    }
+  }
+
+  async updateAccessMenu(
+    accessMenuId: string,
+    updateAccessMenuDto: UpdateAccessMenuDto,
+  ) {
+    try {
+      const { roleId, menuId, updatedBy } = updateAccessMenuDto;
+
+      await this.userService.getUser(updatedBy);
+      await this.roleService.getRoleById(roleId);
+      await this.getAccessMenuById(accessMenuId);
+      await this.getMenuById(menuId);
+
+      return await this.menusRepository.updateAccessMenu(
+        accessMenuId,
+        updateAccessMenuDto,
+      );
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error create access menu',
+        error.status || 500,
+      );
+    }
+  }
+
+  async deleteAccessMenuById(accessMenuId: string): Promise<AccessMenu> {
+    try {
+      await this.getAccessMenuById(accessMenuId);
+      return await this.menusRepository.deleteAccessMenu(accessMenuId);
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error delete access menu',
+        error.status || 500,
+      );
+    }
+  }
+
+  private async buildMenuHierarchy(
+    menus: Menu[],
+    roleId: string | null = null,
+  ): Promise<Menu[]> {
+    try {
+      const menuMap = new Map(
+        menus.map((menu) => [
+          menu.menuId,
+          { ...menu, children: [], features: [] },
+        ]),
+      );
+
+      const rootMenus: Menu[] = [];
+      for (const menu of menuMap.values()) {
+        const features = await this.buildFeatureMenu(roleId, menu.menuId);
+        if (features) menu.features.push(...features);
+
+        if (menu.parentMenuId) {
+          const parentMenu = menuMap.get(menu.parentMenuId);
+          if (parentMenu) {
+            parentMenu.children.push(menu);
+          }
+        } else {
+          rootMenus.push(menu);
+        }
+      }
+
+      return rootMenus;
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error mapping menu and features',
+        error.status || 500,
+      );
+    }
+  }
+
+  private async buildFeatureMenu(
+    roleId: string | null,
+    menuId: string,
+  ): Promise<Features[] | []> {
+    try {
+      let features: Features[] = [];
+
+      if (!roleId) {
+        features = await this.featuresService.getFeatureByMenuId(menuId);
+      } else {
+        features = await this.featuresService.getAccessFeatureByRoleMenuId(
+          roleId,
+          menuId,
+        );
+      }
+
+      return features;
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error build features by menu',
+        error.status || 500,
+      );
+    }
   }
 }
