@@ -490,11 +490,7 @@ export class UserService {
 
   async deleteUserByUserId(userId: string): Promise<Number> {
     try {
-      /*
-        TO DO: 
-          - Delete user activity with user relations
-      */
-
+      await this.userLogActivitiesService.deleteUserActivityByUserId(userId)
       const deleteUser = await this.userRepository.deleteByUserId(userId);
       return deleteUser;
     } catch (e) {
