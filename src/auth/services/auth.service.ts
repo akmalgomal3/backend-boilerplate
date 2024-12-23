@@ -474,11 +474,18 @@ export class AuthService {
         token,
       );
 
-      await this.emailService.sendEmail({
-        to: email,
-        subject: 'Email Verification',
-        html: emailTemplate,
-      });
+      await Promise.all([
+        this.sessionService.createSession(
+          `register-email:${userAuthId}`,
+          token,
+          24 * 60 * 60,
+        ),
+        this.emailService.sendEmail({
+          to: email,
+          subject: 'Email Verification',
+          html: emailTemplate,
+        }),
+      ]);
 
       return { message: 'Email verification has been sent' };
     } catch (e) {
@@ -493,6 +500,16 @@ export class AuthService {
     try {
       const tokenPayload = await this.jwtService.verifyAsync(token);
 
+      const isTokenValid = await this.sessionService.getSession(
+        `register-email:${tokenPayload.userAuthId}`,
+      );
+
+      if (!isTokenValid) {
+        throw new UnauthorizedException(
+          'Link has been expired, please register again',
+        );
+      }
+
       const userAuth = await this.userService.getUserAuthById(
         tokenPayload.userAuthId,
       );
@@ -506,11 +523,18 @@ export class AuthService {
         userAuth.email,
       );
 
-      return await this.userService.approveUser(
-        userAuth.userId,
-        userAuth.userId,
-        userAuth.role.roleId,
-      );
+      const [newUser] = await Promise.all([
+        this.userService.approveUser(
+          userAuth.userId,
+          userAuth.userId,
+          userAuth.role.roleId,
+        ),
+        this.sessionService.deleteSession(
+          `register-email:${tokenPayload.userAuthId}`,
+        ),
+      ]);
+
+      return newUser;
     } catch (e) {
       if (e.name === 'TokenExpiredError') {
         throw new SessionTimeoutException(
