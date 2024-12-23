@@ -254,6 +254,25 @@ export class UserLogActivitiesService {
     }
   }
 
+  async deleteUserActivityByUserId(
+    userId: string,
+  ): Promise<{ deletedNumber: number }> {
+    try {
+      const filter = {
+        ...(userId && { user_id: userId }),
+        is_deleted: false
+      };
+
+      const deletedCount = await this.userActivityRepository.softDeleteUserActivityByFilter(filter);
+      return { deletedNumber: deletedCount };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error delete user log activity by user id',
+        e.status || 500,
+      );
+    }
+  }
+
   mappingDescriptionActivity(
     createDescriptionActivity: CreateDescriptionActivity,
   ) {
