@@ -3,6 +3,7 @@ import {
   ConflictException,
   NotFoundException,
   HttpException,
+  BadRequestException,
   HttpStatus,
 } from '@nestjs/common';
 import { FeaturesRepository } from '../repository/features.repository';
@@ -10,13 +11,22 @@ import { CreateFeatureDto } from '../dto/create-features.dto';
 import { UpdateFeatureDto } from '../dto/update-features.dto';
 import { Features } from '../entity/features.entity';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { CreateAccessFeatureDto } from '../dto/create-access-feature.dto';
+import { AccessFeature } from '../entity/access_feature.entity';
+import { UserService } from 'src/users/services/user.service';
+import { RolesService } from 'src/roles/service/roles.service';
+import { UpdateAccessFeatureDto } from '../dto/update-access-feature.dto';
+import { Feature } from 'typeorm';
 import { MenusRepository } from '../../menus/repository/menus.repository';
 
 @Injectable()
 export class FeaturesService {
   constructor(
+    
     private featuresRepository: FeaturesRepository,
     private menusRepository: MenusRepository,
+    private usersService: UserService,
+    private rolesService: RolesService,
   ) {}
 
   async getFeatures(
@@ -82,6 +92,28 @@ export class FeaturesService {
     }
   }
 
+  async getFeatureNoMenuId(): Promise<Features[]> {
+    try {
+      return await this.featuresRepository.getFeatureNoMenuId();
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error get feature by menu id',
+        error.status || 500,
+      );
+    }
+  }
+
+  async getFeatureByMenuId(menuId: string): Promise<Features[]> {
+    try {
+      return await this.featuresRepository.getFeatureByMenuId(menuId);
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error get feature by menu id',
+        error.status || 500,
+      );
+    }
+  }
+
   async createFeature(
     createFeatureDto: CreateFeatureDto,
     userId: string,
@@ -98,14 +130,16 @@ export class FeaturesService {
         );
       }
 
-      const isMenuExist = await this.menusRepository.getMenuById(
-        createFeatureDto.menuId,
-      );
-
-      if (!isMenuExist) {
-        throw new NotFoundException(
-          `Menu with id ${createFeatureDto.menuId} not exist!`,
+      if(createFeatureDto.menuId != null) {
+        const isMenuExist = await this.menusRepository.getMenuById(
+          createFeatureDto.menuId,
         );
+  
+        if (!isMenuExist) {
+          throw new NotFoundException(
+            `Menu with id ${createFeatureDto.menuId} not exist!`,
+          );
+        }
       }
 
       const newFeature = await this.featuresRepository.createFeature(
@@ -177,6 +211,123 @@ export class FeaturesService {
         throw error;
       }
       throw new ConflictException('Failed to delete feature');
+    }
+  }
+
+  async createAccessFeature(
+    createAccessFeatureDto: CreateAccessFeatureDto,
+  ): Promise<AccessFeature> {
+    try {      
+      const { roleId, featureId, createdBy } = createAccessFeatureDto;
+
+      await Promise.all([
+        this.usersService.getUser(createdBy),
+        this.rolesService.getRoleById(roleId),
+        this.getFeatureById(featureId),
+      ]);
+
+      const validateAccessFeature =
+        await this.featuresRepository.getAccessFeatureByRoleFeatureId(
+          roleId,
+          featureId,
+        );
+      console.log("masuk create access feature");
+
+      if (validateAccessFeature) {
+        throw new BadRequestException('Access feature already exist');
+      }
+
+      return await this.featuresRepository.createAccessFeature(
+        createAccessFeatureDto,
+      );
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error get access menu by role',
+        error.status || 500,
+      );
+    }
+  }
+
+  async getAccessFeatureNoMenuId(): Promise<Features[]> {
+    try {
+      return await this.featuresRepository.getAccessFeatureNoMenuId();
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error get access feature no menu id',
+        error.status || 500,
+      );
+    }
+  }
+
+  async getAccessFeatureById(accessFeatureId: string) {
+    try {
+      const accessFeature =
+        await this.featuresRepository.getAccessFeatureById(accessFeatureId);
+      if (!accessFeature) {
+        throw new NotFoundException('Access menu not found');
+      }
+
+      return accessFeature;
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error get access menu by role',
+        error.status || 500,
+      );
+    }
+  }
+
+  async getAccessFeatureByRoleMenuId(
+    roleId: string,
+    menuId: string,
+  ): Promise<Features[]> {
+    try {
+      return await this.featuresRepository.getAccessFeatureByRoleMenuId(
+        roleId,
+        menuId,
+      );
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error get access menu by role',
+        error.status || 500,
+      );
+    }
+  }
+
+  async updateAccessFeatureById(
+    accessFeatureId: string,
+    updateAccessFeatureDto: UpdateAccessFeatureDto,
+  ): Promise<AccessFeature> {
+    try {
+      const { roleId, featureId, updatedBy } = updateAccessFeatureDto;
+
+      await Promise.all([
+        this.usersService.getUser(updatedBy),
+        this.rolesService.getRoleById(roleId),
+        this.getFeatureById(featureId),
+        this.getAccessFeatureById(accessFeatureId),
+      ]);
+
+      return await this.featuresRepository.updateAccessFeatureById(
+        accessFeatureId,
+        updateAccessFeatureDto,
+      );
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error update access menu by id',
+        error.status || 500,
+      );
+    }
+  }
+
+  async deleteAccessFeatureById(accessFeatureId: string): Promise<AccessFeature> {
+    try {
+      await this.getAccessFeatureById(accessFeatureId);
+      return await this.featuresRepository.deleteAccessMenuFeature(accessFeatureId);
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error delete access menu by id',
+        error.status || 500,
+      );
     }
   }
 }
