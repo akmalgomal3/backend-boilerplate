@@ -62,17 +62,20 @@ export class UserLogActivitiesService {
       let { userId, username, deviceType, ipAddress } = user;
       let { method, url, path, params, statusCode, description } = createUserLogActivitiyByUserDTO;
       let { latitude, longitude } = this.utilsService.getGeoIp(ipAddress);
+      let message: string
 
       const page = this.mappingPageActivity(path);
       const activityType = page.includes('auth')
         ? ActivityType.AUTH
         : ActivityType.ACTIVITY;
 
+      
+      if(Array.isArray(description)) message = description.join(', ');
       if (!description) {
-        description = this.mappingDescriptionActivity({
+        message = this.mappingDescriptionActivity({
           username,
           method,
-          page,
+          page, 
           params,
         });
       }
@@ -84,7 +87,7 @@ export class UserLogActivitiesService {
         method,
         path: url,
         statusCode,
-        description,
+        description: message,
         device: {
           type: deviceType,
           info: {
