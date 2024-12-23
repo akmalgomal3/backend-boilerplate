@@ -4,6 +4,7 @@ import {
   NotFoundException,
   HttpException,
   BadRequestException,
+  HttpStatus,
 } from '@nestjs/common';
 import { FeaturesRepository } from '../repository/features.repository';
 import { CreateFeatureDto } from '../dto/create-features.dto';
@@ -16,11 +17,14 @@ import { UserService } from 'src/users/services/user.service';
 import { RolesService } from 'src/roles/service/roles.service';
 import { UpdateAccessFeatureDto } from '../dto/update-access-feature.dto';
 import { Feature } from 'typeorm';
+import { MenusRepository } from '../../menus/repository/menus.repository';
 
 @Injectable()
 export class FeaturesService {
   constructor(
+    
     private featuresRepository: FeaturesRepository,
+    private menusRepository: MenusRepository,
     private usersService: UserService,
     private rolesService: RolesService,
   ) {}
@@ -115,6 +119,27 @@ export class FeaturesService {
     userId: string,
   ): Promise<string> {
     try {
+      const isAlreadyAvailable = await this.featuresRepository.getFeatureByName(
+        createFeatureDto.featureName,
+      );
+
+      if (isAlreadyAvailable) {
+        throw new HttpException(
+          `Feature with name ${createFeatureDto.featureName} already available!`,
+          HttpStatus.CONFLICT,
+        );
+      }
+
+      const isMenuExist = await this.menusRepository.getMenuById(
+        createFeatureDto.menuId,
+      );
+
+      if (!isMenuExist) {
+        throw new NotFoundException(
+          `Menu with id ${createFeatureDto.menuId} not exist!`,
+        );
+      }
+
       const newFeature = await this.featuresRepository.createFeature(
         {
           ...createFeatureDto,
@@ -124,7 +149,7 @@ export class FeaturesService {
       );
       return newFeature;
     } catch (error) {
-      throw new ConflictException('Failed to create feature', error);
+      throw error;
     }
   }
 
@@ -134,7 +159,35 @@ export class FeaturesService {
     userId: string,
   ): Promise<void> {
     try {
-      await this.getFeatureById(featureId);
+      const isExist = await this.getFeatureById(featureId);
+      if (!isExist) {
+        throw new NotFoundException(`Feature with id ${featureId} not exist!`);
+      }
+      if (updateFeatureDto.featureName != null) {
+        const nameAlreadyAvailable =
+          await this.featuresRepository.getFeatureByName(
+            updateFeatureDto.featureName,
+          );
+
+        if (nameAlreadyAvailable) {
+          throw new HttpException(
+            `Feature with name ${updateFeatureDto.featureName} already available!`,
+            HttpStatus.CONFLICT,
+          );
+        }
+      }
+
+      if (updateFeatureDto.menuId != null) {
+        const isMenuExist = await this.menusRepository.getMenuById(
+          updateFeatureDto.menuId,
+        );
+
+        if (!isMenuExist) {
+          throw new NotFoundException(
+            `Menu with id ${updateFeatureDto.menuId} not exist!`,
+          );
+        }
+      }
 
       await this.featuresRepository.updateFeature(
         featureId,
@@ -142,10 +195,7 @@ export class FeaturesService {
         userId,
       );
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new ConflictException('Failed to update feature');
+      throw error;
     }
   }
 

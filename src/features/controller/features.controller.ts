@@ -13,14 +13,17 @@ import { CreateFeatureDto } from '../dto/create-features.dto';
 import { UpdateFeatureDto } from '../dto/update-features.dto';
 import { User } from '../../common/decorators/user.decorator';
 import { JwtPayload } from '../../common/types/jwt-payload.type';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CreateAccessFeatureDto } from '../dto/create-access-feature.dto';
 import { UpdateAccessFeatureDto } from '../dto/update-access-feature.dto';
 
+@ApiBearerAuth()
 @Controller('features')
 export class FeaturesController {
   constructor(private featuresService: FeaturesService) {}
 
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
   @Get()
   @ApiBearerAuth()
   async getFeatures(

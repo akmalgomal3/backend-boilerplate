@@ -20,3 +20,13 @@ export const sendForgotPasswordEmailTemplate = (
     </div>
   `;
 };
+
+export const sendUpdateEmailTemplate = (name: string, token: string) => {
+  return `
+    <div>
+      <h1>Hello, ${name}</h1>
+      <p>We received a request to update your email. To verify your email, please click link below:</p>
+      <a href="http://localhost:3001/auth/update-email?token=${token}">Update email</a>
+    </div>
+  `;
+};

@@ -1,4 +1,12 @@
-import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
 import { GeneratePasswordDto } from '../dto/generate-password.dto';
 import { RegisterDto } from '../dto/register.dto';
@@ -11,6 +19,7 @@ import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import { LoginGoogleDto } from '../dto/login-google.dto';
 import { SendForgotPasswordDto } from '../dto/send-forgot-password.dto';
 import { SetPasswordDto } from '../dto/set-password.dto';
+import { SendUpdateEmailDto } from '../../users/dto/send-update-email.dto';
 
 @Controller('auth')
 export class AuthController {

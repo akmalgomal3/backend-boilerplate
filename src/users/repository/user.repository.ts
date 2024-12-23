@@ -513,6 +513,24 @@ export class UserRepository {
     }
   }
 
+  async updateUserEmail(userId: string, email: string): Promise<Users> {
+    try {
+      const query = `UPDATE users
+                     SET email      = $2,
+                         updated_at = NOW(),
+                         updated_by = $3
+                     WHERE user_id = $1 RETURNING user_id as "userId", username, email, full_name as "fullName", phone_number as "phoneNumber", birthdate`;
+      const user = await this.repository.query(query, [userId, email, userId]);
+
+      return user[0];
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error updating user email',
+        error.status || 500,
+      );
+    }
+  }
+
   async updateUserById(
     userId: string,
     updateUserDto: UpdateUserDto,

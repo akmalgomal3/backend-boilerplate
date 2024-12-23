@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { RolesRepository } from '../repository/roles.repository';
 import { CreateRoleDto } from '../dto/create-roles.dto';
@@ -12,6 +13,7 @@ import {
   PaginatedResponseDto,
   PaginationDto,
 } from '../../common/dto/pagination.dto';
+import { RoleType } from '../../common/enums/user-roles.enum';
 
 @Injectable()
 export class RolesService {
@@ -81,6 +83,30 @@ export class RolesService {
     userId: string,
   ): Promise<string> {
     try {
+      const isAlreadyAvailable = await this.roleRepository.getRoleByName(
+        createRoleDto.roleName,
+      );
+
+      if (isAlreadyAvailable) {
+        throw new HttpException(
+          `Role with name ${createRoleDto.roleName} already available!`,
+          HttpStatus.CONFLICT,
+        );
+      }
+
+      const validRoles = [
+        RoleType.Executive,
+        RoleType.Admin,
+        RoleType.Operator,
+      ];
+
+      if (!validRoles.includes(createRoleDto.roleType)) {
+        throw new HttpException(
+          `Role with type ${createRoleDto.roleType} not valid!`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       const newRole = await this.roleRepository.createRole({
         ...createRoleDto,
         createdBy: userId,
@@ -97,7 +123,35 @@ export class RolesService {
     userId: string,
   ): Promise<void> {
     try {
-      await this.getRoleById(roleId);
+      const isExist = await this.getRoleById(roleId);
+
+      if (!isExist) {
+        throw new NotFoundException(`Role with ID ${roleId} not exist!`);
+      }
+
+      const isAlreadyAvailable = await this.roleRepository.getRoleByName(
+        updateRoleDto.roleName,
+      );
+
+      if (isAlreadyAvailable) {
+        throw new HttpException(
+          `Role with name ${updateRoleDto.roleName} already available!`,
+          HttpStatus.CONFLICT,
+        );
+      }
+
+      const validRoles = [
+        RoleType.Executive,
+        RoleType.Admin,
+        RoleType.Operator,
+      ];
+
+      if (!validRoles.includes(updateRoleDto.roleType)) {
+        throw new HttpException(
+          `Role with type ${updateRoleDto.roleType} not valid!`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
       await this.roleRepository.updateRole(roleId, {
         ...updateRoleDto,
@@ -113,7 +167,11 @@ export class RolesService {
 
   async deleteRole(roleId: string): Promise<void> {
     try {
-      await this.getRoleById(roleId);
+      const isExist = await this.getRoleById(roleId);
+
+      if (!isExist) {
+        throw new NotFoundException(`Role with ID ${roleId} not exist!`);
+      }
 
       await this.roleRepository.deleteRole(roleId);
     } catch (error) {

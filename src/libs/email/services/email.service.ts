@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { SendEmailDto } from '../dto/send-email.dto';
 import {
   sendForgotPasswordEmailTemplate,
+  sendUpdateEmailTemplate,
   verificationEmailTemplate,
 } from '../templates/email.templates';
 
@@ -46,5 +47,9 @@ export class EmailService {
 
   generateSendForgotPasswordEmail(name: string, token: string) {
     return sendForgotPasswordEmailTemplate(name, token);
+  }
+
+  generateSendUpdateEmail(name: string, token: string) {
+    return sendUpdateEmailTemplate(name, token);
   }
 }
