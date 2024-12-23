@@ -38,9 +38,6 @@ export class UserLogActivitiesService {
     }
   }
 
-  /*
-    TODO: Add validation if description is array
-  */
   async createByUser(
     user: JwtPayload,
     createUserLogActivitiyByUserDTO: CreateUserLogActivityByUserDTO,
