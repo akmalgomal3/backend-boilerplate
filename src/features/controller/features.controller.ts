@@ -106,6 +106,22 @@ export class FeaturesController {
     };
   }
 
+  @Get('/accessFeature/:roleId/:menuId')
+  @ApiBearerAuth()
+  async getAccessFeatureByMenuId(
+    @Param('roleId') roleId: string,
+    @Param('menuId') menuId: string,
+  ) {
+    const result = await this.featuresService.getAccessFeatureByRoleMenuId(
+      roleId,
+      menuId,
+    );
+
+    return {
+      data: result
+    };
+  }
+
   @Patch('/accessFeature/:accessFeatureId')
   @ApiBearerAuth()
   async updateAccessFeature(

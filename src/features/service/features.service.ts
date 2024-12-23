@@ -130,14 +130,16 @@ export class FeaturesService {
         );
       }
 
-      const isMenuExist = await this.menusRepository.getMenuById(
-        createFeatureDto.menuId,
-      );
-
-      if (!isMenuExist) {
-        throw new NotFoundException(
-          `Menu with id ${createFeatureDto.menuId} not exist!`,
+      if(createFeatureDto.menuId != null) {
+        const isMenuExist = await this.menusRepository.getMenuById(
+          createFeatureDto.menuId,
         );
+  
+        if (!isMenuExist) {
+          throw new NotFoundException(
+            `Menu with id ${createFeatureDto.menuId} not exist!`,
+          );
+        }
       }
 
       const newFeature = await this.featuresRepository.createFeature(
@@ -215,7 +217,7 @@ export class FeaturesService {
   async createAccessFeature(
     createAccessFeatureDto: CreateAccessFeatureDto,
   ): Promise<AccessFeature> {
-    try {
+    try {      
       const { roleId, featureId, createdBy } = createAccessFeatureDto;
 
       await Promise.all([
@@ -229,6 +231,8 @@ export class FeaturesService {
           roleId,
           featureId,
         );
+      console.log("masuk create access feature");
+
       if (validateAccessFeature) {
         throw new BadRequestException('Access feature already exist');
       }
@@ -239,6 +243,17 @@ export class FeaturesService {
     } catch (error) {
       throw new HttpException(
         error.message || 'Error get access menu by role',
+        error.status || 500,
+      );
+    }
+  }
+
+  async getAccessFeatureNoMenuId(): Promise<Features[]> {
+    try {
+      return await this.featuresRepository.getAccessFeatureNoMenuId();
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error get access feature no menu id',
         error.status || 500,
       );
     }

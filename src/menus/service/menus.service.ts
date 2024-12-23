@@ -33,7 +33,7 @@ export class MenusService {
   async getMenus(
     page: number = 1,
     limit: number = 10,
-  ): Promise<PaginatedResponseDto<Menu>> {
+  ): Promise<{data: {}, metadata: {}}> {
     try {
       const skip = (page - 1) * limit;
       const [menus, totalItems] = await this.menusRepository.getMenus(
@@ -41,11 +41,13 @@ export class MenusService {
         limit,
       );
       const totalPages = Math.ceil(totalItems / limit);
-
       const hierarchicalMenus = await this.buildMenuHierarchy(menus);
 
       return {
-        data: hierarchicalMenus,
+        data: {
+          globalFeature: await this.featuresService.getFeatureNoMenuId(),
+          menus: hierarchicalMenus
+        },
         metadata: {
           page: Number(page),
           limit: Number(limit),
@@ -220,14 +222,17 @@ export class MenusService {
 
   async getAccessMenuByRoleId(
     roleId: string,
-  ): Promise<PaginatedResponseDto<Menu>> {
+  ): Promise<{data: {}, metadata: null | {}}> {
     try {
       const getAccessMenu =
         await this.menusRepository.getAccessMenuByRoleId(roleId);
       const formatMenu = await this.buildMenuHierarchy(getAccessMenu, roleId);
 
       return {
-        data: formatMenu,
+        data: { 
+          globalFeature: await this.featuresService.getAccessFeatureNoMenuId(), 
+          menus: formatMenu 
+        },
         metadata: null,
       };
     } catch (error) {
@@ -270,10 +275,12 @@ export class MenusService {
     try {
       const { roleId, menuId, updatedBy } = updateAccessMenuDto;
 
-      await this.userService.getUser(updatedBy);
-      await this.roleService.getRoleById(roleId);
-      await this.getAccessMenuById(accessMenuId);
-      await this.getMenuById(menuId);
+      await Promise.all([
+        this.userService.getUser(updatedBy),
+        this.roleService.getRoleById(roleId),
+        this.getAccessMenuById(accessMenuId),
+        this.getMenuById(menuId),
+      ])
 
       return await this.menusRepository.updateAccessMenu(
         accessMenuId,

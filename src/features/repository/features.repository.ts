@@ -187,7 +187,8 @@ export class FeaturesRepository {
         INSERT INTO access_feature 
           (role_id, feature_id, can_access, can_read, can_insert, can_update, can_delete, created_by, created_at, updated_at) 
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) 
-        RETURNING access_feature_id as "accessFeatureId", 
+        RETURNING 
+                  -- access_feature_id as "accessFeatureId", 
                   role_id as "roleId", 
                   feature_id as "featureId", 
                   can_access as "canAccess", 
@@ -252,7 +253,7 @@ export class FeaturesRepository {
     }
   }
 
-  async getAccessFeatureByRoleFeatureId(roleId: string, featureId: string) {
+  async getAccessFeatureByRoleFeatureId(roleId: string, featureId: string): Promise<AccessFeature | null> {
     try {
       const query = `
         SELECT 
@@ -280,29 +281,38 @@ export class FeaturesRepository {
       `;
 
       const [result] = await this.repository.query(query, [roleId, featureId]);
-      return {
-        accessFeatureId: result.accessFeatureId,
-        canAccess: result.canAccess,
-        canRead: result.canRead,
-        canInsert: result.canInsert,
-        canUpdate: result.canUpdate,
-        canDelete: result.canDelete,
-        createdAt: result.createAt,
-        createdBy: result.createBy,
-        updatedAt: result.updateAt,
-        updatedBy: result.updatedBy,
-        feature: {
-          featureId: result.featureId,
-          menuId: result.menuId,
-          featureName: result.featureName,
-          active: result.active,
-        },
-        role: {
-          roleId: result.roleId,
-          roleName: result.roleName,
-          roleType: result.roleType,
-        },
-      };
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getAccessFeatureNoMenuId(): Promise<Features[]> {
+    try {
+      const query = `SELECT 
+                      af.access_feature_id as "accessFeatureId",
+                      af.role_id as "roleId",
+                      r.role_name as "roleName",
+                      r.role_type as "roleType",
+                      af.feature_id as "featureId",
+                      f.feature_name as "featureName",
+                      f.active as active,
+                      f.menu_id as "menuId",
+                      af.can_access as "canAccess",
+                      af.can_read as "canRead",
+                      af.can_insert as "canInsert",
+                      af.can_update as "canUpdate",
+                      af.can_delete as "canDelete",
+                      af.created_at as "createdAt",
+                      af.updated_at as "updatedAt",
+                      af.created_by as "createdBy",
+                      af.updated_by as "updatedBy"
+                    FROM access_feature af
+                    INNER JOIN features f ON af.feature_id = f.feature_id
+                    INNER JOIN roles r ON af.role_id = r.role_id
+                    WHERE f.menu_id IS NULL`;
+      const features = await this.repository.query(query);
+      return features;
     } catch (error) {
       throw error;
     }
@@ -338,29 +348,7 @@ export class FeaturesRepository {
       `;
 
       const [result] = await this.repository.query(query, [accessFeatureId]);
-      return {
-        accessFeatureId: result.accessFeatureId,
-        canAccess: result.canAccess,
-        canRead: result.canRead,
-        canInsert: result.canInsert,
-        canUpdate: result.canUpdate,
-        canDelete: result.canDelete,
-        createdAt: result.createAt,
-        createdBy: result.createBy,
-        updatedAt: result.updateAt,
-        updatedBy: result.updatedBy,
-        feature: {
-          featureId: result.featureId,
-          menuId: result.menuId,
-          featureName: result.featureName,
-          active: result.active,
-        },
-        role: {
-          roleId: result.roleId,
-          roleName: result.roleName,
-          roleType: result.roleType,
-        },
-      };
+      return result
     } catch (error) {
       throw error;
     }
