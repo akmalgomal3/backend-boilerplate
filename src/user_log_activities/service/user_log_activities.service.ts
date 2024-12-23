@@ -38,9 +38,6 @@ export class UserLogActivitiesService {
     }
   }
 
-  /*
-    TODO: Add validation if description is array
-  */
   async createByUser(
     user: JwtPayload,
     createUserLogActivitiyByUserDTO: CreateUserLogActivityByUserDTO,
@@ -62,17 +59,20 @@ export class UserLogActivitiesService {
       let { userId, username, deviceType, ipAddress } = user;
       let { method, url, path, params, statusCode, description } = createUserLogActivitiyByUserDTO;
       let { latitude, longitude } = this.utilsService.getGeoIp(ipAddress);
+      let message: string
 
       const page = this.mappingPageActivity(path);
       const activityType = page.includes('auth')
         ? ActivityType.AUTH
         : ActivityType.ACTIVITY;
 
+      
+      if(Array.isArray(description)) message = description.join(', ');
       if (!description) {
-        description = this.mappingDescriptionActivity({
+        message = this.mappingDescriptionActivity({
           username,
           method,
-          page,
+          page, 
           params,
         });
       }
@@ -84,7 +84,7 @@ export class UserLogActivitiesService {
         method,
         path: url,
         statusCode,
-        description,
+        description: message,
         device: {
           type: deviceType,
           info: {
@@ -249,6 +249,25 @@ export class UserLogActivitiesService {
     } catch (e) {
       throw new HttpException(
         e.message || 'Error delete user log activity by description',
+        e.status || 500,
+      );
+    }
+  }
+
+  async deleteUserActivityByUserId(
+    userId: string,
+  ): Promise<{ deletedNumber: number }> {
+    try {
+      const filter = {
+        ...(userId && { user_id: userId }),
+        is_deleted: false
+      };
+
+      const deletedCount = await this.userActivityRepository.softDeleteUserActivityByFilter(filter);
+      return { deletedNumber: deletedCount };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error delete user log activity by user id',
         e.status || 500,
       );
     }

@@ -16,5 +16,5 @@ export class CreateUserLogActivityByUserDTO {
     statusCode: string;
 
     @IsNotEmpty()
-    description?: string;
+    description?: string | Array<string>;
 }
