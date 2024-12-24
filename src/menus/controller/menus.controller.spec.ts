@@ -1,16 +1,35 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MenusController } from './menus.controller';
 import { MenusService } from '../service/menus.service';
-import { Menu } from '../entity/menus.entity';
-import * as request from 'supertest';
-import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
-import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { JwtPayload } from '../../common/types/jwt-payload.type';
+import { RoleType } from '../../common/enums/user-roles.enum';
+import { CreateMenuDto } from '../dto/create-menu.dto';
+import { UpdateMenuDto } from '../dto/update-menu.dto';
 
 jest.mock('../service/menus.service');
 
+const mockMenusService = {
+  getMenus: jest.fn(),
+  getMenuById: jest.fn(),
+  getMenuByName: jest.fn(),
+  createMenu: jest.fn(),
+  updateMenu: jest.fn(),
+  deleteMenu: jest.fn(),
+};
+
+const user: JwtPayload = {
+  userId: '71c7ff42-210f-44b3-9741-98d1919b7fe8',
+  username: 'User Test',
+  email: 'test@example.com',
+  roleName: 'Executive Test',
+  roleType: RoleType.Executive,
+  ipAddress: '1.1.1.1',
+  deviceType: 'Web',
+};
+
 describe('MenusController', () => {
-  let app: INestApplication;
-  let menusService: jest.Mocked<MenusService>;
+  let menusService: MenusService;
+  let menusController: MenusController;
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -18,259 +37,262 @@ describe('MenusController', () => {
       providers: [
         {
           provide: MenusService,
-          useValue: {
-            getMenus: jest.fn(),
-            getMenuById: jest.fn(),
-            getMenuByName: jest.fn(),
-            createMenu: jest.fn(),
-          },
+          useValue: mockMenusService,
         },
       ],
     }).compile();
 
-    menusService = module.get(MenusService);
-    app = module.createNestApplication();
-    await app.init();
+    menusService = module.get<MenusService>(MenusService);
+    menusController = module.get<MenusController>(MenusController);
   });
 
-  afterAll(async () => {
-    await app.close();
+  afterAll(() => {
+    jest.clearAllMocks();
   });
 
-  it('GET /menus - should return paginated menus with status 200', async () => {
-    const mockResponse: PaginatedResponseDto<Menu> = {
-      data: [
-        {
-          menuId: `f1cf0c15-7d4b-466b-8cd9-989c9855d062`,
-          menuName: 'Dashboard',
-          parentMenuId: null,
-          routePath: '/dashboard',
-          icon: 'icon-dashboard',
-          hierarchyLevel: 1,
-          description: 'Main dashboard',
-          active: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          createdBy: 'ccbc3658-9ec4-498a-9a04-46f9853ac4c0',
-          updatedBy: 'ccbc3658-9ec4-498a-9a04-46f9853ac4c0',
-        },
-      ],
-      metadata: {
-        page: 1,
-        limit: 10,
-        totalPages: 1,
-        totalItems: 1,
-      },
-    };
-
-    menusService.getMenus.mockResolvedValue(mockResponse);
-
-    return request(app.getHttpServer())
-      .get('/menus?page=1&limit=10')
-      .set('Authorization', 'Bearer token')
-      .expect(HttpStatus.OK)
-      .expect((res) => {
-        expect(res.body).toHaveProperty('data');
-        expect(res.body).toHaveProperty('metadata');
-        expect(res.body.data).toHaveLength(1);
-        expect(res.body.metadata).toEqual({
+  describe('getMenus', () => {
+    it('should return paginated menus', async () => {
+      const mockResult = {
+        data: [
+          {
+            menuId: '91ccec39-5616-4090-9372-87f08b877352',
+            menuName: 'Menu 1',
+            parentMenuId: null,
+            routePath: '/menu1',
+            icon: null,
+            hierarchyLevel: 1,
+            description: 'Ini menu 1 update',
+            active: true,
+            createdAt: '2024-12-15T21:18:04.272Z',
+            updatedAt: '2024-12-15T21:51:13.696Z',
+            createdBy: '06d7ca2d-2449-44ae-a8f2-7b6eccb4bbf0',
+            updatedBy: '06d7ca2d-2449-44ae-a8f2-7b6eccb4bbf0',
+            children: [
+              {
+                menuId: '4c564485-eb52-4789-a4ff-a4124fb9684c',
+                menuName: 'Menu 4',
+                parentMenuId: '91ccec39-5616-4090-9372-87f08b877352',
+                routePath: '/menu4',
+                icon: null,
+                hierarchyLevel: 2,
+                description: 'Ini Menu 4',
+                active: true,
+                createdAt: '2024-12-15T21:20:17.305Z',
+                updatedAt: '2024-12-15T21:20:17.305Z',
+                createdBy: '06d7ca2d-2449-44ae-a8f2-7b6eccb4bbf0',
+                updatedBy: null,
+                children: [
+                  {
+                    menuId: '51532dff-660d-4fc1-9d87-1a427f088fee',
+                    menuName: 'Menu 13',
+                    parentMenuId: '4c564485-eb52-4789-a4ff-a4124fb9684c',
+                    routePath: '/menu13',
+                    icon: null,
+                    hierarchyLevel: 3,
+                    description: 'Ini Menu 13',
+                    active: true,
+                    createdAt: '2024-12-16T23:12:22.326Z',
+                    updatedAt: '2024-12-16T23:12:22.326Z',
+                    createdBy: '06d7ca2d-2449-44ae-a8f2-7b6eccb4bbf0',
+                    updatedBy: null,
+                    children: [],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        metadata: {
           page: 1,
           limit: 10,
           totalPages: 1,
-          totalItems: 1,
-        });
-      });
-  });
-
-  it('GET /menus - should return 500 if service throws error', async () => {
-    menusService.getMenus.mockRejectedValue(new Error('Service failed'));
-
-    return request(app.getHttpServer())
-      .get('/menus?page=1&limit=10')
-      .set('Authorization', 'Bearer token')
-      .expect(HttpStatus.INTERNAL_SERVER_ERROR)
-      .expect((res) => {
-        expect(res.body).toHaveProperty('statusCode', 500);
-        expect(res.body).toHaveProperty('message');
-      });
-  });
-
-  it('GET /menus/:menuId - should return a menu by ID with status 200', async () => {
-    const mockMenu: Menu = {
-      menuId: `f1cf0c15-7d4b-466b-8cd9-989c9855d062`,
-      menuName: 'Dashboard',
-      parentMenuId: null,
-      routePath: '/dashboard',
-      icon: 'icon-dashboard',
-      hierarchyLevel: 1,
-      description: 'Main dashboard',
-      active: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      createdBy: 'ccbc3658-9ec4-498a-9a04-46f9853ac4c0',
-      updatedBy: 'ccbc3658-9ec4-498a-9a04-46f9853ac4c0',
-    };
-
-    menusService.getMenuById.mockResolvedValue(mockMenu);
-
-    return request(app.getHttpServer())
-      .get('/menus/f1cf0c15-7d4b-466b-8cd9-989c9855d062')
-      .set(
-        'Authorization',
-        'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwNmQ3Y2EyZC0yNDQ5LTQ0YWUtYThmMi03YjZlY2NiNGJiZjAiLCJ1c2VybmFtZSI6Imxha3VuYSIsImVtYWlsIjoibGFrdW5hQGdtYWlsLmNvbSIsInJvbGVOYW1lIjoiYWRtaW4gZGV2Iiwicm9sZVR5cGUiOiJBZG1pbiIsImlwQWRkcmVzcyI6IjEzOS4yNTUuMjU1LjI0MiIsImRldmljZVR5cGUiOiJXZWIiLCJpYXQiOjE3MzQ0MTk0NzEsImV4cCI6MTczNDQyMzA3MX0.OrMrJLaB2PArCtYmOWyiNwusB4NbBH5wqpqXYQM19nM',
-      )
-      .expect(HttpStatus.OK)
-      .expect((res) => {
-        expect(res.body).toHaveProperty('data');
-        expect(res.body.data).toEqual({
-          ...mockMenu,
-          createdAt: mockMenu.createdAt.toISOString(),
-          updatedAt: mockMenu.updatedAt.toISOString(),
-        });
-      });
-  });
-
-  it('GET /menus/:menuId - should return 500 if menu not found & service throws conflict error', async () => {
-    menusService.getMenuById.mockRejectedValue({
-      response: {
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Internal server error',
-      },
-    });
-
-    return request(app.getHttpServer())
-      .get('/menus/f1cf0c15-7d4b-466b-8cd9-989c9855d062')
-      .set('Authorization', 'Bearer token')
-      .expect(HttpStatus.INTERNAL_SERVER_ERROR)
-      .expect((res) => {
-        expect(res.body).toHaveProperty(
-          'statusCode',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-        expect(res.body).toHaveProperty('message', 'Internal server error');
-      });
-  });
-
-  it('GET /menus/:menuName - should return 200 if a menu found by name', async () => {
-    const mockMenu = {
-      menuId: 'f1cf0c15-7d4b-466b-8cd9-989c9855d062',
-      menuName: 'Dashboard',
-      parentMenuId: null,
-      routePath: '/dashboard',
-      icon: 'icon-dashboard',
-      hierarchyLevel: 1,
-      description: 'Main dashboard',
-      active: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      createdBy: 'ccbc3658-9ec4-498a-9a04-46f9853ac4c0',
-      updatedBy: 'ccbc3658-9ec4-498a-9a04-46f9853ac4c0',
-    };
-
-    menusService.getMenuByName.mockResolvedValue(mockMenu);
-
-    return request(app.getHttpServer())
-      .get('/menus/name/Dashboard')
-      .set(
-        'Authorization',
-        'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwNmQ3Y2EyZC0yNDQ5LTQ0YWUtYThmMi03YjZlY2NiNGJiZjAiLCJ1c2VybmFtZSI6Imxha3VuYSIsImVtYWlsIjoibGFrdW5hQGdtYWlsLmNvbSIsInJvbGVOYW1lIjoiYWRtaW4gZGV2Iiwicm9sZVR5cGUiOiJBZG1pbiIsImlwQWRkcmVzcyI6IjEzOS4yNTUuMjU1LjI0MiIsImRldmljZVR5cGUiOiJXZWIiLCJpYXQiOjE3MzQ0MTk0NzEsImV4cCI6MTczNDQyMzA3MX0.OrMrJLaB2PArCtYmOWyiNwusB4NbBH5wqpqXYQM19nM',
-      )
-      .expect(HttpStatus.OK)
-      .expect((res) => {
-        expect(res.body).toHaveProperty('data');
-        expect(res.body.data).toEqual({
-          ...mockMenu,
-          createdAt: mockMenu.createdAt.toISOString(),
-          updatedAt: mockMenu.updatedAt.toISOString(),
-        });
-      });
-  });
-
-  it('GET /menus/:menuName - should return a 500 error if menu by name not found & service throws database error', async () => {
-    menusService.getMenuByName.mockRejectedValue({
-      response: {
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Internal server error',
-      },
-    });
-
-    return request(app.getHttpServer())
-      .get('/menus/name/Dashboard')
-      .set(
-        'Authorization',
-        'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwNmQ3Y2EyZC0yNDQ5LTQ0YWUtYThmMi03YjZlY2NiNGJiZjAiLCJ1c2VybmFtZSI6Imxha3VuYSIsImVtYWlsIjoibGFrdW5hQGdtYWlsLmNvbSIsInJvbGVOYW1lIjoiYWRtaW4gZGV2Iiwicm9sZVR5cGUiOiJBZG1pbiIsImlwQWRkcmVzcyI6IjEzOS4yNTUuMjU1LjI0MiIsImRldmljZVR5cGUiOiJXZWIiLCJpYXQiOjE3MzQ0MTk0NzEsImV4cCI6MTczNDQyMzA3MX0.OrMrJLaB2PArCtYmOWyiNwusB4NbBH5wqpqXYQM19nM',
-      )
-      .expect(HttpStatus.INTERNAL_SERVER_ERROR)
-      .expect((res) => {
-        expect(res.body).toHaveProperty(
-          'statusCode',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-        expect(res.body).toHaveProperty('message', 'Internal server error');
-      });
-  });
-});
-
-describe('MenusController (e2e)', () => {
-  let app: INestApplication;
-  const menusService = {
-    createMenu: jest.fn(),
-  };
-
-  beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [MenusController],
-      providers: [
-        {
-          provide: MenusService,
-          useValue: {
-            getMenus: jest.fn(),
-            getMenuById: jest.fn(),
-            getMenuByName: jest.fn(),
-            createMenu: jest.fn(),
-          },
+          totalItems: 7,
         },
-      ],
-    }).compile();
+      };
 
-    app = module.createNestApplication();
+      mockMenusService.getMenus.mockResolvedValueOnce(mockResult);
 
-    // Add a mock middleware to inject userId into request.user
-    app.use((req, res, next) => {
-      req.user = { userId: 'mock-user-id-123' };
-      next();
+      const result = await menusController.getMenus(1, 10);
+
+      expect(menusService.getMenus).toHaveBeenCalledWith(1, 10);
+      expect(result).toEqual(mockResult);
     });
 
-    app.useGlobalPipes(new ValidationPipe());
-    await app.init();
+    it('should throw an error if service fails', async () => {
+      mockMenusService.getMenus.mockRejectedValueOnce(
+        new Error('Service error'),
+      );
+
+      await expect(menusController.getMenus(1, 10)).rejects.toThrow(
+        'Service error',
+      );
+    });
   });
 
-  afterAll(async () => {
-    await app.close();
+  describe('getMenuById', () => {
+    it('should return menu by id', async () => {
+      const mockMenu = {
+        menuId: '91ccec39-5616-4090-9372-87f08b877352',
+        menuName: 'Menu 1',
+        parentMenuId: null,
+        routePath: '/menu1',
+        icon: null,
+        hierarchyLevel: 1,
+        description: 'Ini menu 1',
+        active: true,
+        createdAt: '2024-12-15T21:18:04.272Z',
+        updatedAt: '2024-12-15T21:51:13.696Z',
+        createdBy: '06d7ca2d-2449-44ae-a8f2-7b6eccb4bbf0',
+        updatedBy: '06d7ca2d-2449-44ae-a8f2-7b6eccb4bbf0',
+      };
+
+      mockMenusService.getMenuById.mockResolvedValueOnce(mockMenu);
+
+      const result = await menusController.getMenuById(
+        '91ccec39-5616-4090-9372-87f08b877352',
+      );
+
+      expect(menusService.getMenuById).toHaveBeenCalledWith(
+        '91ccec39-5616-4090-9372-87f08b877352',
+      );
+      expect(result).toEqual({ data: mockMenu });
+    });
+
+    it('should throw an error if service fails', async () => {
+      mockMenusService.getMenuById.mockRejectedValueOnce(
+        new Error('Menu not found'),
+      );
+
+      await expect(menusController.getMenuById('invalid-id')).rejects.toThrow(
+        'Menu not found',
+      );
+    });
   });
 
-  it('POST /menus - should create a new menu', async () => {
-    const createMenuDto = {
-      menuName: 'Test Menu',
-      parentMenuId: null,
-      routePath: '/test',
-      icon: 'icon-test',
-      hierarchyLevel: 1,
-      description: 'Test Menu Description',
+  describe('getMenuByName', () => {
+    it('should return menu by name', async () => {
+      const mockMenu = {
+        menuId: '91ccec39-5616-4090-9372-87f08b877352',
+        menuName: 'Menu 1',
+        parentMenuId: null,
+        routePath: '/menu1',
+        icon: null,
+        hierarchyLevel: 1,
+        description: 'Ini menu 1',
+        active: true,
+        createdAt: '2024-12-15T21:18:04.272Z',
+        updatedAt: '2024-12-15T21:51:13.696Z',
+        createdBy: '06d7ca2d-2449-44ae-a8f2-7b6eccb4bbf0',
+        updatedBy: '06d7ca2d-2449-44ae-a8f2-7b6eccb4bbf0',
+      };
+
+      mockMenusService.getMenuByName.mockResolvedValueOnce(mockMenu);
+
+      const result = await menusController.getMenuByName('Menu 1');
+
+      expect(menusService.getMenuByName).toHaveBeenCalledWith('Menu 1');
+      expect(result).toEqual({ data: mockMenu });
+    });
+
+    it('should throw an error if service fails', async () => {
+      mockMenusService.getMenuByName.mockRejectedValueOnce(
+        new Error('Menu not found'),
+      );
+
+      await expect(
+        menusController.getMenuByName('Invalid Menu'),
+      ).rejects.toThrow('Menu not found');
+    });
+  });
+
+  describe('createMenu', () => {
+    const createMenuDto: CreateMenuDto = {
+      menuName: 'Menu 18',
+      parentMenuId: '4c564485-eb54-4789-a4ff-a4124fb9664c',
+      routePath: '/menu18',
+      icon: null,
+      hierarchyLevel: 3,
+      description: 'Ini Menu 18',
       active: true,
     };
-    const mockMenuId = 'menu-id-123';
 
-    menusService.createMenu.mockResolvedValue(mockMenuId);
+    const mockResult = {
+      menuId: 'f267f7cb-c577-4db3-b4aa-9fb4bd91f0ba',
+    };
+    it('should create a new menu', async () => {
+      mockMenusService.createMenu.mockResolvedValueOnce(mockResult);
 
-    return request(app.getHttpServer())
-      .post('/menus')
-      .set('Authorization', 'Bearer token')
-      .send(createMenuDto)
-      .expect(201)
-      .expect((res) => {
-        expect(res.body).toHaveProperty('data');
-        expect(res.body.data).toBe(mockMenuId);
-      });
+      const result = await menusController.createMenu(createMenuDto, user);
+
+      expect(menusService.createMenu).toHaveBeenCalledWith(
+        createMenuDto,
+        user.userId,
+      );
+      expect(result).toEqual({ data: mockResult });
+    });
+
+    it('should throw an error if service fails', async () => {
+      mockMenusService.createMenu.mockRejectedValueOnce(
+        new Error('Creation failed'),
+      );
+
+      await expect(
+        menusController.createMenu(createMenuDto, user),
+      ).rejects.toThrow('Creation failed');
+    });
+  });
+
+  describe('updateMenu', () => {
+    const updateMenuDto: UpdateMenuDto = {
+      menuName: 'Updated Menu',
+      description: 'Updated description',
+    };
+    it('should update a menu', async () => {
+      mockMenusService.updateMenu.mockResolvedValueOnce(undefined);
+
+      await menusController.updateMenu(
+        '91ccec39-5616-4090-9372-87f08b877352',
+        updateMenuDto,
+        user,
+      );
+
+      expect(menusService.updateMenu).toHaveBeenCalledWith(
+        '91ccec39-5616-4090-9372-87f08b877352',
+        updateMenuDto,
+        user.userId,
+      );
+    });
+
+    it('should throw an error if service fails', async () => {
+      mockMenusService.updateMenu.mockRejectedValueOnce(
+        new Error('Update failed'),
+      );
+
+      await expect(
+        menusController.updateMenu('invalid-id', { menuName: 'Test' }, user),
+      ).rejects.toThrow('Update failed');
+    });
+  });
+
+  describe('deleteMenu', () => {
+    it('should delete a menu', async () => {
+      mockMenusService.deleteMenu.mockResolvedValueOnce(undefined);
+
+      await menusController.deleteMenu('91ccec39-5616-4090-9372-87f08b877352');
+
+      expect(menusService.deleteMenu).toHaveBeenCalledWith(
+        '91ccec39-5616-4090-9372-87f08b877352',
+      );
+    });
+
+    it('should throw an error if service fails', async () => {
+      mockMenusService.deleteMenu.mockRejectedValueOnce(
+        new Error('Delete failed'),
+      );
+
+      await expect(menusController.deleteMenu('invalid-id')).rejects.toThrow(
+        'Delete failed',
+      );
+    });
   });
 });

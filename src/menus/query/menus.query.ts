@@ -90,6 +90,6 @@ export const MenusQuery = {
   `,
 
   DELETE_MENU: `
-    DELETE FROM menus WHERE menu_id = $1
+      DELETE FROM menus WHERE menu_id = ANY($1);
   `,
 };

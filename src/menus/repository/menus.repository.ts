@@ -6,8 +6,6 @@ import { Menu } from '../entity/menus.entity';
 import { MenusQuery } from '../query/menus.query';
 import { CreateAccessMenuDto } from '../dto/create-access-menu.dto';
 import { AccessMenu } from '../entity/access_menu.entity';
-import { create } from 'lodash';
-import { Roles } from 'src/roles/entity/roles.entity';
 import { UpdateAccessMenuDto } from '../dto/update-access-menu.dto';
 
 @Injectable()
@@ -120,7 +118,7 @@ export class MenusRepository {
     }
   }
 
-  async deleteMenu(menuId: string): Promise<void> {
+  async deleteMenu(menuId: string[]): Promise<void> {
     const queryRunner = this.repository.manager.connection.createQueryRunner();
 
     await queryRunner.connect();
@@ -258,7 +256,9 @@ export class MenusRepository {
   async deleteAccessMenu(accessMenuId: string): Promise<AccessMenu> {
     try {
       const query = `DELETE FROM access_menu WHERE access_menu_id = $1 RETURNING access_menu_id as "accessMenuId", menu_id as "menuId", role_id as "roleId", created_by as "createdBy"`;
-      const [deleteAccessMenu] = await this.repositoryAccessMenu.query(query, [accessMenuId]);
+      const [deleteAccessMenu] = await this.repositoryAccessMenu.query(query, [
+        accessMenuId,
+      ]);
 
       return deleteAccessMenu;
     } catch (error) {

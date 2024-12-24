@@ -1,6 +1,5 @@
 import {
   Injectable,
-  ConflictException,
   NotFoundException,
   HttpException,
   HttpStatus,
@@ -10,15 +9,12 @@ import { MenusRepository } from '../repository/menus.repository';
 import { CreateMenuDto } from '../dto/create-menu.dto';
 import { UpdateMenuDto } from '../dto/update-menu.dto';
 import { Menu } from '../entity/menus.entity';
-import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { CreateAccessMenuDto } from '../dto/create-access-menu.dto';
 import { RolesService } from 'src/roles/service/roles.service';
 import { UserService } from 'src/users/services/user.service';
 import { UpdateAccessMenuDto } from '../dto/update-access-menu.dto';
 import { FeaturesService } from 'src/features/service/features.service';
 import { Features } from 'src/features/entity/features.entity';
-import { features } from 'process';
-import { AccessFeature } from 'src/features/entity/access_feature.entity';
 import { AccessMenu } from '../entity/access_menu.entity';
 
 @Injectable()
@@ -33,7 +29,7 @@ export class MenusService {
   async getMenus(
     page: number = 1,
     limit: number = 10,
-  ): Promise<{data: {}, metadata: {}}> {
+  ): Promise<{ data: {}; metadata: {} }> {
     try {
       const skip = (page - 1) * limit;
       const [menus, totalItems] = await this.menusRepository.getMenus(
@@ -46,7 +42,7 @@ export class MenusService {
       return {
         data: {
           globalFeature: await this.featuresService.getFeatureNoMenuId(),
-          menus: hierarchicalMenus
+          menus: hierarchicalMenus,
         },
         metadata: {
           page: Number(page),
@@ -57,8 +53,8 @@ export class MenusService {
       };
     } catch (error) {
       throw new HttpException(
-        `Failed to retrieve menus, ${error}`,
-        HttpStatus.CONFLICT,
+        error.message || 'Error get all menu',
+        error.status || 500,
       );
     }
   }
@@ -73,12 +69,9 @@ export class MenusService {
 
       return menu;
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
       throw new HttpException(
-        `Failed to retrieve menus, ${error}`,
-        HttpStatus.CONFLICT,
+        error.message || 'Error get menu by id',
+        error.status || 500,
       );
     }
   }
@@ -93,12 +86,9 @@ export class MenusService {
 
       return menu;
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
       throw new HttpException(
-        `Failed to retrieve menus, ${error}`,
-        HttpStatus.CONFLICT,
+        error.message || 'Error get menu by name',
+        error.status || 500,
       );
     }
   }
@@ -108,17 +98,6 @@ export class MenusService {
     userId: string,
   ): Promise<string> {
     try {
-      const nameAlreadyAvailable = await this.menusRepository.getMenuByName(
-        createMenuDto.menuName,
-      );
-
-      if (nameAlreadyAvailable) {
-        throw new HttpException(
-          `Menu with name ${createMenuDto.menuName} already available!`,
-          HttpStatus.CONFLICT,
-        );
-      }
-
       if (createMenuDto.parentMenuId != null) {
         const isParentExist = await this.menusRepository.getMenuById(
           createMenuDto.parentMenuId,
@@ -140,7 +119,10 @@ export class MenusService {
       );
       return newMenu;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error create menu',
+        error.status || 500,
+      );
     }
   }
 
@@ -183,10 +165,10 @@ export class MenusService {
 
       await this.menusRepository.updateMenu(menuId, updateMenuDto, userId);
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new ConflictException('Failed to update menu');
+      throw new HttpException(
+        error.message || 'Error update menu',
+        error.status || 500,
+      );
     }
   }
 
@@ -194,12 +176,53 @@ export class MenusService {
     try {
       await this.getMenuById(menuId);
 
-      await this.menusRepository.deleteMenu(menuId);
+      const allMenus = await this.getMenus(1, 100000);
+
+      const menuIdsWillDelete = this.getAllMenuChildId(
+        allMenus.data['menus'],
+        menuId,
+      );
+
+      await this.menusRepository.deleteMenu(menuIdsWillDelete);
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new ConflictException('Failed to delete menu');
+      throw new HttpException(
+        error.message || 'Error delete menu',
+        error.status || 500,
+      );
+    }
+  }
+
+  private getAllMenuChildId(data: any[], targetId: string): string[] {
+    try {
+      const result: string[] = [];
+
+      const findIds = (menus: any[]) => {
+        for (const menu of menus) {
+          if (menu.menuId == targetId) {
+            collectIds(menu);
+            result.push(targetId);
+            break;
+          }
+          if (menu.children && menu.children.length > 0) {
+            findIds(menu.children);
+          }
+        }
+      };
+
+      const collectIds = (menu: any) => {
+        for (const child of menu.children) {
+          result.push(child.menuId);
+          collectIds(child);
+        }
+      };
+
+      findIds(data);
+      return result;
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error delete menu',
+        error.status || 500,
+      );
     }
   }
 
@@ -222,16 +245,16 @@ export class MenusService {
 
   async getAccessMenuByRoleId(
     roleId: string,
-  ): Promise<{data: {}, metadata: null | {}}> {
+  ): Promise<{ data: {}; metadata: null | {} }> {
     try {
       const getAccessMenu =
         await this.menusRepository.getAccessMenuByRoleId(roleId);
       const formatMenu = await this.buildMenuHierarchy(getAccessMenu, roleId);
 
       return {
-        data: { 
-          globalFeature: await this.featuresService.getAccessFeatureNoMenuId(), 
-          menus: formatMenu 
+        data: {
+          globalFeature: await this.featuresService.getAccessFeatureNoMenuId(),
+          menus: formatMenu,
         },
         metadata: null,
       };
@@ -280,7 +303,7 @@ export class MenusService {
         this.roleService.getRoleById(roleId),
         this.getAccessMenuById(accessMenuId),
         this.getMenuById(menuId),
-      ])
+      ]);
 
       return await this.menusRepository.updateAccessMenu(
         accessMenuId,
@@ -314,7 +337,7 @@ export class MenusService {
       const menuMap = new Map(
         menus.map((menu) => [
           menu.menuId,
-          { ...menu, children: [], features: [] },
+          { ...menu, features: [], children: [] },
         ]),
       );
 
@@ -324,9 +347,13 @@ export class MenusService {
         if (features) menu.features.push(...features);
 
         if (menu.parentMenuId) {
-          const parentMenu = menuMap.get(menu.parentMenuId);
-          if (parentMenu) {
-            parentMenu.children.push(menu);
+          if (!menuMap.get(menu.parentMenuId)) {
+            rootMenus.push(menu);
+          } else {
+            const parentMenu = menuMap.get(menu.parentMenuId);
+            if (parentMenu) {
+              parentMenu.children.push(menu);
+            }
           }
         } else {
           rootMenus.push(menu);
