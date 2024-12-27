@@ -196,16 +196,17 @@ export class AuthService {
         email: user.email,
         roleName: user.role.roleName,
         roleType: user.role.roleType,
+        roleId: user.role.roleId,
         ipAddress,
         deviceType,
       };
 
       const accessToken = await this.jwtService.signAsync(payload, {
-        expiresIn: '1h',
+        expiresIn: this.configService.get('EXPIRED_ACCESS_TOKEN'),
       });
 
       const refreshToken = await this.jwtService.signAsync(payload, {
-        expiresIn: '3d',
+        expiresIn: this.configService.get('EXPIRED_REFRESH_TOKEN'),
       });
 
       await Promise.all([
@@ -307,15 +308,16 @@ export class AuthService {
         email: user.email,
         roleName: user.role.roleName,
         roleType: user.role.roleType,
+        roleId: user.role.roleId,
         ipAddress,
         deviceType,
       };
 
       const accessToken = await this.jwtService.signAsync(payload, {
-        expiresIn: '1h',
+        expiresIn: this.configService.get('EXPIRED_ACCESS_TOKEN'),
       });
       const refreshToken = await this.jwtService.signAsync(payload, {
-        expiresIn: '3d',
+        expiresIn: this.configService.get('EXPIRED_REFRESH_TOKEN'),
       });
 
       await Promise.all([
@@ -368,10 +370,11 @@ export class AuthService {
         roleType: user.roleType,
         ipAddress: user.ipAddress,
         deviceType: user.deviceType,
+        roleId: user.roleId,
       };
 
       const accessToken = await this.jwtService.signAsync(payload, {
-        expiresIn: '1h',
+        expiresIn: this.configService.get('EXPIRED_ACCESS_TOKEN'),
       });
 
       await this.sessionService.deleteSession(
@@ -497,7 +500,7 @@ export class AuthService {
           userAuthId,
         },
         {
-          expiresIn: '1d',
+          expiresIn: this.configService.get('EXPIRED_REGISTER_EMAIL_TOKEN'),
         },
       );
       const emailTemplate = this.emailService.generateVerificationEmail(
@@ -595,7 +598,7 @@ export class AuthService {
           userId: user.userId,
         },
         {
-          expiresIn: '15m',
+          expiresIn: this.configService.get('EXPIRED_EMAIL_TOKEN'),
         },
       );
 

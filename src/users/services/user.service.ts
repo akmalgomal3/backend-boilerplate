@@ -29,6 +29,7 @@ import { UserAuthRequestType } from '../../common/enums/request-type.enum';
 import { ApproveUserAuthDto } from '../dto/approve-user-auth.dto';
 import { GetUserAuthDto } from '../dto/get-unapproved-user.dto';
 import { UpdatePasswordByAdminDto } from '../dto/update-password-by-admin.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UserService {
@@ -41,6 +42,7 @@ export class UserService {
     private jwtService: JwtService,
     private emailService: EmailService,
     private sessionService: SessionService,
+    private configService: ConfigService,
   ) {}
 
   async getUsers(
@@ -459,7 +461,7 @@ export class UserService {
           email,
         },
         {
-          expiresIn: '15m',
+          expiresIn: this.configService.get('EXPIRED_EMAIL_TOKEN'),
         },
       );
 
