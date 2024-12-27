@@ -1,12 +1,12 @@
 import {
-  Controller,
-  Post,
-  Get,
-  Delete,
   Body,
+  Controller,
+  Delete,
+  Get,
   Param,
-  Query,
   Patch,
+  Post,
+  Query,
 } from '@nestjs/common';
 import { RolesService } from '../service/roles.service';
 import { CreateRoleDto } from '../dto/create-roles.dto';
@@ -15,8 +15,11 @@ import { Roles } from '../entity/roles.entity';
 import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { User } from '../../common/decorators/user.decorator';
 import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { AuthorizedRoles } from '../../common/decorators/authorized-roles.decorator';
+import { RoleType } from '../../common/enums/user-roles.enum';
 
 @ApiBearerAuth()
+@AuthorizedRoles(RoleType.Admin)
 @Controller('roles')
 export class RolesController {
   constructor(private rolesService: RolesService) {}
