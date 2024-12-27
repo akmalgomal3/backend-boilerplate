@@ -13,6 +13,7 @@ import { UsersAuth } from '../entity/user-auth.entity';
 import { Roles } from 'src/roles/entity/roles.entity';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserAuthRequestType } from '../../common/enums/request-type.enum';
+import { ERROR_MESSAGES } from '../../common/exceptions/error-messages';
 
 @Injectable()
 export class UserRepository {
@@ -443,7 +444,7 @@ export class UserRepository {
 
       const userAuthInfo = await this.getUserAuthById(userAuthId);
       if (!userAuthInfo) {
-        throw new NotFoundException('User not found');
+        throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
       }
 
       if (userAuthInfo.requestStatus !== UserAuthRequestType.Requested) {
