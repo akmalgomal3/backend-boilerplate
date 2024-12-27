@@ -525,9 +525,11 @@ export class AuthService {
 
       const [newUser] = await Promise.all([
         this.userService.approveUser(
+          {
+            roleId: userAuth.role.roleId,
+            userAuthId: userAuth.userId,
+          },
           userAuth.userId,
-          userAuth.userId,
-          userAuth.role.roleId,
         ),
         this.sessionService.deleteSession(
           `register-email:${tokenPayload.userAuthId}`,

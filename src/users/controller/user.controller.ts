@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { ResponseInterceptor } from 'src/common/interceptor/response.interceptor';
 import { UserService } from '../services/user.service';
-import { GetUnapprovedUserDto } from '../dto/get-unapproved-user.dto';
 import { RoleType } from '../../common/enums/user-roles.enum';
 import { AuthorizedRoles } from '../../common/decorators/authorized-roles.decorator';
 import { ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
@@ -24,6 +23,8 @@ import { UpdateUserDto } from '../dto/update-user.dto';
 import { UpdateBanUserDto } from '../dto/update-ban-user.dto';
 import { SendUpdateEmailDto } from '../dto/send-update-email.dto';
 import { Public } from '../../common/decorators/public.decorator';
+import { DeclineUserAuthDto } from '../dto/decline-user-auth.dto';
+import { GetUserAuthDto } from '../dto/get-unapproved-user.dto';
 
 // @ts-ignore
 @Controller('users')
@@ -48,12 +49,9 @@ export class UserController {
 
   @ApiBearerAuth()
   @AuthorizedRoles(RoleType.Admin)
-  @Get('/approval/all')
-  async getUnapprovedUsers(
-    @Query() getUnapprovedUserDto: GetUnapprovedUserDto,
-  ) {
-    const result =
-      await this.userService.getUnapprovedUsers(getUnapprovedUserDto);
+  @Get('/user-auth/all')
+  async getUnapprovedUsers(@Query() getUserAuth: GetUserAuthDto) {
+    const result = await this.userService.getUnapprovedUsers(getUserAuth);
     return {
       data: result.data,
       metadata: result.metadata,
@@ -62,20 +60,48 @@ export class UserController {
 
   @ApiBearerAuth()
   @AuthorizedRoles(RoleType.Admin)
-  @Post('/:userAuthId/approve')
+  @Post('/user-auth/approve')
   async approveUser(
-    @Param('userAuthId', ParseUUIDPipe) userId: string,
     @User() user: JwtPayload,
     @Body() approveDto: ApproveUserAuthDto,
   ) {
-    const result = await this.userService.approveUser(
-      userId,
-      user.userId,
-      approveDto.roleId,
-    );
+    const result = await this.userService.approveUser(approveDto, user.userId);
 
     return {
+      message: 'User Auth approved successfully',
       data: result,
+    };
+  }
+
+  @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
+  @Post('/user-auth/decline')
+  async declineUser(
+    @Body() declineDto: DeclineUserAuthDto,
+    @User() user: JwtPayload,
+  ) {
+    const result = await this.userService.declineUserAuth(
+      declineDto.userAuthId,
+      user.userId,
+    );
+    return {
+      data: result,
+    };
+  }
+
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'userAuthId',
+    required: true,
+    description: 'User Auth ID',
+  })
+  @AuthorizedRoles(RoleType.Admin)
+  @Delete('/user-auth/:userAuthId')
+  async deleteUserAuth(@Param('userAuthId', ParseUUIDPipe) userAuthId: string) {
+    await this.userService.deleteUserAuth(userAuthId);
+
+    return {
+      message: 'User Auth deleted successfully',
     };
   }
 
