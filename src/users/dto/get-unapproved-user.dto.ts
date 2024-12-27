@@ -1,8 +1,15 @@
-import { IsIn, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import {
+  IsEnum,
+  IsIn,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { UserAuthRequestType } from '../../common/enums/request-type.enum';
 
-export class GetUnapprovedUserDto {
+export class GetUserAuthDto {
   @ApiProperty({ example: 1 })
   @IsNumber()
   @IsNotEmpty()
@@ -18,6 +25,15 @@ export class GetUnapprovedUserDto {
   @ApiProperty({ example: 'kurniawan', required: false })
   @IsOptional()
   search: string;
+
+  @ApiProperty({
+    enum: UserAuthRequestType,
+    example: UserAuthRequestType.Approved,
+    required: false,
+  })
+  @IsEnum(UserAuthRequestType)
+  @IsOptional()
+  requestType?: UserAuthRequestType;
 
   @ApiProperty({ example: 'DESC' })
   @IsNotEmpty()

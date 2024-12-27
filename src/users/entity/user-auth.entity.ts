@@ -8,6 +8,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Roles } from '../../roles/entity/roles.entity';
+import { UserAuthRequestType } from '../../common/enums/request-type.enum';
 
 // user auth is for temporary user who is not approved by admin
 @Entity('users_auth')
@@ -39,6 +40,14 @@ export class UsersAuth {
 
   @Column({ type: 'boolean' })
   active: boolean;
+
+  @Column({
+    type: 'enum',
+    enum: UserAuthRequestType,
+    default: UserAuthRequestType.Requested,
+    nullable: true,
+  })
+  requestStatus?: UserAuthRequestType;
 
   @CreateDateColumn({ default: () => 'NOW()' })
   @Column()

@@ -15,7 +15,6 @@ import {
 import { Users } from '../entity/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { RolesService } from '../../roles/service/roles.service';
-import { GetUnapprovedUserDto } from '../dto/get-unapproved-user.dto';
 import * as bcrypt from 'bcrypt';
 import { UpdatePasswordDto } from '../dto/update-password.dto';
 import { UtilsService } from '../../libs/utils/services/utils.service';
@@ -25,6 +24,10 @@ import { JwtService } from '@nestjs/jwt';
 import { EmailService } from '../../libs/email/services/email.service';
 import { SessionService } from '../../libs/session/service/session.service';
 import { JwtPayload } from '../../common/types/jwt-payload.type';
+import { UsersAuth } from '../entity/user-auth.entity';
+import { UserAuthRequestType } from '../../common/enums/request-type.enum';
+import { ApproveUserAuthDto } from '../dto/approve-user-auth.dto';
+import { GetUserAuthDto } from '../dto/get-unapproved-user.dto';
 
 @Injectable()
 export class UserService {
@@ -168,20 +171,69 @@ export class UserService {
     }
   }
 
-  async getUnapprovedUsers(getUnapprovedDto: GetUnapprovedUserDto) {
+  async declineUserAuth(userId: string, declinerId: string) {
+    try {
+      const userAuth = await this.getUserAuthById(userId);
+
+      if (!userAuth) {
+        throw new NotFoundException('User auth not found');
+      }
+
+      if (userAuth.requestStatus !== UserAuthRequestType.Requested) {
+        throw new BadRequestException('User auth status is not requested');
+      }
+
+      const declineUser = await this.userRepository.updateUserAuthStatus(
+        userId,
+        declinerId,
+        UserAuthRequestType.Declined,
+      );
+
+      return {
+        userId: declineUser.userId,
+        requestStatus: declineUser.requestStatus,
+        updatedBy: declineUser.updatedBy,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error declining user',
+        error.status || 500,
+      );
+    }
+  }
+
+  async deleteUserAuth(userId: string): Promise<void> {
+    try {
+      const userAuth: UsersAuth = await this.getUserAuthById(userId);
+      if (!userAuth) {
+        throw new NotFoundException('User auth not found');
+      }
+
+      await this.userRepository.deleteUserAuth(userId);
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error deleting user',
+        error.status || 500,
+      );
+    }
+  }
+
+  async getUnapprovedUsers(getUserAuthDto: GetUserAuthDto) {
     try {
       const {
         page = 1,
         limit: take = 10,
         sortByDate,
         search,
-      } = getUnapprovedDto;
+        requestType,
+      } = getUserAuthDto;
       const skip: number = (page - 1) * take;
-      const [data, total] = await this.userRepository.getUnapprovedUsers(
+      const [data, total] = await this.userRepository.getUserAuth(
         take,
         skip,
         search,
         sortByDate,
+        requestType,
       );
 
       return {
@@ -201,8 +253,10 @@ export class UserService {
     }
   }
 
-  async approveUser(userAuthId: string, approverId: string, roleId: string) {
+  async approveUser(approveDto: ApproveUserAuthDto, approverId: string) {
     try {
+      const { userAuthId, roleId } = approveDto;
+
       const newUser: Users = await this.userRepository.approveUser(
         userAuthId,
         approverId,
@@ -477,7 +531,8 @@ export class UserService {
 
   async getUserAuthById(userId: string) {
     try {
-      const result = await this.userRepository.getUserAuthById(userId);
+      const result: UsersAuth =
+        await this.userRepository.getUserAuthById(userId);
 
       return result;
     } catch (e) {
@@ -490,7 +545,7 @@ export class UserService {
 
   async deleteUserByUserId(userId: string): Promise<Number> {
     try {
-      await this.userLogActivitiesService.deleteUserActivityByUserId(userId)
+      await this.userLogActivitiesService.deleteUserActivityByUserId(userId);
       const deleteUser = await this.userRepository.deleteByUserId(userId);
       return deleteUser;
     } catch (e) {
@@ -551,13 +606,13 @@ export class UserService {
 
       if (userAuthByUsername) {
         throw new BadRequestException(
-          'Username already registered, Please wait for approval or contact admin',
+          `Username already used with status ${userAuthByUsername.requestStatus}, Please use another username or wait for approval or contact admin`,
         );
       }
 
       if (userAuthByEmail) {
         throw new BadRequestException(
-          'Email already registered, Please wait for approval or contact admin',
+          `Email already used with status ${userAuthByEmail.requestStatus}, Please use another email or wait for approval or contact admin`,
         );
       }
     }

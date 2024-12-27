@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   HttpException,
   Inject,
   Injectable,
@@ -9,9 +10,9 @@ import { CreateUserDto } from '../dto/create-user.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { Users } from '../entity/user.entity';
 import { UsersAuth } from '../entity/user-auth.entity';
-import { format } from 'date-fns';
 import { Roles } from 'src/roles/entity/roles.entity';
 import { UpdateUserDto } from '../dto/update-user.dto';
+import { UserAuthRequestType } from '../../common/enums/request-type.enum';
 
 @Injectable()
 export class UserRepository {
@@ -92,17 +93,18 @@ export class UserRepository {
   async getUserAuthById(userId: string): Promise<UsersAuth> {
     try {
       const query = `
-          SELECT user_id       as "userId",
+          SELECT user_id        as "userId",
                  username,
                  email,
                  password,
                  active,
-                 full_name     as "fullName",
-                 phone_number  as "phoneNumber",
+                 full_name      as "fullName",
+                 phone_number   as "phoneNumber",
                  birthdate,
-                 roles.role_id as "roleId",
-                 role_name     as "roleName",
-                 role_type     as "roleType"
+                 roles.role_id  as "roleId",
+                 role_name      as "roleName",
+                 role_type      as "roleType",
+                 request_status as "requestStatus"
           FROM users_auth
                    LEFT JOIN roles ON users_auth.role_id = roles.role_id
           WHERE user_id = $1
@@ -169,17 +171,18 @@ export class UserRepository {
   async getUserAuthByUsername(username: string): Promise<UsersAuth> {
     try {
       const query = `
-          SELECT user_id       as "userId",
+          SELECT user_id        as "userId",
                  username,
                  email,
                  password,
                  active,
-                 full_name     as "fullName",
-                 phone_number  as "phoneNumber",
+                 full_name      as "fullName",
+                 phone_number   as "phoneNumber",
                  birthdate,
-                 roles.role_id as "roleId",
-                 role_name     as "roleName",
-                 role_type     as "roleType"
+                 roles.role_id  as "roleId",
+                 role_name      as "roleName",
+                 role_type      as "roleType",
+                 request_status as "requestStatus"
           FROM users_auth
                    LEFT JOIN roles ON users_auth.role_id = roles.role_id
           WHERE username = $1
@@ -242,17 +245,18 @@ export class UserRepository {
 
   async getUserAuthByEmail(email: string): Promise<UsersAuth> {
     try {
-      const query = `SELECT user_id       as "userId",
+      const query = `SELECT user_id        as "userId",
                             username,
                             email,
                             password,
                             active,
-                            full_name     as "fullName",
-                            phone_number  as "phoneNumber",
+                            full_name      as "fullName",
+                            phone_number   as "phoneNumber",
                             birthdate,
-                            roles.role_id as "roleId",
-                            role_name     as "roleName",
-                            role_type     as "roleType"
+                            roles.role_id  as "roleId",
+                            role_name      as "roleName",
+                            role_type      as "roleType",
+                            request_status as "requestStatus"
                      FROM users_auth
                               LEFT JOIN roles ON users_auth.role_id = roles.role_id
                      WHERE email = $1`;
@@ -329,9 +333,10 @@ export class UserRepository {
 
       const query = `INSERT INTO users_auth (email, username, full_name, password, role_id, birthdate, phone_number,
                                              user_id,
-                                             created_by, active, created_at, updated_at)
+                                             created_by, active, created_at, updated_at, request_status)
                      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(),
-                             NOW()) RETURNING user_id as "userId", username, email, full_name as "fullName", phone_number as "phoneNumber", birthdate`;
+                             NOW(),
+                             'Requested') RETURNING user_id as "userId", username, email, full_name as "fullName", phone_number as "phoneNumber", birthdate`;
 
       const data = await this.repository.query(query, [
         email,
@@ -355,17 +360,47 @@ export class UserRepository {
     }
   }
 
-  async getUnapprovedUsers(
+  async updateUserAuthStatus(
+    userAuthId: string,
+    updaterId: string,
+    requestStatus: UserAuthRequestType,
+  ): Promise<UsersAuth> {
+    try {
+      const query = `UPDATE users_auth
+                     SET request_status = $3,
+                         updated_at     = NOW(),
+                         updated_by     = $2
+                     WHERE user_id = $1 RETURNING user_id as "userId", username, request_status as "requestStatus"`;
+      const [data] = await this.repository.query(query, [
+        userAuthId,
+        updaterId,
+        requestStatus,
+      ]);
+
+      return data[0];
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error declining user',
+        error.status || 500,
+      );
+    }
+  }
+
+  async getUserAuth(
     take: number,
     skip: number,
     search: string,
     sortDate: 'DESC' | 'ASC',
+    requestType?: UserAuthRequestType,
   ): Promise<[UsersAuth[], number]> {
     try {
       return await this.repositoryAuth.findAndCount({
         where: {
           ...(search && {
             username: Like(`%${search}%`),
+          }),
+          ...(requestType && {
+            requestStatus: requestType,
           }),
         },
         take,
@@ -407,10 +442,21 @@ export class UserRepository {
       await queryRunner.startTransaction();
 
       const userAuthInfo = await this.getUserAuthById(userAuthId);
+      if (!userAuthInfo) {
+        throw new NotFoundException('User not found');
+      }
 
-      await queryRunner.query('DELETE FROM users_auth WHERE user_id = $1', [
-        userAuthId,
-      ]);
+      if (userAuthInfo.requestStatus !== UserAuthRequestType.Requested) {
+        throw new BadRequestException(
+          `User already ${userAuthInfo.requestStatus}`,
+        );
+      }
+
+      await this.updateUserAuthStatus(
+        userAuthInfo.userId,
+        approverId,
+        UserAuthRequestType.Approved,
+      );
 
       const newUser = await queryRunner.query(
         `INSERT INTO users (email, username, full_name, password, role_id, birthdate, phone_number, user_id,
