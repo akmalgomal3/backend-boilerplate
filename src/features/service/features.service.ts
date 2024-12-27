@@ -1,28 +1,28 @@
 import {
-  Injectable,
-  ConflictException,
-  NotFoundException,
-  HttpException,
   BadRequestException,
+  HttpException,
   HttpStatus,
+  Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { FeaturesRepository } from '../repository/features.repository';
 import { CreateFeatureDto } from '../dto/create-features.dto';
 import { UpdateFeatureDto } from '../dto/update-features.dto';
 import { Features } from '../entity/features.entity';
-import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import {
+  PaginatedResponseDto,
+  PaginationDto,
+} from '../../common/dto/pagination.dto';
 import { CreateAccessFeatureDto } from '../dto/create-access-feature.dto';
 import { AccessFeature } from '../entity/access_feature.entity';
 import { UserService } from 'src/users/services/user.service';
 import { RolesService } from 'src/roles/service/roles.service';
 import { UpdateAccessFeatureDto } from '../dto/update-access-feature.dto';
-import { Feature } from 'typeorm';
 import { MenusRepository } from '../../menus/repository/menus.repository';
 
 @Injectable()
 export class FeaturesService {
   constructor(
-    
     private featuresRepository: FeaturesRepository,
     private menusRepository: MenusRepository,
     private usersService: UserService,
@@ -30,14 +30,16 @@ export class FeaturesService {
   ) {}
 
   async getFeatures(
-    page: number = 1,
-    limit: number = 10,
+    dto: PaginationDto,
+    search: string,
   ): Promise<PaginatedResponseDto<Features>> {
     try {
+      const { page = 1, limit = 10 } = dto;
       const skip = (page - 1) * limit;
       const [features, totalItems] = await this.featuresRepository.getFeatures(
         skip,
         limit,
+        search,
       );
       const totalPages = Math.ceil(totalItems / limit);
 
@@ -51,7 +53,10 @@ export class FeaturesService {
         },
       };
     } catch (error) {
-      throw new ConflictException('Failed to retrieve features', error);
+      throw new HttpException(
+        error.message || 'Error get all features',
+        error.status || 500,
+      );
     }
   }
 
@@ -60,15 +65,15 @@ export class FeaturesService {
       const feature = await this.featuresRepository.getFeatureById(featureId);
 
       if (!feature) {
-        throw new NotFoundException(`Feature with ID ${featureId} not found`);
+        new NotFoundException(`Feature with ID ${featureId} not found`);
       }
 
       return feature;
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new ConflictException('Failed to retrieve feature');
+      throw new HttpException(
+        error.message || 'Error get feature by id',
+        error.status || 500,
+      );
     }
   }
 
@@ -78,17 +83,15 @@ export class FeaturesService {
         await this.featuresRepository.getFeatureByName(featureName);
 
       if (!feature) {
-        throw new NotFoundException(
-          `Feature with name ${featureName} not found`,
-        );
+        new NotFoundException(`Feature with name ${featureName} not found`);
       }
 
       return feature;
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new ConflictException('Failed to retrieve feature');
+      throw new HttpException(
+        error.message || 'Error get feature by name',
+        error.status || 500,
+      );
     }
   }
 
@@ -124,34 +127,36 @@ export class FeaturesService {
       );
 
       if (isAlreadyAvailable) {
-        throw new HttpException(
+        new HttpException(
           `Feature with name ${createFeatureDto.featureName} already available!`,
           HttpStatus.CONFLICT,
         );
       }
 
-      if(createFeatureDto.menuId != null) {
+      if (createFeatureDto.menuId != null) {
         const isMenuExist = await this.menusRepository.getMenuById(
           createFeatureDto.menuId,
         );
-  
+
         if (!isMenuExist) {
-          throw new NotFoundException(
+          new NotFoundException(
             `Menu with id ${createFeatureDto.menuId} not exist!`,
           );
         }
       }
 
-      const newFeature = await this.featuresRepository.createFeature(
+      return await this.featuresRepository.createFeature(
         {
           ...createFeatureDto,
           active: createFeatureDto.active ?? true,
         },
         userId,
       );
-      return newFeature;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error create new feature',
+        error.status || 500,
+      );
     }
   }
 
@@ -163,7 +168,7 @@ export class FeaturesService {
     try {
       const isExist = await this.getFeatureById(featureId);
       if (!isExist) {
-        throw new NotFoundException(`Feature with id ${featureId} not exist!`);
+        new NotFoundException(`Feature with id ${featureId} not exist!`);
       }
       if (updateFeatureDto.featureName != null) {
         const nameAlreadyAvailable =
@@ -172,7 +177,7 @@ export class FeaturesService {
           );
 
         if (nameAlreadyAvailable) {
-          throw new HttpException(
+          new HttpException(
             `Feature with name ${updateFeatureDto.featureName} already available!`,
             HttpStatus.CONFLICT,
           );
@@ -185,7 +190,7 @@ export class FeaturesService {
         );
 
         if (!isMenuExist) {
-          throw new NotFoundException(
+          new NotFoundException(
             `Menu with id ${updateFeatureDto.menuId} not exist!`,
           );
         }
@@ -197,7 +202,10 @@ export class FeaturesService {
         userId,
       );
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error update role',
+        error.status || 500,
+      );
     }
   }
 
@@ -207,17 +215,17 @@ export class FeaturesService {
 
       await this.featuresRepository.deleteFeature(featureId);
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new ConflictException('Failed to delete feature');
+      throw new HttpException(
+        error.message || 'Error delete role',
+        error.status || 500,
+      );
     }
   }
 
   async createAccessFeature(
     createAccessFeatureDto: CreateAccessFeatureDto,
   ): Promise<AccessFeature> {
-    try {      
+    try {
       const { roleId, featureId, createdBy } = createAccessFeatureDto;
 
       await Promise.all([
@@ -231,17 +239,17 @@ export class FeaturesService {
           roleId,
           featureId,
         );
-      console.log("masuk create access feature");
+      console.log('masuk create access feature');
 
       if (validateAccessFeature) {
-        throw new BadRequestException('Access feature already exist');
+        new BadRequestException('Access feature already exist');
       }
 
       return await this.featuresRepository.createAccessFeature(
         createAccessFeatureDto,
       );
     } catch (error) {
-      throw new HttpException(
+      new HttpException(
         error.message || 'Error get access menu by role',
         error.status || 500,
       );
@@ -319,10 +327,14 @@ export class FeaturesService {
     }
   }
 
-  async deleteAccessFeatureById(accessFeatureId: string): Promise<AccessFeature> {
+  async deleteAccessFeatureById(
+    accessFeatureId: string,
+  ): Promise<AccessFeature> {
     try {
       await this.getAccessFeatureById(accessFeatureId);
-      return await this.featuresRepository.deleteAccessMenuFeature(accessFeatureId);
+      return await this.featuresRepository.deleteAccessMenuFeature(
+        accessFeatureId,
+      );
     } catch (error) {
       throw new HttpException(
         error.message || 'Error delete access menu by id',

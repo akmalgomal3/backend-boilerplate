@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DataSource, Feature, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { CreateFeatureDto } from '../dto/create-features.dto';
 import { UpdateFeatureDto } from '../dto/update-features.dto';
 import { Features } from '../entity/features.entity';
@@ -18,11 +18,16 @@ export class FeaturesRepository {
     this.repository = this.dataSource.getRepository(Features);
   }
 
-  async getFeatures(skip: number, take: number): Promise<[Features[], number]> {
+  async getFeatures(
+    skip: number,
+    take: number,
+    search: string,
+  ): Promise<[Features[], number]> {
     try {
       const features = await this.repository.query(FeaturesQuery.GET_FEATURES, [
         skip,
         take,
+        search,
       ]);
       const count = await this.repository.query(FeaturesQuery.COUNT_FEATURES);
 
@@ -253,7 +258,10 @@ export class FeaturesRepository {
     }
   }
 
-  async getAccessFeatureByRoleFeatureId(roleId: string, featureId: string): Promise<AccessFeature | null> {
+  async getAccessFeatureByRoleFeatureId(
+    roleId: string,
+    featureId: string,
+  ): Promise<AccessFeature | null> {
     try {
       const query = `
         SELECT 
@@ -348,7 +356,7 @@ export class FeaturesRepository {
       `;
 
       const [result] = await this.repository.query(query, [accessFeatureId]);
-      return result
+      return result;
     } catch (error) {
       throw error;
     }
