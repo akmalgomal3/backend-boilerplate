@@ -106,7 +106,7 @@ export class UserController {
   }
 
   @ApiBearerAuth()
-  @Patch('/:userId/password')
+  @Patch('/account/password')
   async updatePassword(
     @Body() updatePasswordDto: UpdatePasswordDto,
     @User() user: JwtPayload,
