@@ -1,12 +1,12 @@
 import {
-  Controller,
-  Post,
-  Get,
-  Delete,
   Body,
+  Controller,
+  Delete,
+  Get,
   Param,
-  Query,
   Patch,
+  Post,
+  Query,
 } from '@nestjs/common';
 import { FeaturesService } from '../service/features.service';
 import { CreateFeatureDto } from '../dto/create-features.dto';
@@ -16,6 +16,8 @@ import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CreateAccessFeatureDto } from '../dto/create-access-feature.dto';
 import { UpdateAccessFeatureDto } from '../dto/update-access-feature.dto';
+import { AuthorizedRoles } from '../../common/decorators/authorized-roles.decorator';
+import { RoleType } from '../../common/enums/user-roles.enum';
 
 @ApiBearerAuth()
 @Controller('features')
@@ -24,13 +26,19 @@ export class FeaturesController {
 
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'search', required: false })
   @Get()
   @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
   async getFeatures(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
+    @Query('search') search: string = '',
   ) {
-    const result = await this.featuresService.getFeatures(page, limit);
+    const result = await this.featuresService.getFeatures(
+      { page, limit },
+      search,
+    );
     return {
       data: result.data,
       metadata: result.metadata,
@@ -39,6 +47,7 @@ export class FeaturesController {
 
   @Get(':featureId')
   @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
   async getFeatureById(@Param('featureId') featureId: string) {
     const result = await this.featuresService.getFeatureById(featureId);
     return {
@@ -48,6 +57,7 @@ export class FeaturesController {
 
   @Get('name/:featureName')
   @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
   async getFeatureByName(@Param('featureName') featureName: string) {
     const result = await this.featuresService.getFeatureByName(featureName);
     return {
@@ -57,6 +67,7 @@ export class FeaturesController {
 
   @Post()
   @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
   async createFeature(
     @Body() createFeatureDto: CreateFeatureDto,
     @User() user: JwtPayload,
@@ -72,6 +83,7 @@ export class FeaturesController {
 
   @Patch(':featureId')
   @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
   async updateFeature(
     @Param('featureId') featureId: string,
     @Body() updateFeatureDto: UpdateFeatureDto,
@@ -86,6 +98,7 @@ export class FeaturesController {
 
   @Delete(':featureId')
   @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
   async deleteFeature(@Param('featureId') featureId: string): Promise<void> {
     return this.featuresService.deleteFeature(featureId);
   }
@@ -118,7 +131,7 @@ export class FeaturesController {
     );
 
     return {
-      data: result
+      data: result,
     };
   }
 
@@ -145,7 +158,8 @@ export class FeaturesController {
   @Delete('/accessFeature/:accessFeatureId')
   @ApiBearerAuth()
   async deleteAccessFeature(@Param('accessFeatureId') accessFeatureId: string) {
-    const result = await this.featuresService.deleteAccessFeatureById(accessFeatureId);
+    const result =
+      await this.featuresService.deleteAccessFeatureById(accessFeatureId);
 
     return {
       data: result,
