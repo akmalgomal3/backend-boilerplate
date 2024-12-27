@@ -1,9 +1,9 @@
 import {
-  Injectable,
-  NotFoundException,
+  BadRequestException,
   HttpException,
   HttpStatus,
-  BadRequestException,
+  Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { MenusRepository } from '../repository/menus.repository';
 import { CreateMenuDto } from '../dto/create-menu.dto';
@@ -29,12 +29,14 @@ export class MenusService {
   async getMenus(
     page: number = 1,
     limit: number = 10,
+    search: string = '',
   ): Promise<{ data: {}; metadata: {} }> {
     try {
       const skip = (page - 1) * limit;
       const [menus, totalItems] = await this.menusRepository.getMenus(
         skip,
         limit,
+        search,
       );
       const totalPages = Math.ceil(totalItems / limit);
       const hierarchicalMenus = await this.buildMenuHierarchy(menus);
@@ -64,7 +66,7 @@ export class MenusService {
       const menu = await this.menusRepository.getMenuById(menuId);
 
       if (!menu) {
-        throw new NotFoundException(`Menu with ID ${menuId} not found`);
+        new NotFoundException(`Menu with ID ${menuId} not found`);
       }
 
       return menu;
@@ -81,7 +83,7 @@ export class MenusService {
       const menu = await this.menusRepository.getMenuByName(menuName);
 
       if (!menu) {
-        throw new NotFoundException(`Menu with name ${menuName} not found`);
+        new NotFoundException(`Menu with name ${menuName} not found`);
       }
 
       return menu;
@@ -104,20 +106,19 @@ export class MenusService {
         );
 
         if (!isParentExist) {
-          throw new NotFoundException(
+          new NotFoundException(
             `Parent menu with id ${createMenuDto.parentMenuId} not exist!`,
           );
         }
       }
 
-      const newMenu = await this.menusRepository.createMenu(
+      return await this.menusRepository.createMenu(
         {
           ...createMenuDto,
           active: createMenuDto.active ?? true,
         },
         userId,
       );
-      return newMenu;
     } catch (error) {
       throw new HttpException(
         error.message || 'Error create menu',
@@ -135,7 +136,7 @@ export class MenusService {
       const isExist = await this.getMenuById(menuId);
 
       if (!isExist) {
-        throw new NotFoundException(`Menu with id ${menuId} not exist!`);
+        new NotFoundException(`Menu with id ${menuId} not exist!`);
       }
 
       if (updateMenuDto.menuName != null) {
@@ -144,7 +145,7 @@ export class MenusService {
         );
 
         if (nameAlreadyAvailable) {
-          throw new HttpException(
+          new HttpException(
             `Menu with name ${updateMenuDto.menuName} already available!`,
             HttpStatus.CONFLICT,
           );
@@ -157,7 +158,7 @@ export class MenusService {
         );
 
         if (!isParentExist) {
-          throw new NotFoundException(
+          new NotFoundException(
             `Parent menu with id ${updateMenuDto.parentMenuId} not exist!`,
           );
         }

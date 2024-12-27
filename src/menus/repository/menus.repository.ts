@@ -21,11 +21,16 @@ export class MenusRepository {
     this.repositoryAccessMenu = this.dataSource.getRepository(AccessMenu);
   }
 
-  async getMenus(skip: number, take: number): Promise<[Menu[], number]> {
+  async getMenus(
+    skip: number,
+    take: number,
+    search: string,
+  ): Promise<[Menu[], number]> {
     try {
       const menus = await this.repository.query(MenusQuery.GET_MENUS, [
         skip,
         take,
+        search,
       ]);
       const count = await this.repository.query(MenusQuery.COUNT_MENUS);
 
