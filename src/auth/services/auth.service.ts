@@ -183,6 +183,7 @@ export class AuthService {
       const user = await this.userService.getUserByUsername(username);
 
       if (!user) {
+        await this.validateUserAuth(username);
         throw new BadRequestException('username not found');
       }
 
@@ -274,6 +275,7 @@ export class AuthService {
       const user = await this.userService.getUserByEmail(data.email);
 
       if (!user) {
+        await this.validateUserAuth(data.email);
         throw new BadRequestException('User not found');
       }
 
@@ -731,6 +733,32 @@ export class AuthService {
     } catch (e) {
       throw new HttpException(
         e.message || 'Error validating user',
+        e.status || 500,
+      );
+    }
+  }
+
+  private async validateUserAuth(identifier: string) {
+    try {
+      const userAuthByUsername =
+        await this.userService.getUserAuthByUsername(identifier);
+      const userAuthByEmail =
+        await this.userService.getUserAuthByEmail(identifier);
+
+      if (userAuthByUsername.requestStatus !== 'Approved') {
+        throw new BadRequestException(
+          `Username cannot be used because the status is ${userAuthByUsername.requestStatus}, please contact the administrator for further information`,
+        );
+      }
+
+      if (userAuthByEmail.requestStatus !== 'Declined') {
+        throw new BadRequestException(
+          `Email cannot be used because the status is ${userAuthByEmail.requestStatus}, please contact the administrator for further information`,
+        );
+      }
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error validating user auth',
         e.status || 500,
       );
     }
