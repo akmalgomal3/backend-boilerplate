@@ -7,8 +7,10 @@ export const RolesQuery = {
              updated_at as "updatedAt",
              created_by as "createdBy",
              updated_by as "updatedAt"
-      FROM roles
-               OFFSET $1 LIMIT $2
+      FROM roles 
+      WHERE role_name ILIKE '%' || $3 || '%' OR 
+                            role_type::TEXT ILIKE $3 
+      OFFSET $1 LIMIT $2
     `,
   COUNT_ROLES: `
         SELECT COUNT(*) FROM roles

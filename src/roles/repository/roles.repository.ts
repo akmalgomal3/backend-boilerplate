@@ -16,11 +16,16 @@ export class RolesRepository {
     this.repository = this.dataSource.getRepository(Roles);
   }
 
-  async getRoles(skip: number, take: number): Promise<[Roles[], number]> {
+  async getRoles(
+    skip: number,
+    take: number,
+    search: string,
+  ): Promise<[Roles[], number]> {
     try {
       const roles = await this.repository.query(RolesQuery.GET_ROLES, [
         skip,
         take,
+        search,
       ]);
       const count = await this.repository.query(RolesQuery.COUNT_ROLES);
 
