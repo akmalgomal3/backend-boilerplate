@@ -11,6 +11,7 @@ export const FeaturesQuery = {
             created_by as "createdBy",
             updated_by as "updatedAt"
         FROM features
+        WHERE feature_name ILIKE '%' || $3 || '%'
         OFFSET $1 LIMIT $2
     `,
   COUNT_FEATURES: `
