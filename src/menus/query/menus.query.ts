@@ -14,6 +14,8 @@ export const MenusQuery = {
       created_by as "createdBy",
       updated_by as "updatedBy"
     FROM menus
+    WHERE menu_name ILIKE '%' || $3 || '%' OR
+          description ILIKE '%' || $3 || '%'
     ORDER BY hierarchy_level ASC
     OFFSET $1 LIMIT $2
   `,
