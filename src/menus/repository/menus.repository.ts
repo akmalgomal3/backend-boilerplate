@@ -1,13 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, QueryRunner, Repository, Transaction } from 'typeorm';
 import { CreateMenuDto } from '../dto/create-menu.dto';
 import { UpdateMenuDto } from '../dto/update-menu.dto';
 import { Menu } from '../entity/menus.entity';
 import { MenusQuery } from '../query/menus.query';
-import { CreateAccessMenuDto } from '../dto/create-access-menu.dto';
 import { AccessMenu } from '../entity/access_menu.entity';
-import { UpdateAccessMenuDto } from '../dto/update-access-menu.dto';
-
+import { AccessMenuQuery } from '../query/access_menu.query';
 @Injectable()
 export class MenusRepository {
   private repository: Repository<Menu>;
@@ -58,6 +56,16 @@ export class MenusRepository {
         menuName,
       ]);
       return data.length > 0 ? data[0] : null;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getMenusToCreateAccess(): Promise<Menu[] | []>{
+    try {
+      const query = MenusQuery.GET_MENUS_TO_CREATE_ACCESS
+      const menus = await this.repository.query(query);
+      return menus;
     } catch (error) {
       throw error;
     }
@@ -142,22 +150,7 @@ export class MenusRepository {
 
   async getAccessMenuById(accessMenuId: string): Promise<Partial<AccessMenu>> {
     try {
-      const query = `SELECT 
-                      am.access_menu_id as "accessMenuId",
-                      am.created_by as "createdBy",
-                      am.created_at as "createdAt",
-                      am.updated_at as "updatedAt",
-                      am.updated_by as "updatedBy",
-                      am.role_id as "roleId", 
-                      r.role_name as "roleName",
-                      r.role_type as "roleType",
-                      am.menu_id as "menuId", 
-                      m.menu_name as "menuName"
-                    FROM access_menu am
-                      LEFT JOIN roles r ON am.role_id = r.role_id
-                      LEFT JOIN menus m ON am.menu_id = m.menu_id
-                    WHERE am.access_menu_id = $1
-                    `;
+      const query = AccessMenuQuery.GET_ACCESS_MENU_BY_ID;
       const [accessMenu] = await this.repositoryAccessMenu.query(query, [
         accessMenuId,
       ]);
@@ -185,21 +178,7 @@ export class MenusRepository {
 
   async getAccessMenuByRoleId(roleId: string): Promise<Menu[]> {
     try {
-      const query = `SELECT 
-                      access_menu.access_menu_id as "accessMenuId",
-                      role_id as "roleId", 
-                      access_menu.menu_id as "menuId", 
-                      menus.menu_name as "menuName",
-                      parent_menu_id as "parentMenuId",
-                      hierarchy_level as "hierarchyLevel",
-                      route_path as "routePath", 
-                      icon as icon, 
-                      active as active
-                    FROM access_menu 
-                      LEFT JOIN menus ON access_menu.menu_id = menus.menu_id
-                    WHERE access_menu.role_id = $1 AND menus.active = true
-                    ORDER BY menus.hierarchy_level ASC
-                    `;
+      const query = AccessMenuQuery.GET_ACCESS_MENU_BY_ROLE_ID;
       const accessMenu = await this.repositoryAccessMenu.query(query, [roleId]);
       return accessMenu;
     } catch (error) {
@@ -207,26 +186,47 @@ export class MenusRepository {
     }
   }
 
-  async getAccessMenuByRoleMenuId(
-    roleId: string,
-    menuId: string,
-  ): Promise<AccessMenu> {
+  async getAllMenuAccessByRoleId(roleId: string): Promise<Menu[]> {
     try {
-      return await this.repositoryAccessMenu.findOne({
-        where: { role: { roleId }, menu: { menuId } },
-      });
+      const query = AccessMenuQuery.GET_ALL_MENU_ACCESS_BY_ROLE_ID;
+      const accessMenu = await this.repositoryAccessMenu.query(query, [roleId]);
+      return accessMenu;
     } catch (error) {
       throw error;
     }
   }
 
-  async createAccessMenu(
-    createAccessMenuDto: CreateAccessMenuDto,
+  async createBulkAccessMenu(roleId: string, createdBy: string, menus: string[]): Promise<void> {
+    const queryRunner = this.repository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      await this.deleteAccessMenuTrxByRoleId(queryRunner, roleId);
+      for (const menuId of menus) {
+        await this.createAccessMenu(queryRunner, {
+          roleId,
+          menuId,
+          createdBy,
+        });
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error
+    }finally{
+      await  queryRunner.release();
+    }
+  }
+
+  private async createAccessMenu(
+    trx: QueryRunner,
+    {roleId, menuId, createdBy}
   ): Promise<AccessMenu> {
     try {
-      const { roleId, menuId, createdBy } = createAccessMenuDto;
-      const query = `INSERT INTO access_menu (role_id, menu_id, created_by, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW()) RETURNING access_menu_id as "accessMenuId", menu_id as "menuId", role_id as "roleId", created_by as "createdBy"`;
-      const [create] = await this.repositoryAccessMenu.query(query, [
+      const query = AccessMenuQuery.CREATE_ACCESS_MENU;
+      const [create] = await trx.query(query, [
         roleId,
         menuId,
         createdBy,
@@ -238,31 +238,12 @@ export class MenusRepository {
     }
   }
 
-  async updateAccessMenu(
-    accessMenuId: string,
-    updateAccessMenuDto: UpdateAccessMenuDto,
-  ): Promise<AccessMenu> {
+  async deleteAccessMenuTrxByRoleId(trx: QueryRunner = null, roleId: string): Promise<void> {
     try {
-      const { roleId, menuId, updatedBy } = updateAccessMenuDto;
-      const query = `UPDATE access_menu SET role_id = $1, menu_id = $2, updated_by= $3, updated_at = NOW() WHERE access_menu_id = $4 RETURNING access_menu_id as "accessMenuId", menu_id as "menuId", role_id as "roleId", updated_by as "updatedBy"`;
-      const [update] = await this.repositoryAccessMenu.query(query, [
+      if(!trx) trx = this.repository.manager.connection.createQueryRunner();
+      const query = AccessMenuQuery.DELETE_ACCESS_MENU_BY_ROLE_ID;
+      const deleteAccessMenu = await trx.query(query, [
         roleId,
-        menuId,
-        updatedBy,
-        accessMenuId,
-      ]);
-
-      return update;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async deleteAccessMenu(accessMenuId: string): Promise<AccessMenu> {
-    try {
-      const query = `DELETE FROM access_menu WHERE access_menu_id = $1 RETURNING access_menu_id as "accessMenuId", menu_id as "menuId", role_id as "roleId", created_by as "createdBy"`;
-      const [deleteAccessMenu] = await this.repositoryAccessMenu.query(query, [
-        accessMenuId,
       ]);
 
       return deleteAccessMenu;
