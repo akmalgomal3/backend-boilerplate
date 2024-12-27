@@ -196,6 +196,7 @@ export class AuthService {
         email: user.email,
         roleName: user.role.roleName,
         roleType: user.role.roleType,
+        roleId: user.role.roleId,
         ipAddress,
         deviceType,
       };
@@ -307,6 +308,7 @@ export class AuthService {
         email: user.email,
         roleName: user.role.roleName,
         roleType: user.role.roleType,
+        roleId: user.role.roleId,
         ipAddress,
         deviceType,
       };
@@ -368,6 +370,7 @@ export class AuthService {
         roleType: user.roleType,
         ipAddress: user.ipAddress,
         deviceType: user.deviceType,
+        roleId: user.roleId,
       };
 
       const accessToken = await this.jwtService.signAsync(payload, {
