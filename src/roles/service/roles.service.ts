@@ -158,6 +158,7 @@ export class RolesService {
         updatedBy: userId,
       });
     } catch (error) {
+      console.log(error);
       if (error instanceof NotFoundException) {
         throw error;
       }

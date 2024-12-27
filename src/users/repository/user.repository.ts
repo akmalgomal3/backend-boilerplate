@@ -169,17 +169,18 @@ export class UserRepository {
   async getUserAuthByUsername(username: string): Promise<UsersAuth> {
     try {
       const query = `
-          SELECT user_id       as "userId",
+          SELECT user_id        as "userId",
                  username,
                  email,
                  password,
                  active,
-                 full_name     as "fullName",
-                 phone_number  as "phoneNumber",
+                 full_name      as "fullName",
+                 phone_number   as "phoneNumber",
                  birthdate,
-                 roles.role_id as "roleId",
-                 role_name     as "roleName",
-                 role_type     as "roleType"
+                 roles.role_id  as "roleId",
+                 role_name      as "roleName",
+                 role_type      as "roleType",
+                 request_status as "requestStatus"
           FROM users_auth
                    LEFT JOIN roles ON users_auth.role_id = roles.role_id
           WHERE username = $1
@@ -242,17 +243,18 @@ export class UserRepository {
 
   async getUserAuthByEmail(email: string): Promise<UsersAuth> {
     try {
-      const query = `SELECT user_id       as "userId",
+      const query = `SELECT user_id        as "userId",
                             username,
                             email,
                             password,
                             active,
-                            full_name     as "fullName",
-                            phone_number  as "phoneNumber",
+                            full_name      as "fullName",
+                            phone_number   as "phoneNumber",
                             birthdate,
-                            roles.role_id as "roleId",
-                            role_name     as "roleName",
-                            role_type     as "roleType"
+                            roles.role_id  as "roleId",
+                            role_name      as "roleName",
+                            role_type      as "roleType",
+                            request_status as "requestStatus"
                      FROM users_auth
                               LEFT JOIN roles ON users_auth.role_id = roles.role_id
                      WHERE email = $1`;
@@ -329,9 +331,10 @@ export class UserRepository {
 
       const query = `INSERT INTO users_auth (email, username, full_name, password, role_id, birthdate, phone_number,
                                              user_id,
-                                             created_by, active, created_at, updated_at)
+                                             created_by, active, created_at, updated_at, request_status)
                      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(),
-                             NOW()) RETURNING user_id as "userId", username, email, full_name as "fullName", phone_number as "phoneNumber", birthdate`;
+                             NOW(),
+                             'Requested') RETURNING user_id as "userId", username, email, full_name as "fullName", phone_number as "phoneNumber", birthdate`;
 
       const data = await this.repository.query(query, [
         email,

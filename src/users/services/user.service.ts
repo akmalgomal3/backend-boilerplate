@@ -490,7 +490,7 @@ export class UserService {
 
   async deleteUserByUserId(userId: string): Promise<Number> {
     try {
-      await this.userLogActivitiesService.deleteUserActivityByUserId(userId)
+      await this.userLogActivitiesService.deleteUserActivityByUserId(userId);
       const deleteUser = await this.userRepository.deleteByUserId(userId);
       return deleteUser;
     } catch (e) {
@@ -551,13 +551,13 @@ export class UserService {
 
       if (userAuthByUsername) {
         throw new BadRequestException(
-          'Username already registered, Please wait for approval or contact admin',
+          `Username already used with status ${userAuthByUsername.requestStatus}, Please use another username or wait for approval or contact admin`,
         );
       }
 
       if (userAuthByEmail) {
         throw new BadRequestException(
-          'Email already registered, Please wait for approval or contact admin',
+          `Email already used with status ${userAuthByEmail.requestStatus}, Please use another email or wait for approval or contact admin`,
         );
       }
     }
