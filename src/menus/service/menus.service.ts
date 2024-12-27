@@ -9,13 +9,14 @@ import { MenusRepository } from '../repository/menus.repository';
 import { CreateMenuDto } from '../dto/create-menu.dto';
 import { UpdateMenuDto } from '../dto/update-menu.dto';
 import { Menu } from '../entity/menus.entity';
-import { CreateAccessMenuDto } from '../dto/create-access-menu.dto';
+import {
+  CreateAccessMenuDto,
+  CreateUpdateBulkAccessMenuDto,
+} from '../dto/create_update_access_menu.dto';
 import { RolesService } from 'src/roles/service/roles.service';
 import { UserService } from 'src/users/services/user.service';
-import { UpdateAccessMenuDto } from '../dto/update-access-menu.dto';
 import { FeaturesService } from 'src/features/service/features.service';
 import { Features } from 'src/features/entity/features.entity';
-import { AccessMenu } from '../entity/access_menu.entity';
 
 @Injectable()
 export class MenusService {
@@ -227,38 +228,35 @@ export class MenusService {
     }
   }
 
-  async getAccessMenuById(accessMenuId: string) {
-    try {
-      const accessMenu =
-        await this.menusRepository.getAccessMenuById(accessMenuId);
-      if (!accessMenu) {
-        throw new NotFoundException('Access menu not found');
-      }
-
-      return accessMenu;
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Error get access menu by id',
-        error.status || 500,
-      );
-    }
-  }
-
-  async getAccessMenuByRoleId(
-    roleId: string,
-  ): Promise<{ data: {}; metadata: null | {} }> {
+  async getAccessMenuByCurrentUser(roleId: string): Promise<{globalFeature: Features[], menus: Menu[]}> {
     try {
       const getAccessMenu =
         await this.menusRepository.getAccessMenuByRoleId(roleId);
-      const formatMenu = await this.buildMenuHierarchy(getAccessMenu, roleId);
-
+      const hierarchicalMenus = await this.buildMenuHierarchy(getAccessMenu, roleId);
       return {
-        data: {
-          globalFeature: await this.featuresService.getAccessFeatureNoMenuId(),
-          menus: formatMenu,
-        },
-        metadata: null,
+          globalFeature: await this.featuresService.getFeatureNoMenuId(),
+          menus: hierarchicalMenus,
       };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error get access menu by current user',
+        error.status || 500
+      )
+    }
+  }
+
+
+  async getAccessMenuByRoleId(roleId: string): Promise<Menu[] | []> {
+    try {
+      const getAccessMenu =
+        await this.menusRepository.getAllMenuAccessByRoleId(roleId);
+      const formatMenu = await this.buildMenuHierarchy(
+        getAccessMenu,
+        roleId,
+        false,
+      );
+
+      return formatMenu;
     } catch (error) {
       throw new HttpException(
         error.message || 'Error get access menu by role',
@@ -267,64 +265,52 @@ export class MenusService {
     }
   }
 
-  async createAccessMenu(createAccessMenuDto: CreateAccessMenuDto) {
+  async getAllMenuToCreateAccessMenu(): Promise<Menu[] | []> {
     try {
-      const { roleId, menuId, createdBy } = createAccessMenuDto;
+      const menus = await this.menusRepository.getMenusToCreateAccess();
+      const formatMenu = await this.buildMenuHierarchy(menus, null, false);
+      return formatMenu;
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error get all menu to create access menu',
+        error.status || 500,
+      );
+    }
+  }
+
+  async createUpdateBulkAccessMenu(
+    creatBulkAccessMenuDto: CreateUpdateBulkAccessMenuDto,
+  ) {
+    try {
+      const { roleId, createdBy, menus } = creatBulkAccessMenuDto;
 
       await Promise.all([
         this.userService.getUser(createdBy),
         this.roleService.getRoleById(roleId),
-        this.getMenuById(menuId),
       ]);
 
-      const validateAccessMenu =
-        await this.menusRepository.getAccessMenuByRoleMenuId(roleId, menuId);
-      if (validateAccessMenu) {
-        throw new BadRequestException('Access menu already exist');
-      }
-
-      return await this.menusRepository.createAccessMenu(createAccessMenuDto);
+      const collectIds = this.collectMenuIdToCreate(menus);
+      await this.menusRepository.createBulkAccessMenu(
+        roleId,
+        createdBy,
+        collectIds,
+      );
+      return await this.getAccessMenuByRoleId(roleId);
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error create access menu',
+        error.message || 'Error create bulk access menu',
         error.status || 500,
       );
     }
   }
 
-  async updateAccessMenu(
-    accessMenuId: string,
-    updateAccessMenuDto: UpdateAccessMenuDto,
-  ) {
+  async deleteAccessMenuByRoleId(roleId: string): Promise<void> {
     try {
-      const { roleId, menuId, updatedBy } = updateAccessMenuDto;
-
-      await Promise.all([
-        this.userService.getUser(updatedBy),
-        this.roleService.getRoleById(roleId),
-        this.getAccessMenuById(accessMenuId),
-        this.getMenuById(menuId),
-      ]);
-
-      return await this.menusRepository.updateAccessMenu(
-        accessMenuId,
-        updateAccessMenuDto,
-      );
+      await this.roleService.getRoleById(roleId);
+      await this.menusRepository.deleteAccessMenuTrxByRoleId(null, roleId);
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error create access menu',
-        error.status || 500,
-      );
-    }
-  }
-
-  async deleteAccessMenuById(accessMenuId: string): Promise<AccessMenu> {
-    try {
-      await this.getAccessMenuById(accessMenuId);
-      return await this.menusRepository.deleteAccessMenu(accessMenuId);
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Error delete access menu',
+        error.message || 'Error delete access menu by role',
         error.status || 500,
       );
     }
@@ -333,6 +319,7 @@ export class MenusService {
   private async buildMenuHierarchy(
     menus: Menu[],
     roleId: string | null = null,
+    isPrintFeature: boolean = true,
   ): Promise<Menu[]> {
     try {
       const menuMap = new Map(
@@ -344,8 +331,10 @@ export class MenusService {
 
       const rootMenus: Menu[] = [];
       for (const menu of menuMap.values()) {
-        const features = await this.buildFeatureMenu(roleId, menu.menuId);
-        if (features) menu.features.push(...features);
+        if (isPrintFeature) {
+          const features = await this.buildFeatureMenu(roleId, menu.menuId);
+          if (features) menu.features.push(...features);
+        }
 
         if (menu.parentMenuId) {
           if (!menuMap.get(menu.parentMenuId)) {
@@ -379,7 +368,7 @@ export class MenusService {
 
       if (!roleId) {
         features = await this.featuresService.getFeatureByMenuId(menuId);
-      } else {
+      } else { 
         features = await this.featuresService.getAccessFeatureByRoleMenuId(
           roleId,
           menuId,
@@ -394,4 +383,20 @@ export class MenusService {
       );
     }
   }
+
+  private collectMenuIdToCreate = (menus: CreateAccessMenuDto[]) => {
+    const result: string[] = [];
+    for (const menu of menus) {
+      if (menu.selected) {
+        result.push(menu.menuId);
+      }
+
+      if (menu.children && menu.children.length > 0) {
+        const childResult = this.collectMenuIdToCreate(menu.children);
+        result.push(...childResult);
+      }
+    }
+
+    return result;
+  };
 }

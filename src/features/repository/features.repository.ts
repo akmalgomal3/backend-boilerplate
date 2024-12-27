@@ -229,9 +229,9 @@ export class FeaturesRepository {
       const query = `
         SELECT 
           af.access_feature_id as "accessFeatureId",
-          af.role_id as "roleId",
-          r.role_name as "roleName",
-          r.role_type as "roleType",
+          -- af.role_id as "roleId",
+          -- r.role_name as "roleName",
+          -- r.role_type as "roleType",
           af.feature_id as "featureId",
           f.feature_name as "featureName",
           f.active as active,
@@ -247,7 +247,7 @@ export class FeaturesRepository {
           af.updated_by as "updatedBy"
         FROM access_feature af
         INNER JOIN features f ON af.feature_id = f.feature_id
-        INNER JOIN roles r ON af.role_id = r.role_id
+        -- INNER JOIN roles r ON af.role_id = r.role_id
         WHERE af.role_id = $1 AND f.menu_id = $2 AND f.active = true
       `;
 
