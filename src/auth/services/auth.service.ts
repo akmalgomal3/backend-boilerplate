@@ -181,6 +181,7 @@ export class AuthService {
       const { username, password, ipAddress, deviceType } = loginDto;
 
       const user = await this.userService.getUserByUsername(username);
+      console.log(user);
 
       if (!user) {
         await this.validateUserAuth(username);
@@ -413,6 +414,34 @@ export class AuthService {
     } catch (e) {
       throw new HttpException(
         e.message || 'Error logging out user',
+        e.status || 500,
+      );
+    }
+  }
+
+  async logoutAllDevices(userId: string) {
+    try {
+      await Promise.all([
+        this.sessionService.deleteSession(
+          `session:${userId}:${DeviceType.WEB}`,
+        ),
+        this.sessionService.deleteSession(
+          `refresh:${userId}:${DeviceType.WEB}`,
+        ),
+        this.sessionService.deleteSession(
+          `session:${userId}:${DeviceType.MOBILE}`,
+        ),
+        this.sessionService.deleteSession(
+          `refresh:${userId}:${DeviceType.MOBILE}`,
+        ),
+      ]);
+
+      return {
+        message: 'Logout all devices success',
+      };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error logging out all devices',
         e.status || 500,
       );
     }
@@ -745,13 +774,16 @@ export class AuthService {
       const userAuthByEmail =
         await this.userService.getUserAuthByEmail(identifier);
 
-      if (userAuthByUsername.requestStatus !== 'Approved') {
+      if (
+        userAuthByUsername &&
+        userAuthByUsername.requestStatus !== 'Approved'
+      ) {
         throw new BadRequestException(
           `Username cannot be used because the status is ${userAuthByUsername.requestStatus}, please contact the administrator for further information`,
         );
       }
 
-      if (userAuthByEmail.requestStatus !== 'Declined') {
+      if (userAuthByEmail && userAuthByEmail.requestStatus !== 'Declined') {
         throw new BadRequestException(
           `Email cannot be used because the status is ${userAuthByEmail.requestStatus}, please contact the administrator for further information`,
         );

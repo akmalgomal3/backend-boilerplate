@@ -453,8 +453,6 @@ export class UserService {
         );
       }
 
-      console.log(user);
-
       const token: string = await this.jwtService.signAsync(
         {
           userId: user.userId,

@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpCode,
+  Param,
   Patch,
   Post,
   Query,
@@ -20,6 +21,9 @@ import { LoginGoogleDto } from '../dto/login-google.dto';
 import { SendForgotPasswordDto } from '../dto/send-forgot-password.dto';
 import { SetPasswordDto } from '../dto/set-password.dto';
 import { SendUpdateEmailDto } from '../../users/dto/send-update-email.dto';
+import { AuthorizedRoles } from '../../common/decorators/authorized-roles.decorator';
+import { RoleType } from '../../common/enums/user-roles.enum';
+import { LogoutByAdminDto } from '../../users/dto/logout-by-admin.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -138,6 +142,28 @@ export class AuthController {
   @Post('/logout')
   async logout(@User() user: JwtPayload) {
     const data = await this.authService.logout(user);
+
+    return {
+      data,
+    };
+  }
+
+  @HttpCode(200)
+  @ApiBearerAuth()
+  @Post('/logout-all-devices')
+  async logoutAllDevices(@User() user: JwtPayload) {
+    const data = await this.authService.logoutAllDevices(user.userId);
+
+    return {
+      data,
+    };
+  }
+
+  @AuthorizedRoles(RoleType.Admin)
+  @ApiBearerAuth()
+  @Post('/logout-by-admin')
+  async logoutByAdmin(@Body() logoutDto: LogoutByAdminDto) {
+    const data = await this.authService.logoutAllDevices(logoutDto.userId);
 
     return {
       data,
