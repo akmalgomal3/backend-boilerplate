@@ -25,6 +25,7 @@ import { SendUpdateEmailDto } from '../dto/send-update-email.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { DeclineUserAuthDto } from '../dto/decline-user-auth.dto';
 import { GetUserAuthDto } from '../dto/get-unapproved-user.dto';
+import { UpdatePasswordByAdminDto } from '../dto/update-password-by-admin.dto';
 
 // @ts-ignore
 @Controller('users')
@@ -106,7 +107,7 @@ export class UserController {
   }
 
   @ApiBearerAuth()
-  @Patch('/:userId/password')
+  @Patch('/account/password')
   async updatePassword(
     @Body() updatePasswordDto: UpdatePasswordDto,
     @User() user: JwtPayload,
@@ -114,6 +115,29 @@ export class UserController {
     const result = await this.userService.updatePassword(
       user.userId,
       updatePasswordDto,
+    );
+    return {
+      data: result,
+    };
+  }
+
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'userId',
+    required: true,
+    description: 'User ID',
+  })
+  @AuthorizedRoles(RoleType.Admin)
+  @Patch('/admin/password/:userId')
+  async updatePasswordByAdmin(
+    @User() user: JwtPayload,
+    @Body() updatePasswordDto: UpdatePasswordByAdminDto,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ) {
+    const result = await this.userService.updatePasswordByAdmin(
+      userId,
+      updatePasswordDto,
+      user.userId,
     );
     return {
       data: result,

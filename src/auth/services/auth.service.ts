@@ -88,7 +88,7 @@ export class AuthService {
         }
       }
 
-      const decryptedPassword = this.validateConfirmPassword(
+      const decryptedPassword = this.utils.validateConfirmPassword(
         password,
         confirmPassword,
       );
@@ -138,7 +138,7 @@ export class AuthService {
         email,
       } = registerDto;
 
-      const decryptedPassword = this.validateConfirmPassword(
+      const decryptedPassword = this.utils.validateConfirmPassword(
         password,
         confirmPassword,
       );
@@ -181,8 +181,10 @@ export class AuthService {
       const { username, password, ipAddress, deviceType } = loginDto;
 
       const user = await this.userService.getUserByUsername(username);
+      console.log(user);
 
       if (!user) {
+        await this.validateUserAuth(username);
         throw new BadRequestException('username not found');
       }
 
@@ -274,6 +276,7 @@ export class AuthService {
       const user = await this.userService.getUserByEmail(data.email);
 
       if (!user) {
+        await this.validateUserAuth(data.email);
         throw new BadRequestException('User not found');
       }
 
@@ -416,6 +419,34 @@ export class AuthService {
     }
   }
 
+  async logoutAllDevices(userId: string) {
+    try {
+      await Promise.all([
+        this.sessionService.deleteSession(
+          `session:${userId}:${DeviceType.WEB}`,
+        ),
+        this.sessionService.deleteSession(
+          `refresh:${userId}:${DeviceType.WEB}`,
+        ),
+        this.sessionService.deleteSession(
+          `session:${userId}:${DeviceType.MOBILE}`,
+        ),
+        this.sessionService.deleteSession(
+          `refresh:${userId}:${DeviceType.MOBILE}`,
+        ),
+      ]);
+
+      return {
+        message: 'Logout all devices success',
+      };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error logging out all devices',
+        e.status || 500,
+      );
+    }
+  }
+
   async registerWithEmailVerification(registerDto: RegisterDto) {
     try {
       const {
@@ -433,7 +464,7 @@ export class AuthService {
         throw new BadRequestException('Role id not found');
       }
 
-      const decryptedPassword: string = this.validateConfirmPassword(
+      const decryptedPassword: string = this.utils.validateConfirmPassword(
         password,
         confirmPassword,
       );
@@ -597,7 +628,7 @@ export class AuthService {
     try {
       const { password, confirmPassword, token } = setPasswordDto;
 
-      const decryptedPassword = this.validateConfirmPassword(
+      const decryptedPassword = this.utils.validateConfirmPassword(
         password,
         confirmPassword,
       );
@@ -736,6 +767,35 @@ export class AuthService {
     }
   }
 
+  private async validateUserAuth(identifier: string) {
+    try {
+      const userAuthByUsername =
+        await this.userService.getUserAuthByUsername(identifier);
+      const userAuthByEmail =
+        await this.userService.getUserAuthByEmail(identifier);
+
+      if (
+        userAuthByUsername &&
+        userAuthByUsername.requestStatus !== 'Approved'
+      ) {
+        throw new BadRequestException(
+          `Username cannot be used because the status is ${userAuthByUsername.requestStatus}, please contact the administrator for further information`,
+        );
+      }
+
+      if (userAuthByEmail && userAuthByEmail.requestStatus !== 'Declined') {
+        throw new BadRequestException(
+          `Email cannot be used because the status is ${userAuthByEmail.requestStatus}, please contact the administrator for further information`,
+        );
+      }
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error validating user auth',
+        e.status || 500,
+      );
+    }
+  }
+
   private async validateUserPassword(password: string, user: Users) {
     try {
       const isPasswordValid = await bcrypt.compare(
@@ -774,35 +834,6 @@ export class AuthService {
     }
   }
 
-  private validateConfirmPassword(
-    password: string,
-    confirmPassword: string,
-  ): string {
-    const decryptedPassword: string = this.utils.decrypt(password);
-    const decryptedConfirmPassword: string =
-      this.utils.decrypt(confirmPassword);
-
-    if (decryptedPassword !== decryptedConfirmPassword) {
-      throw new BadRequestException('Password does not match');
-    }
-
-    if (!password.startsWith('U2F')) {
-      throw new BadRequestException(
-        'Invalid password format, must be encrypted',
-      );
-    }
-
-    if (!confirmPassword.startsWith('U2F')) {
-      throw new BadRequestException(
-        'Invalid password format, must be encrypted',
-      );
-    }
-
-    this.validateStrongPassword(decryptedPassword);
-
-    return decryptedPassword;
-  }
-
   private async validateLoginAttemptLog(userId: string) {
     try {
       const failedLogin =
@@ -820,45 +851,6 @@ export class AuthService {
     } catch (e) {
       throw new HttpException(
         e.message || 'Error validating login attempt log',
-        e.status || 500,
-      );
-    }
-  }
-
-  private validateStrongPassword(decryptedPassword: string) {
-    try {
-      if (decryptedPassword.length < 8 || decryptedPassword.length > 12) {
-        throw new BadRequestException(
-          'Password must be between 8 to 12 characters long.',
-        );
-      }
-
-      if (!/[A-Z]/.test(decryptedPassword)) {
-        throw new BadRequestException(
-          'Password must contain at least one uppercase letter.',
-        );
-      }
-
-      if (!/[a-z]/.test(decryptedPassword)) {
-        throw new BadRequestException(
-          'Password must contain at least one lowercase letter.',
-        );
-      }
-
-      if (!/\d/.test(decryptedPassword)) {
-        throw new BadRequestException(
-          'Password must contain at least one number.',
-        );
-      }
-
-      if (!/[!@#$%^&*(),.?":{}|<>]/.test(decryptedPassword)) {
-        throw new BadRequestException(
-          'Password must contain at least one special character.',
-        );
-      }
-    } catch (e) {
-      throw new HttpException(
-        e.message || 'Error validating strong password',
         e.status || 500,
       );
     }
