@@ -23,12 +23,14 @@ export class RolesController {
 
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'search', required: false })
   @Get()
   async getRoles(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
+    @Query('search') search: string = '',
   ) {
-    const result = await this.rolesService.getRoles({ page, limit });
+    const result = await this.rolesService.getRoles({ page, limit }, search);
     return {
       data: result.data,
       metadata: result.metadata,
