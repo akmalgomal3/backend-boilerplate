@@ -28,6 +28,7 @@ import { UsersAuth } from '../entity/user-auth.entity';
 import { UserAuthRequestType } from '../../common/enums/request-type.enum';
 import { ApproveUserAuthDto } from '../dto/approve-user-auth.dto';
 import { GetUserAuthDto } from '../dto/get-unapproved-user.dto';
+import { UpdatePasswordByAdminDto } from '../dto/update-password-by-admin.dto';
 
 @Injectable()
 export class UserService {
@@ -374,7 +375,47 @@ export class UserService {
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      await this.userRepository.updateUserPassword(user.userId, hashedPassword);
+      await this.userRepository.updateUserPassword(
+        user.userId,
+        hashedPassword,
+        user.userId,
+      );
+
+      return {
+        message: `User ${user.username} password updated successfully`,
+      };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error updating password',
+        e.status || 500,
+      );
+    }
+  }
+
+  async updatePasswordByAdmin(
+    userId: string,
+    updatePasswordByAdminDto: UpdatePasswordByAdminDto,
+    adminId: string,
+  ) {
+    try {
+      const { newPassword, confirmNewPassword } = updatePasswordByAdminDto;
+      const user = await this.getUser(userId);
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      const decryptedPassword = this.utilsService.validateConfirmPassword(
+        newPassword,
+        confirmNewPassword,
+      );
+
+      const hashedPassword = await bcrypt.hash(decryptedPassword, 10);
+
+      await this.userRepository.updateUserPassword(
+        user.userId,
+        hashedPassword,
+        adminId,
+      );
 
       return {
         message: `User ${user.username} password updated successfully`,
@@ -389,7 +430,11 @@ export class UserService {
 
   async setPassword(userId: string, hashedPassword: string) {
     try {
-      return this.userRepository.updateUserPassword(userId, hashedPassword);
+      return this.userRepository.updateUserPassword(
+        userId,
+        hashedPassword,
+        userId,
+      );
     } catch (e) {
       throw new HttpException(
         e.message || 'Error updating password',

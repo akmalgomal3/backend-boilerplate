@@ -515,7 +515,11 @@ export class UserRepository {
     }
   }
 
-  async updateUserPassword(userId: string, password: string): Promise<Users> {
+  async updateUserPassword(
+    userId: string,
+    password: string,
+    updaterId: string,
+  ): Promise<Users> {
     try {
       const query = `UPDATE users
                      SET password   = $2,
@@ -525,7 +529,7 @@ export class UserRepository {
       const user = await this.repository.query(query, [
         userId,
         password,
-        userId,
+        updaterId,
       ]);
 
       return user[0];

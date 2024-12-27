@@ -88,7 +88,7 @@ export class AuthService {
         }
       }
 
-      const decryptedPassword = this.validateConfirmPassword(
+      const decryptedPassword = this.utils.validateConfirmPassword(
         password,
         confirmPassword,
       );
@@ -138,7 +138,7 @@ export class AuthService {
         email,
       } = registerDto;
 
-      const decryptedPassword = this.validateConfirmPassword(
+      const decryptedPassword = this.utils.validateConfirmPassword(
         password,
         confirmPassword,
       );
@@ -435,7 +435,7 @@ export class AuthService {
         throw new BadRequestException('Role id not found');
       }
 
-      const decryptedPassword: string = this.validateConfirmPassword(
+      const decryptedPassword: string = this.utils.validateConfirmPassword(
         password,
         confirmPassword,
       );
@@ -599,7 +599,7 @@ export class AuthService {
     try {
       const { password, confirmPassword, token } = setPasswordDto;
 
-      const decryptedPassword = this.validateConfirmPassword(
+      const decryptedPassword = this.utils.validateConfirmPassword(
         password,
         confirmPassword,
       );
@@ -802,35 +802,6 @@ export class AuthService {
     }
   }
 
-  private validateConfirmPassword(
-    password: string,
-    confirmPassword: string,
-  ): string {
-    const decryptedPassword: string = this.utils.decrypt(password);
-    const decryptedConfirmPassword: string =
-      this.utils.decrypt(confirmPassword);
-
-    if (decryptedPassword !== decryptedConfirmPassword) {
-      throw new BadRequestException('Password does not match');
-    }
-
-    if (!password.startsWith('U2F')) {
-      throw new BadRequestException(
-        'Invalid password format, must be encrypted',
-      );
-    }
-
-    if (!confirmPassword.startsWith('U2F')) {
-      throw new BadRequestException(
-        'Invalid password format, must be encrypted',
-      );
-    }
-
-    this.validateStrongPassword(decryptedPassword);
-
-    return decryptedPassword;
-  }
-
   private async validateLoginAttemptLog(userId: string) {
     try {
       const failedLogin =
@@ -848,45 +819,6 @@ export class AuthService {
     } catch (e) {
       throw new HttpException(
         e.message || 'Error validating login attempt log',
-        e.status || 500,
-      );
-    }
-  }
-
-  private validateStrongPassword(decryptedPassword: string) {
-    try {
-      if (decryptedPassword.length < 8 || decryptedPassword.length > 12) {
-        throw new BadRequestException(
-          'Password must be between 8 to 12 characters long.',
-        );
-      }
-
-      if (!/[A-Z]/.test(decryptedPassword)) {
-        throw new BadRequestException(
-          'Password must contain at least one uppercase letter.',
-        );
-      }
-
-      if (!/[a-z]/.test(decryptedPassword)) {
-        throw new BadRequestException(
-          'Password must contain at least one lowercase letter.',
-        );
-      }
-
-      if (!/\d/.test(decryptedPassword)) {
-        throw new BadRequestException(
-          'Password must contain at least one number.',
-        );
-      }
-
-      if (!/[!@#$%^&*(),.?":{}|<>]/.test(decryptedPassword)) {
-        throw new BadRequestException(
-          'Password must contain at least one special character.',
-        );
-      }
-    } catch (e) {
-      throw new HttpException(
-        e.message || 'Error validating strong password',
         e.status || 500,
       );
     }
