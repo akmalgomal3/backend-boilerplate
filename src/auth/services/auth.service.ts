@@ -27,7 +27,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import { ConfigService } from '@nestjs/config';
 import { SetPasswordDto } from '../dto/set-password.dto';
-import { ERROR_MESSAGES } from '../../common/exceptions/error-messages';
+import { ErrorMessages } from '../../common/exceptions/root-error.message';
 
 @Injectable()
 export class AuthService {
@@ -85,7 +85,9 @@ export class AuthService {
       if (roleId) {
         const checkRole = await this.roleService.getRoleById(roleId);
         if (!checkRole) {
-          throw new BadRequestException(ERROR_MESSAGES.ROLE_ID_NOT_FOUND);
+          throw new BadRequestException(
+            ErrorMessages.auth.getMessage('ROLE_ID_NOT_FOUND'),
+          );
         }
       }
 
@@ -185,7 +187,9 @@ export class AuthService {
 
       if (!user) {
         await this.validateUserAuth(username);
-        throw new BadRequestException(ERROR_MESSAGES.USERNAME_NOT_FOUND);
+        throw new BadRequestException(
+          ErrorMessages.auth.getMessage('USERNAME_NOT_FOUND'),
+        );
       }
 
       await this.validateUser(password, user, deviceType);
@@ -278,16 +282,22 @@ export class AuthService {
 
       if (!user) {
         await this.validateUserAuth(data.email);
-        throw new BadRequestException(ERROR_MESSAGES.USER_NOT_FOUND);
+        throw new BadRequestException(
+          ErrorMessages.auth.getMessage('USER_NOT_FOUND'),
+        );
       }
 
       const isAttemptValid = await this.validateLoginAttemptLog(user.userId);
       if (!isAttemptValid) {
-        throw new UnauthorizedException(ERROR_MESSAGES.FAILED_FIVE_TIMES);
+        throw new UnauthorizedException(
+          ErrorMessages.auth.getMessage('FAILED_FIVE_TIMES'),
+        );
       }
 
       if (!user.active) {
-        throw new BadRequestException(ERROR_MESSAGES.USER_NOT_ACTIVE);
+        throw new BadRequestException(
+          ErrorMessages.auth.getMessage('USER_NOT_ACTIVE'),
+        );
       }
 
       const isSessionValid = await this.validateUserSession(
@@ -295,7 +305,9 @@ export class AuthService {
         deviceType,
       );
       if (!isSessionValid) {
-        throw new UnauthorizedException(ERROR_MESSAGES.CONFLICT_SESSION);
+        throw new UnauthorizedException(
+          ErrorMessages.auth.getMessage('CONFLICT_SESSION'),
+        );
       }
 
       const payload: JwtPayload = {
@@ -351,11 +363,15 @@ export class AuthService {
       );
 
       if (!refreshToken) {
-        throw new UnauthorizedException(ERROR_MESSAGES.EXPIRED_REFRESH_TOKEN);
+        throw new UnauthorizedException(
+          ErrorMessages.auth.getMessage('EXPIRED_REFRESH_TOKEN'),
+        );
       }
 
       if (refreshToken !== token) {
-        throw new UnauthorizedException(ERROR_MESSAGES.INVALID_REFRESH_TOKEN);
+        throw new UnauthorizedException(
+          ErrorMessages.auth.getMessage('INVALID_REFRESH_TOKEN'),
+        );
       }
 
       const payload: JwtPayload = {
@@ -460,7 +476,9 @@ export class AuthService {
       } = registerDto;
 
       if (roleId && !(await this.roleService.getRoleById(roleId))) {
-        throw new BadRequestException(ERROR_MESSAGES.ROLE_ID_NOT_FOUND);
+        throw new BadRequestException(
+          ErrorMessages.auth.getMessage('ROLE_ID_NOT_FOUND'),
+        );
       }
 
       const decryptedPassword: string = this.utils.validateConfirmPassword(
@@ -535,7 +553,9 @@ export class AuthService {
       );
 
       if (!isTokenValid) {
-        throw new UnauthorizedException(ERROR_MESSAGES.EXPIRED_LINK);
+        throw new UnauthorizedException(
+          ErrorMessages.auth.getMessage('EXPIRED_LINK'),
+        );
       }
 
       const userAuth = await this.userService.getUserAuthById(
@@ -543,7 +563,9 @@ export class AuthService {
       );
 
       if (!userAuth) {
-        throw new NotFoundException(ERROR_MESSAGES.USER_AUTH_NOT_FOUND);
+        throw new NotFoundException(
+          ErrorMessages.auth.getMessage('USER_AUTH_NOT_FOUND'),
+        );
       }
 
       await this.userService.validateUsernameEmail(
@@ -567,7 +589,9 @@ export class AuthService {
       return newUser;
     } catch (e) {
       if (e.name === 'TokenExpiredError') {
-        throw new SessionTimeoutException(ERROR_MESSAGES.EXPIRED_LINK);
+        throw new SessionTimeoutException(
+          ErrorMessages.auth.getMessage('EXPIRED_LINK'),
+        );
       }
 
       throw new HttpException(
@@ -582,7 +606,9 @@ export class AuthService {
       const user = await this.userService.getUserByEmail(email);
 
       if (!user) {
-        throw new NotFoundException(ERROR_MESSAGES.INVALID_EMAIL);
+        throw new NotFoundException(
+          ErrorMessages.auth.getMessage('INVALID_EMAIL'),
+        );
       }
 
       const token: string = await this.jwtService.signAsync(
@@ -635,13 +661,17 @@ export class AuthService {
       );
 
       if (!isTokenValid) {
-        throw new UnauthorizedException(ERROR_MESSAGES.EXPIRED_LINK);
+        throw new UnauthorizedException(
+          ErrorMessages.auth.getMessage('EXPIRED_LINK'),
+        );
       }
 
       const user: Users = await this.userService.getUser(tokenPayload.userId);
 
       if (!user) {
-        throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
+        throw new NotFoundException(
+          ErrorMessages.auth.getMessage('USER_NOT_FOUND'),
+        );
       }
 
       const hashedPassword: string = await bcrypt.hash(decryptedPassword, 10);
@@ -659,7 +689,9 @@ export class AuthService {
       };
     } catch (e) {
       if (e.name === 'TokenExpiredError') {
-        throw new SessionTimeoutException(ERROR_MESSAGES.EXPIRED_LINK);
+        throw new SessionTimeoutException(
+          ErrorMessages.auth.getMessage('EXPIRED_LINK'),
+        );
       }
 
       throw new HttpException(
@@ -680,11 +712,15 @@ export class AuthService {
       ]);
 
       if (checkUsername) {
-        throw new BadRequestException(ERROR_MESSAGES.USERNAME_ALREADY_USED);
+        throw new BadRequestException(
+          ErrorMessages.auth.getMessage('USERNAME_ALREADY_USED'),
+        );
       }
 
       if (checkEmail) {
-        throw new BadRequestException(ERROR_MESSAGES.EMAIL_ALREADY_USED);
+        throw new BadRequestException(
+          ErrorMessages.auth.getMessage('EMAIL_ALREADY_USED'),
+        );
       }
 
       const [checkEmailAuth, checkUsernameAuth] = await Promise.all([
@@ -715,21 +751,29 @@ export class AuthService {
   ) {
     try {
       if (!password.startsWith('U2F')) {
-        throw new BadRequestException(ERROR_MESSAGES.INVALID_PASSWORD_FORMAT);
+        throw new BadRequestException(
+          ErrorMessages.auth.getMessage('INVALID_PASSWORD_FORMAT'),
+        );
       }
 
       const isAttemptValid = await this.validateLoginAttemptLog(user.userId);
       if (!isAttemptValid) {
-        throw new UnauthorizedException(ERROR_MESSAGES.FAILED_FIVE_TIMES);
+        throw new UnauthorizedException(
+          ErrorMessages.auth.getMessage('FAILED_FIVE_TIMES'),
+        );
       }
 
       if (!user.active) {
-        throw new BadRequestException(ERROR_MESSAGES.USER_NOT_ACTIVE);
+        throw new BadRequestException(
+          ErrorMessages.auth.getMessage('USER_NOT_ACTIVE'),
+        );
       }
 
       const isPasswordValid = await this.validateUserPassword(password, user);
       if (!isPasswordValid) {
-        throw new UnauthorizedException(ERROR_MESSAGES.INVALID_PASSWORD);
+        throw new UnauthorizedException(
+          ErrorMessages.auth.getMessage('INVALID_PASSWORD'),
+        );
       }
 
       const isSessionValid = await this.validateUserSession(
@@ -738,7 +782,9 @@ export class AuthService {
       );
 
       if (!isSessionValid) {
-        throw new UnauthorizedException(ERROR_MESSAGES.CONFLICT_SESSION);
+        throw new UnauthorizedException(
+          ErrorMessages.auth.getMessage('CONFLICT_SESSION'),
+        );
       }
     } catch (e) {
       throw new HttpException(

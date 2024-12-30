@@ -13,7 +13,7 @@ import { UsersAuth } from '../entity/user-auth.entity';
 import { Roles } from 'src/roles/entity/roles.entity';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserAuthRequestType } from '../../common/enums/request-type.enum';
-import { ERROR_MESSAGES } from '../../common/exceptions/error-messages';
+import { ErrorMessages } from '../../common/exceptions/root-error.message';
 
 @Injectable()
 export class UserRepository {
@@ -444,7 +444,9 @@ export class UserRepository {
 
       const userAuthInfo = await this.getUserAuthById(userAuthId);
       if (!userAuthInfo) {
-        throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
+        throw new NotFoundException(
+          ErrorMessages.users.getMessage('USER_AUTH_NOT_FOUND'),
+        );
       }
 
       if (userAuthInfo.requestStatus !== UserAuthRequestType.Requested) {
