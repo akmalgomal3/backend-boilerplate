@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  HttpException,
-  HttpStatus,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
 import { MenusRepository } from '../repository/menus.repository';
 import { CreateMenuDto } from '../dto/create-menu.dto';
 import { UpdateMenuDto } from '../dto/update-menu.dto';
@@ -66,8 +60,9 @@ export class MenusService {
     try {
       const menu = await this.menusRepository.getMenuById(menuId);
 
+      console.log(!menu);
       if (!menu) {
-        new NotFoundException(`Menu with ID ${menuId} not found`);
+        throw new NotFoundException(`Menu with ID ${menuId} not found`);
       }
 
       return menu;
@@ -84,7 +79,7 @@ export class MenusService {
       const menu = await this.menusRepository.getMenuByName(menuName);
 
       if (!menu) {
-        new NotFoundException(`Menu with name ${menuName} not found`);
+        throw new NotFoundException(`Menu with name ${menuName} not found`);
       }
 
       return menu;
@@ -106,8 +101,9 @@ export class MenusService {
           createMenuDto.parentMenuId,
         );
 
-        if (!isParentExist) {
-          new NotFoundException(
+        console.log(isParentExist);
+        if (isParentExist == null) {
+          throw new NotFoundException(
             `Parent menu with id ${createMenuDto.parentMenuId} not exist!`,
           );
         }
@@ -137,7 +133,7 @@ export class MenusService {
       const isExist = await this.getMenuById(menuId);
 
       if (!isExist) {
-        new NotFoundException(`Menu with id ${menuId} not exist!`);
+        throw new NotFoundException(`Menu with id ${menuId} not exist!`);
       }
 
       if (updateMenuDto.parentMenuId != null) {
@@ -146,7 +142,7 @@ export class MenusService {
         );
 
         if (!isParentExist) {
-          new NotFoundException(
+          throw new NotFoundException(
             `Parent menu with id ${updateMenuDto.parentMenuId} not exist!`,
           );
         }
@@ -215,23 +211,27 @@ export class MenusService {
     }
   }
 
-  async getAccessMenuByCurrentUser(roleId: string): Promise<{globalFeature: Features[], menus: Menu[]}> {
+  async getAccessMenuByCurrentUser(
+    roleId: string,
+  ): Promise<{ globalFeature: Features[]; menus: Menu[] }> {
     try {
       const getAccessMenu =
         await this.menusRepository.getAccessMenuByRoleId(roleId);
-      const hierarchicalMenus = await this.buildMenuHierarchy(getAccessMenu, roleId);
+      const hierarchicalMenus = await this.buildMenuHierarchy(
+        getAccessMenu,
+        roleId,
+      );
       return {
-          globalFeature: await this.featuresService.getFeatureNoMenuId(),
-          menus: hierarchicalMenus,
+        globalFeature: await this.featuresService.getFeatureNoMenuId(),
+        menus: hierarchicalMenus,
       };
     } catch (error) {
       throw new HttpException(
         error.message || 'Error get access menu by current user',
-        error.status || 500
-      )
+        error.status || 500,
+      );
     }
   }
-
 
   async getAccessMenuByRoleId(roleId: string): Promise<Menu[] | []> {
     try {
@@ -355,7 +355,7 @@ export class MenusService {
 
       if (!roleId) {
         features = await this.featuresService.getFeatureByMenuId(menuId);
-      } else { 
+      } else {
         features = await this.featuresService.getAccessFeatureByRoleMenuId(
           roleId,
           menuId,
