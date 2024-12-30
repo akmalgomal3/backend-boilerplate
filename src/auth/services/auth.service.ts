@@ -112,6 +112,8 @@ export class AuthService {
         }),
       ]);
 
+      const role = await this.roleService.getRoleById(user.role.roleId);
+
       return {
         userId: user.userId,
         username: user.username,
@@ -119,6 +121,11 @@ export class AuthService {
         fullName: user.fullName,
         phoneNumber: user.phoneNumber,
         birthdate: format(new Date(user.birthdate), 'yyyy-MM-dd'),
+        role: {
+          roleId: role.roleId,
+          roleName: role.roleName,
+          roleType: role.roleType,
+        },
       };
     } catch (e) {
       throw new HttpException(
@@ -162,6 +169,8 @@ export class AuthService {
         }),
       ]);
 
+      const role = await this.roleService.getRoleById(user.role.roleId);
+
       return {
         userId: user.userId,
         username: user.username,
@@ -169,6 +178,11 @@ export class AuthService {
         fullName: user.fullName,
         phoneNumber: user.phoneNumber,
         birthdate: format(new Date(user.birthdate), 'yyyy-MM-dd'),
+        role: {
+          roleId: role.roleId,
+          roleName: role.roleName,
+          roleType: role.roleType,
+        },
       };
     } catch (e) {
       console.log(e);
