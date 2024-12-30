@@ -1,5 +1,8 @@
+import { RoleType } from '../../common/enums/user-roles.enum';
+
 export const RolesQuery = {
-  GET_ROLES: `
+  GET_ROLES(offset: number, limit: number, search: string): string {
+    return `
       SELECT role_id as "roleId",
              role_type as "roleType",
              role_name as "roleName",
@@ -8,14 +11,16 @@ export const RolesQuery = {
              created_by as "createdBy",
              updated_by as "updatedAt"
       FROM roles 
-      WHERE role_name ILIKE '%' || $3 || '%' OR 
-                            role_type::TEXT ILIKE $3 
-      OFFSET $1 LIMIT $2
-    `,
+      WHERE role_name ILIKE '%${search}%' OR 
+                            role_type::TEXT ILIKE '%${search}%'
+      OFFSET ${offset} LIMIT ${limit}
+    `;
+  },
   COUNT_ROLES: `
         SELECT COUNT(*) FROM roles
     `,
-  GET_ROLE_BY_ID: `
+  GET_ROLE_BY_ID(roleId: string): string {
+    return `
         SELECT role_id as "roleId",
                role_type as "roleType",
                role_name as "roleName",
@@ -23,9 +28,11 @@ export const RolesQuery = {
                updated_at as "updatedAt",
                created_by as "createdBy",
                updated_by as "updatedAt"
-        FROM roles WHERE role_id = $1
-    `,
-  GET_ROLE_BY_NAME: `
+        FROM roles WHERE role_id = '${roleId}'
+    `;
+  },
+  GET_ROLE_BY_NAME(roleName: string): string {
+    return `
         SELECT role_id as "roleId",
                role_type as "roleType",
                role_name as "roleName",
@@ -33,30 +40,42 @@ export const RolesQuery = {
                updated_at as "updatedAt",
                created_by as "createdBy",
                updated_by as "updatedAt"
-        FROM roles WHERE role_name = $1
-    `,
-  CREATE_ROLE: `
+        FROM roles WHERE role_name = '${roleName}'
+    `;
+  },
+  CREATE_ROLE(roleType: RoleType, roleName: string, createdBy: string): string {
+    return `
         INSERT INTO roles (
             role_type, 
             role_name, 
             created_by,
             created_at,
             updated_at
-        ) VALUES ($1, $2, $3, NOW(), NOW())
+        ) VALUES ('${roleType}', '${roleName}', ${createdBy ? `'${createdBy}'` : 'NULL'}, NOW(), NOW())
         RETURNING role_id as "roleId"
-    `,
-  UPDATE_ROLE: `
+    `;
+  },
+  UPDATE_ROLE(
+    roleType: RoleType,
+    roleName: string,
+    updatedBy: string,
+    roleId: string,
+  ): string {
+    return `
         UPDATE roles 
         SET 
-            role_type = COALESCE($1, role_type),
-            role_name = COALESCE($2, role_name),
-            updated_by = $3,
+            role_type = COALESCE(${roleType ? `'${roleType}'` : 'NULL'}, role_type),
+            role_name = COALESCE(${roleName ? `'${roleName}'` : 'NULL'}, role_name),
+            updated_by = ${updatedBy ? `'${updatedBy}'` : 'NULL'},
             updated_at = NOW()
-        WHERE role_id = $4
-    `,
-  DELETE_ROLE: `
-        DELETE FROM roles WHERE role_id = $1
-    `,
+        WHERE role_id = '${roleId}'
+    `;
+  },
+  DELETE_ROLE(roleId: string): string {
+    return `
+        DELETE FROM roles WHERE role_id = '${roleId}'
+    `;
+  },
   GET_BASE_ROLE: `
       SELECT role_id as "roleId"
       FROM roles

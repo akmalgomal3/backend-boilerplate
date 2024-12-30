@@ -22,11 +22,9 @@ export class RolesRepository {
     search: string,
   ): Promise<[Roles[], number]> {
     try {
-      const roles = await this.repository.query(RolesQuery.GET_ROLES, [
-        skip,
-        take,
-        search,
-      ]);
+      const roles = await this.repository.query(
+        RolesQuery.GET_ROLES(skip, take, search),
+      );
       const count = await this.repository.query(RolesQuery.COUNT_ROLES);
 
       return [roles, parseInt(count[0].count)];
@@ -37,9 +35,9 @@ export class RolesRepository {
 
   async getRoleById(roleId: string): Promise<Roles | null> {
     try {
-      const data = await this.repository.query(RolesQuery.GET_ROLE_BY_ID, [
-        roleId,
-      ]);
+      const data = await this.repository.query(
+        RolesQuery.GET_ROLE_BY_ID(roleId),
+      );
 
       return data.length > 0 ? data[0] : null;
     } catch (error) {
@@ -49,9 +47,9 @@ export class RolesRepository {
 
   async getRoleByName(roleName: string): Promise<Roles | null> {
     try {
-      const data = await this.repository.query(RolesQuery.GET_ROLE_BY_NAME, [
-        roleName,
-      ]);
+      const data = await this.repository.query(
+        RolesQuery.GET_ROLE_BY_NAME(roleName),
+      );
 
       return data.length > 0 ? data[0] : null;
     } catch (error) {
@@ -66,11 +64,13 @@ export class RolesRepository {
     await queryRunner.startTransaction();
 
     try {
-      const newRole = await queryRunner.query(RolesQuery.CREATE_ROLE, [
-        dto.roleType,
-        dto.roleName,
-        dto.createdBy || null,
-      ]);
+      const newRole = await queryRunner.query(
+        RolesQuery.CREATE_ROLE(
+          dto.roleType,
+          dto.roleName,
+          dto.createdBy || null,
+        ),
+      );
 
       await queryRunner.commitTransaction();
       return newRole[0];
@@ -89,12 +89,14 @@ export class RolesRepository {
     await queryRunner.startTransaction();
 
     try {
-      await queryRunner.query(RolesQuery.UPDATE_ROLE, [
-        dto.roleType || null,
-        dto.roleName || null,
-        dto.updatedBy || null,
-        roleId,
-      ]);
+      await queryRunner.query(
+        RolesQuery.UPDATE_ROLE(
+          dto.roleType || null,
+          dto.roleName || null,
+          dto.updatedBy || null,
+          roleId,
+        ),
+      );
 
       await queryRunner.commitTransaction();
     } catch (error) {
@@ -112,7 +114,7 @@ export class RolesRepository {
     await queryRunner.startTransaction();
 
     try {
-      await queryRunner.query(RolesQuery.DELETE_ROLE, [roleId]);
+      await queryRunner.query(RolesQuery.DELETE_ROLE(roleId));
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();

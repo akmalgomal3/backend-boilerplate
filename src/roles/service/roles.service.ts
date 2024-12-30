@@ -13,6 +13,7 @@ import {
   PaginationDto,
 } from '../../common/dto/pagination.dto';
 import { RoleType } from '../../common/enums/user-roles.enum';
+import { ErrorMessages } from '../../common/exceptions/root-error.message';
 
 @Injectable()
 export class RolesService {
@@ -44,7 +45,7 @@ export class RolesService {
       };
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error get all roles',
+        error.message || ErrorMessages.roles.getMessage('ERROR_GET_ALL_ROLES'),
         error.status || 500,
       );
     }
@@ -55,13 +56,18 @@ export class RolesService {
       const role = await this.roleRepository.getRoleById(roleId);
 
       if (!role) {
-        new NotFoundException(`Role with ID ${roleId} not found`);
+        throw new NotFoundException(
+          ErrorMessages.roles.dynamicMessage(
+            ErrorMessages.roles.getMessage('ERROR_GET_ROLE_BY_ID_NOT_FOUND'),
+            { roleId: roleId },
+          ),
+        );
       }
 
       return role;
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error get role by id',
+        error.message || ErrorMessages.roles.getMessage('ERROR_GET_ROLE_BY_ID'),
         error.status || 500,
       );
     }
@@ -72,13 +78,19 @@ export class RolesService {
       const role = await this.roleRepository.getRoleByName(roleName);
 
       if (!role) {
-        new NotFoundException(`Role with name ${roleName} not found`);
+        throw new NotFoundException(
+          ErrorMessages.roles.dynamicMessage(
+            ErrorMessages.roles.getMessage('ERROR_GET_ROLE_BY_NAME_NOT_FOUND'),
+            { roleName: roleName },
+          ),
+        );
       }
 
       return role;
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error get role by name',
+        error.message ||
+          ErrorMessages.roles.getMessage('ERROR_GET_ROLE_BY_NAME'),
         error.status || 500,
       );
     }
@@ -94,8 +106,13 @@ export class RolesService {
       );
 
       if (isAlreadyAvailable) {
-        new HttpException(
-          `Role with name ${createRoleDto.roleName} already available!`,
+        throw new HttpException(
+          ErrorMessages.roles.dynamicMessage(
+            ErrorMessages.roles.getMessage(
+              'ERROR_CREATE_ROLE_ALREADY_AVAILABLE',
+            ),
+            { roleName: createRoleDto.roleName },
+          ),
           HttpStatus.CONFLICT,
         );
       }
@@ -107,8 +124,11 @@ export class RolesService {
       ];
 
       if (!validRoles.includes(createRoleDto.roleType)) {
-        new HttpException(
-          `Role with type ${createRoleDto.roleType} not valid!`,
+        throw new HttpException(
+          ErrorMessages.roles.dynamicMessage(
+            ErrorMessages.roles.getMessage('ERROR_CREATE_ROLE_TYPE_INVALID'),
+            { roleType: createRoleDto.roleType },
+          ),
           HttpStatus.BAD_REQUEST,
         );
       }
@@ -119,7 +139,7 @@ export class RolesService {
       });
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error create new role',
+        error.message || ErrorMessages.roles.getMessage('ERROR_CREATE_ROLE'),
         error.status || 500,
       );
     }
@@ -134,7 +154,12 @@ export class RolesService {
       const isExist = await this.getRoleById(roleId);
 
       if (!isExist) {
-        new NotFoundException(`Role with ID ${roleId} not exist!`);
+        throw new NotFoundException(
+          ErrorMessages.roles.dynamicMessage(
+            ErrorMessages.roles.getMessage('ERROR_UPDATE_ROLE_NOT_FOUND'),
+            { roleId: roleId },
+          ),
+        );
       }
 
       const isAlreadyAvailable = await this.roleRepository.getRoleByName(
@@ -142,8 +167,13 @@ export class RolesService {
       );
 
       if (isAlreadyAvailable) {
-        new HttpException(
-          `Role with name ${updateRoleDto.roleName} already available!`,
+        throw new HttpException(
+          ErrorMessages.roles.dynamicMessage(
+            ErrorMessages.roles.getMessage(
+              'ERROR_UPDATE_ROLE_ALREADY_AVAILABLE',
+            ),
+            { roleName: updateRoleDto.roleName },
+          ),
           HttpStatus.CONFLICT,
         );
       }
@@ -158,8 +188,11 @@ export class RolesService {
         updateRoleDto.roleType &&
         !validRoles.includes(updateRoleDto.roleType)
       ) {
-        new HttpException(
-          `Role with type ${updateRoleDto.roleType} not valid!`,
+        throw new HttpException(
+          ErrorMessages.roles.dynamicMessage(
+            ErrorMessages.roles.getMessage('ERROR_UPDATE_ROLE_TYPE_INVALID'),
+            { roleType: updateRoleDto.roleType },
+          ),
           HttpStatus.BAD_REQUEST,
         );
       }
@@ -170,7 +203,7 @@ export class RolesService {
       });
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error update role',
+        error.message || ErrorMessages.roles.getMessage('ERROR_UPDATE_ROLE'),
         error.status || 500,
       );
     }
@@ -181,13 +214,18 @@ export class RolesService {
       const isExist = await this.getRoleById(roleId);
 
       if (!isExist) {
-        new NotFoundException(`Role with ID ${roleId} not exist!`);
+        throw new NotFoundException(
+          ErrorMessages.roles.dynamicMessage(
+            ErrorMessages.roles.getMessage('ERROR_DELETE_ROLE_NOT_EXIST'),
+            { roleId: roleId },
+          ),
+        );
       }
 
       await this.roleRepository.deleteRole(roleId);
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error delete role',
+        error.message || ErrorMessages.roles.getMessage('ERROR_DELETE_ROLE'),
         error.status || 500,
       );
     }
@@ -200,7 +238,8 @@ export class RolesService {
       return role.roleId;
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error getting base role',
+        error.message ||
+          ErrorMessages.roles.getMessage('ERROR_GETTING_BASE_ROLE'),
         error.status || 500,
       );
     }

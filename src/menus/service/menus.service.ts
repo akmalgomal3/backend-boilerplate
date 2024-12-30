@@ -19,6 +19,7 @@ import { RolesService } from 'src/roles/service/roles.service';
 import { UserService } from 'src/users/services/user.service';
 import { FeaturesService } from 'src/features/service/features.service';
 import { Features } from 'src/features/entity/features.entity';
+import { ErrorMessages } from '../../common/exceptions/root-error.message';
 
 @Injectable()
 export class MenusService {
@@ -53,7 +54,7 @@ export class MenusService {
       };
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error get all menu',
+        error.message || ErrorMessages.menus.getMessage('ERROR_GET_ALL_MENU'),
         error.status || 500,
       );
     }
@@ -63,14 +64,20 @@ export class MenusService {
     try {
       const menu = await this.menusRepository.getMenuById(menuId);
 
+      console.log(!menu);
       if (!menu) {
-        new NotFoundException(`Menu with ID ${menuId} not found`);
+        throw new NotFoundException(
+          ErrorMessages.menus.dynamicMessage(
+            ErrorMessages.menus.getMessage('ERROR_GET_MENU_BY_ID_NOT_FOUND'),
+            { menuId: menuId },
+          ),
+        );
       }
 
       return menu;
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error get menu by id',
+        error.message || ErrorMessages.menus.getMessage('ERROR_GET_MENU_BY_ID'),
         error.status || 500,
       );
     }
@@ -81,13 +88,19 @@ export class MenusService {
       const menu = await this.menusRepository.getMenuByName(menuName);
 
       if (!menu) {
-        new NotFoundException(`Menu with name ${menuName} not found`);
+        throw new NotFoundException(
+          ErrorMessages.menus.dynamicMessage(
+            ErrorMessages.menus.getMessage('ERROR_GET_MENU_BY_NAME_NOT_FOUND'),
+            { menuName: menuName },
+          ),
+        );
       }
 
       return menu;
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error get menu by name',
+        error.message ||
+          ErrorMessages.menus.getMessage('ERROR_GET_MENU_BY_NAME'),
         error.status || 500,
       );
     }
@@ -103,9 +116,15 @@ export class MenusService {
           createMenuDto.parentMenuId,
         );
 
-        if (!isParentExist) {
-          new NotFoundException(
-            `Parent menu with id ${createMenuDto.parentMenuId} not exist!`,
+        console.log(isParentExist);
+        if (isParentExist == null) {
+          throw new NotFoundException(
+            ErrorMessages.menus.dynamicMessage(
+              ErrorMessages.menus.getMessage(
+                'ERROR_CREATE_MENU_PARENT_NOT_FOUND',
+              ),
+              { menuId: createMenuDto.parentMenuId },
+            ),
           );
         }
       }
@@ -119,7 +138,7 @@ export class MenusService {
       );
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error create menu',
+        error.message || ErrorMessages.menus.getMessage('ERROR_CREATE_MENU'),
         error.status || 500,
       );
     }
@@ -134,20 +153,12 @@ export class MenusService {
       const isExist = await this.getMenuById(menuId);
 
       if (!isExist) {
-        new NotFoundException(`Menu with id ${menuId} not exist!`);
-      }
-
-      if (updateMenuDto.menuName != null) {
-        const nameAlreadyAvailable = await this.menusRepository.getMenuByName(
-          updateMenuDto.menuName,
+        throw new NotFoundException(
+          ErrorMessages.menus.dynamicMessage(
+            ErrorMessages.menus.getMessage('ERROR_UPDATE_MENU_NOT_FOUND'),
+            { menuId: menuId },
+          ),
         );
-
-        if (nameAlreadyAvailable) {
-          new HttpException(
-            `Menu with name ${updateMenuDto.menuName} already available!`,
-            HttpStatus.CONFLICT,
-          );
-        }
       }
 
       if (updateMenuDto.parentMenuId != null) {
@@ -156,8 +167,13 @@ export class MenusService {
         );
 
         if (!isParentExist) {
-          new NotFoundException(
-            `Parent menu with id ${updateMenuDto.parentMenuId} not exist!`,
+          throw new NotFoundException(
+            ErrorMessages.menus.dynamicMessage(
+              ErrorMessages.menus.getMessage(
+                'ERROR_UPDATE_MENU_PARENT_NOT_FOUND',
+              ),
+              { menuId: updateMenuDto.parentMenuId },
+            ),
           );
         }
       }
@@ -165,7 +181,7 @@ export class MenusService {
       await this.menusRepository.updateMenu(menuId, updateMenuDto, userId);
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error update menu',
+        error.message || ErrorMessages.menus.getMessage('ERROR_UPDATE_MENU'),
         error.status || 500,
       );
     }
@@ -185,7 +201,7 @@ export class MenusService {
       await this.menusRepository.deleteMenu(menuIdsWillDelete);
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error delete menu',
+        error.message || ErrorMessages.menus.getMessage('ERROR_DELETE_MENU'),
         error.status || 500,
       );
     }
@@ -219,7 +235,8 @@ export class MenusService {
       return result;
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error delete menu',
+        error.message ||
+          ErrorMessages.menus.getMessage('ERROR_GET_ALL_MENU_CHILD_ID'),
         error.status || 500,
       );
     }
@@ -368,7 +385,8 @@ export class MenusService {
       return rootMenus;
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error mapping menu and features',
+        error.message ||
+          ErrorMessages.menus.getMessage('ERROR_BUILD_MENU_HIERARCHY'),
         error.status || 500,
       );
     }

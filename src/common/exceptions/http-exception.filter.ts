@@ -13,9 +13,7 @@ import { JwtPayload } from '../types/jwt-payload.type';
 
 @Catch(HttpException)
 export class HttpExceptionFilter implements ExceptionFilter {
-  constructor(
-    private userLogActivitiesService: UserLogActivitiesService
-  ) {}
+  constructor(private userLogActivitiesService: UserLogActivitiesService) {}
 
   async catch(exception: HttpException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -23,28 +21,39 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>() as any;
     const status = exception.getStatus();
     const errorResponse = exception.getResponse() as any;
-    const message = typeof errorResponse === 'string'
-      ? errorResponse
-      : errorResponse.message || 'Internal server error'
+    const message =
+      typeof errorResponse === 'string'
+        ? errorResponse
+        : errorResponse.message || 'Internal server error';
 
-    let user: JwtPayload = request?.user
-    const url = request.url
+    let user: JwtPayload = request?.user;
+    const url = request.url;
 
-    if (url.includes("login")){
-        user = request.body
+    if (url.includes('login')) {
+      user = request.body;
     }
 
-    if(user){
-      const userLogActivity :CreateUserLogActivityByUserDTO = {
-        method: request.method, 
-        url: request.url, 
+    console.error('HTTP Exception:', {
+      status,
+      message,
+      method: request.method,
+      url: request.url,
+      params: request.params,
+      body: request.body,
+      stack: exception.stack,
+    });
+
+    if (user) {
+      const userLogActivity: CreateUserLogActivityByUserDTO = {
+        method: request.method,
+        url: request.url,
         path: request?.route?.path,
         statusCode: status.toString(),
         description: message,
-        params: request?.params
-      }
-  
-      await this.userLogActivitiesService.createByUser(user, userLogActivity)  
+        params: request?.params,
+      };
+
+      await this.userLogActivitiesService.createByUser(user, userLogActivity);
     }
 
     const apiResponse: ApiResponse<null> = {

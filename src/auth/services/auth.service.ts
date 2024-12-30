@@ -27,6 +27,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import { ConfigService } from '@nestjs/config';
 import { SetPasswordDto } from '../dto/set-password.dto';
+import { ErrorMessages } from '../../common/exceptions/root-error.message';
 
 @Injectable()
 export class AuthService {
@@ -84,7 +85,9 @@ export class AuthService {
       if (roleId) {
         const checkRole = await this.roleService.getRoleById(roleId);
         if (!checkRole) {
-          throw new BadRequestException('Role id not found');
+          throw new BadRequestException(
+            ErrorMessages.auth.getMessage('ROLE_ID_NOT_FOUND'),
+          );
         }
       }
 
@@ -109,6 +112,8 @@ export class AuthService {
         }),
       ]);
 
+      const role = await this.roleService.getRoleById(user.role.roleId);
+
       return {
         userId: user.userId,
         username: user.username,
@@ -116,6 +121,11 @@ export class AuthService {
         fullName: user.fullName,
         phoneNumber: user.phoneNumber,
         birthdate: format(new Date(user.birthdate), 'yyyy-MM-dd'),
+        role: {
+          roleId: role.roleId,
+          roleName: role.roleName,
+          roleType: role.roleType,
+        },
       };
     } catch (e) {
       throw new HttpException(
@@ -159,6 +169,8 @@ export class AuthService {
         }),
       ]);
 
+      const role = await this.roleService.getRoleById(user.role.roleId);
+
       return {
         userId: user.userId,
         username: user.username,
@@ -166,6 +178,11 @@ export class AuthService {
         fullName: user.fullName,
         phoneNumber: user.phoneNumber,
         birthdate: format(new Date(user.birthdate), 'yyyy-MM-dd'),
+        role: {
+          roleId: role.roleId,
+          roleName: role.roleName,
+          roleType: role.roleType,
+        },
       };
     } catch (e) {
       console.log(e);
@@ -181,11 +198,12 @@ export class AuthService {
       const { username, password, ipAddress, deviceType } = loginDto;
 
       const user = await this.userService.getUserByUsername(username);
-      console.log(user);
 
       if (!user) {
         await this.validateUserAuth(username);
-        throw new BadRequestException('username not found');
+        throw new BadRequestException(
+          ErrorMessages.auth.getMessage('USERNAME_NOT_FOUND'),
+        );
       }
 
       await this.validateUser(password, user, deviceType);
@@ -278,18 +296,22 @@ export class AuthService {
 
       if (!user) {
         await this.validateUserAuth(data.email);
-        throw new BadRequestException('User not found');
+        throw new BadRequestException(
+          ErrorMessages.auth.getMessage('USER_NOT_FOUND'),
+        );
       }
 
       const isAttemptValid = await this.validateLoginAttemptLog(user.userId);
       if (!isAttemptValid) {
         throw new UnauthorizedException(
-          'Failed to login due to 5 failed attempt !!',
+          ErrorMessages.auth.getMessage('FAILED_FIVE_TIMES'),
         );
       }
 
       if (!user.active) {
-        throw new BadRequestException('Account is not active');
+        throw new BadRequestException(
+          ErrorMessages.auth.getMessage('USER_NOT_ACTIVE'),
+        );
       }
 
       const isSessionValid = await this.validateUserSession(
@@ -298,7 +320,7 @@ export class AuthService {
       );
       if (!isSessionValid) {
         throw new UnauthorizedException(
-          'There is an active session for this user, please logout first !!',
+          ErrorMessages.auth.getMessage('CONFLICT_SESSION'),
         );
       }
 
@@ -355,11 +377,15 @@ export class AuthService {
       );
 
       if (!refreshToken) {
-        throw new UnauthorizedException('Refresh token expired');
+        throw new UnauthorizedException(
+          ErrorMessages.auth.getMessage('EXPIRED_REFRESH_TOKEN'),
+        );
       }
 
       if (refreshToken !== token) {
-        throw new UnauthorizedException('Invalid refresh token');
+        throw new UnauthorizedException(
+          ErrorMessages.auth.getMessage('INVALID_REFRESH_TOKEN'),
+        );
       }
 
       const payload: JwtPayload = {
@@ -464,7 +490,9 @@ export class AuthService {
       } = registerDto;
 
       if (roleId && !(await this.roleService.getRoleById(roleId))) {
-        throw new BadRequestException('Role id not found');
+        throw new BadRequestException(
+          ErrorMessages.auth.getMessage('ROLE_ID_NOT_FOUND'),
+        );
       }
 
       const decryptedPassword: string = this.utils.validateConfirmPassword(
@@ -540,7 +568,7 @@ export class AuthService {
 
       if (!isTokenValid) {
         throw new UnauthorizedException(
-          'Link has been expired, please register again',
+          ErrorMessages.auth.getMessage('EXPIRED_LINK'),
         );
       }
 
@@ -549,7 +577,9 @@ export class AuthService {
       );
 
       if (!userAuth) {
-        throw new NotFoundException('User auth not found');
+        throw new NotFoundException(
+          ErrorMessages.auth.getMessage('USER_AUTH_NOT_FOUND'),
+        );
       }
 
       await this.userService.validateUsernameEmail(
@@ -574,7 +604,7 @@ export class AuthService {
     } catch (e) {
       if (e.name === 'TokenExpiredError') {
         throw new SessionTimeoutException(
-          'Link has been expired, please register again',
+          ErrorMessages.auth.getMessage('EXPIRED_LINK'),
         );
       }
 
@@ -590,7 +620,9 @@ export class AuthService {
       const user = await this.userService.getUserByEmail(email);
 
       if (!user) {
-        throw new NotFoundException('This email is not registered as a user');
+        throw new NotFoundException(
+          ErrorMessages.auth.getMessage('INVALID_EMAIL'),
+        );
       }
 
       const token: string = await this.jwtService.signAsync(
@@ -644,14 +676,16 @@ export class AuthService {
 
       if (!isTokenValid) {
         throw new UnauthorizedException(
-          'Link has been expired, please reset password again',
+          ErrorMessages.auth.getMessage('EXPIRED_LINK'),
         );
       }
 
       const user: Users = await this.userService.getUser(tokenPayload.userId);
 
       if (!user) {
-        throw new NotFoundException('User not found');
+        throw new NotFoundException(
+          ErrorMessages.auth.getMessage('USER_NOT_FOUND'),
+        );
       }
 
       const hashedPassword: string = await bcrypt.hash(decryptedPassword, 10);
@@ -670,7 +704,7 @@ export class AuthService {
     } catch (e) {
       if (e.name === 'TokenExpiredError') {
         throw new SessionTimeoutException(
-          'Link has been expired, please reset password again',
+          ErrorMessages.auth.getMessage('EXPIRED_LINK'),
         );
       }
 
@@ -693,13 +727,13 @@ export class AuthService {
 
       if (checkUsername) {
         throw new BadRequestException(
-          'Username already registered, please use another username',
+          ErrorMessages.auth.getMessage('USERNAME_ALREADY_USED'),
         );
       }
 
       if (checkEmail) {
         throw new BadRequestException(
-          'Email already registered, please use another email',
+          ErrorMessages.auth.getMessage('EMAIL_ALREADY_USED'),
         );
       }
 
@@ -732,24 +766,28 @@ export class AuthService {
     try {
       if (!password.startsWith('U2F')) {
         throw new BadRequestException(
-          'Invalid password format, must be encrypted',
+          ErrorMessages.auth.getMessage('INVALID_PASSWORD_FORMAT'),
         );
       }
 
       const isAttemptValid = await this.validateLoginAttemptLog(user.userId);
       if (!isAttemptValid) {
         throw new UnauthorizedException(
-          'Failed to login due to 5 failed attempt !!',
+          ErrorMessages.auth.getMessage('FAILED_FIVE_TIMES'),
         );
       }
 
       if (!user.active) {
-        throw new BadRequestException('Account is not active');
+        throw new BadRequestException(
+          ErrorMessages.auth.getMessage('USER_NOT_ACTIVE'),
+        );
       }
 
       const isPasswordValid = await this.validateUserPassword(password, user);
       if (!isPasswordValid) {
-        throw new UnauthorizedException('Invalid password');
+        throw new UnauthorizedException(
+          ErrorMessages.auth.getMessage('INVALID_PASSWORD'),
+        );
       }
 
       const isSessionValid = await this.validateUserSession(
@@ -759,7 +797,7 @@ export class AuthService {
 
       if (!isSessionValid) {
         throw new UnauthorizedException(
-          'There is an active session for this user, please logout first !!',
+          ErrorMessages.auth.getMessage('CONFLICT_SESSION'),
         );
       }
     } catch (e) {
@@ -782,13 +820,21 @@ export class AuthService {
         userAuthByUsername.requestStatus !== 'Approved'
       ) {
         throw new BadRequestException(
-          `Username cannot be used because the status is ${userAuthByUsername.requestStatus}, please contact the administrator for further information`,
+          ErrorMessages.auth.dynamicMessage(
+            ErrorMessages.auth.getMessage(
+              'INVALID_LOGIN_NEED_APPROVAL_USERNAME',
+            ),
+            { status: userAuthByUsername.requestStatus },
+          ),
         );
       }
 
       if (userAuthByEmail && userAuthByEmail.requestStatus !== 'Declined') {
         throw new BadRequestException(
-          `Email cannot be used because the status is ${userAuthByEmail.requestStatus}, please contact the administrator for further information`,
+          ErrorMessages.auth.dynamicMessage(
+            ErrorMessages.auth.getMessage('INVALID_LOGIN_NEED_APPROVAL_EMAIL'),
+            { status: userAuthByEmail.requestStatus },
+          ),
         );
       }
     } catch (e) {
