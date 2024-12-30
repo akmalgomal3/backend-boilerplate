@@ -820,13 +820,21 @@ export class AuthService {
         userAuthByUsername.requestStatus !== 'Approved'
       ) {
         throw new BadRequestException(
-          `Username cannot be used because the status is ${userAuthByUsername.requestStatus}, please contact the administrator for further information`,
+          ErrorMessages.auth.dynamicMessage(
+            ErrorMessages.auth.getMessage(
+              'INVALID_LOGIN_NEED_APPROVAL_USERNAME',
+            ),
+            { status: userAuthByUsername.requestStatus },
+          ),
         );
       }
 
       if (userAuthByEmail && userAuthByEmail.requestStatus !== 'Declined') {
         throw new BadRequestException(
-          `Email cannot be used because the status is ${userAuthByEmail.requestStatus}, please contact the administrator for further information`,
+          ErrorMessages.auth.dynamicMessage(
+            ErrorMessages.auth.getMessage('INVALID_LOGIN_NEED_APPROVAL_EMAIL'),
+            { status: userAuthByEmail.requestStatus },
+          ),
         );
       }
     } catch (e) {
