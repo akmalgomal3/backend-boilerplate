@@ -13,7 +13,7 @@ import { UsersAuth } from '../entity/user-auth.entity';
 import { Roles } from 'src/roles/entity/roles.entity';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserAuthRequestType } from '../../common/enums/request-type.enum';
-import { ERROR_MESSAGES } from '../../common/exceptions/error-messages';
+import { ErrorMessages } from '../../common/exceptions/root-error.message';
 
 @Injectable()
 export class UserRepository {
@@ -292,7 +292,7 @@ export class UserRepository {
       const query = `INSERT INTO users (email, username, full_name, password, role_id, birthdate, phone_number, user_id,
                                         created_by, active, created_at, updated_at)
                      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(),
-                             NOW()) RETURNING user_id as "userId", username, email, full_name as "fullName", phone_number as "phoneNumber", birthdate`;
+                             NOW()) RETURNING user_id as "userId", username, email, full_name as "fullName", phone_number as "phoneNumber", birthdate, role_id as "roleId"`;
 
       const data = await this.repository.query(query, [
         email,
@@ -307,7 +307,14 @@ export class UserRepository {
         isActive,
       ]);
 
-      return data[0];
+      return data[0]
+        ? {
+            ...data[0],
+            role: {
+              roleId: data[0].roleId,
+            },
+          }
+        : {};
     } catch (error) {
       throw new HttpException(
         error.message || 'Error creating user',
@@ -337,7 +344,7 @@ export class UserRepository {
                                              created_by, active, created_at, updated_at, request_status)
                      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(),
                              NOW(),
-                             'Requested') RETURNING user_id as "userId", username, email, full_name as "fullName", phone_number as "phoneNumber", birthdate`;
+                             'Requested') RETURNING user_id as "userId", username, email, full_name as "fullName", phone_number as "phoneNumber", birthdate, role_id as "roleId"`;
 
       const data = await this.repository.query(query, [
         email,
@@ -352,7 +359,14 @@ export class UserRepository {
         isActive,
       ]);
 
-      return data[0];
+      return data[0]
+        ? {
+            ...data[0],
+            role: {
+              roleId: data[0].roleId,
+            },
+          }
+        : {};
     } catch (error) {
       throw new HttpException(
         error.message || 'Error creating user',
@@ -444,7 +458,9 @@ export class UserRepository {
 
       const userAuthInfo = await this.getUserAuthById(userAuthId);
       if (!userAuthInfo) {
-        throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
+        throw new NotFoundException(
+          ErrorMessages.users.getMessage('USER_AUTH_NOT_FOUND'),
+        );
       }
 
       if (userAuthInfo.requestStatus !== UserAuthRequestType.Requested) {

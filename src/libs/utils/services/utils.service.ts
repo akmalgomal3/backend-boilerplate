@@ -3,6 +3,7 @@ import * as CryptoJS from 'crypto-js';
 import { ConfigService } from '@nestjs/config';
 import * as geoip from 'geoip-lite';
 import { result } from 'lodash';
+import { ErrorMessages } from '../../../common/exceptions/root-error.message';
 
 @Injectable()
 export class UtilsService {
@@ -98,31 +99,31 @@ export class UtilsService {
     try {
       if (decryptedPassword.length < 8 || decryptedPassword.length > 12) {
         throw new BadRequestException(
-          'Password must be between 8 to 12 characters long.',
+          ErrorMessages.utils.getMessage('INVALID_PASSWORD_LENGTH'),
         );
       }
 
       if (!/[A-Z]/.test(decryptedPassword)) {
         throw new BadRequestException(
-          'Password must contain at least one uppercase letter.',
+          ErrorMessages.utils.getMessage('INVALID_PASSWORD_UPPERCASE'),
         );
       }
 
       if (!/[a-z]/.test(decryptedPassword)) {
         throw new BadRequestException(
-          'Password must contain at least one lowercase letter.',
+          ErrorMessages.utils.getMessage('INVALID_PASSWORD_LOWERCASE'),
         );
       }
 
       if (!/\d/.test(decryptedPassword)) {
         throw new BadRequestException(
-          'Password must contain at least one number.',
+          ErrorMessages.utils.getMessage('INVALID_PASSWORD_NUMBER'),
         );
       }
 
       if (!/[!@#$%^&*(),.?":{}|<>]/.test(decryptedPassword)) {
         throw new BadRequestException(
-          'Password must contain at least one special character.',
+          ErrorMessages.utils.getMessage('INVALID_PASSWORD_SPECIAL_CHARACTER'),
         );
       }
     } catch (e) {
@@ -133,26 +134,25 @@ export class UtilsService {
     }
   }
 
-  validateConfirmPassword(
-    password: string,
-    confirmPassword: string,
-  ): string {
+  validateConfirmPassword(password: string, confirmPassword: string): string {
     const decryptedPassword: string = this.decrypt(password);
     const decryptedConfirmPassword: string = this.decrypt(confirmPassword);
 
     if (decryptedPassword !== decryptedConfirmPassword) {
-      throw new BadRequestException('Password does not match');
+      throw new BadRequestException(
+        ErrorMessages.utils.getMessage('PASSWORD_NOT_MATCH'),
+      );
     }
 
     if (!password.startsWith('U2F')) {
       throw new BadRequestException(
-        'Invalid password format, must be encrypted',
+        ErrorMessages.utils.getMessage('INVALID_PASSWORD_FORMAT'),
       );
     }
 
     if (!confirmPassword.startsWith('U2F')) {
       throw new BadRequestException(
-        'Invalid password format, must be encrypted',
+        ErrorMessages.utils.getMessage('INVALID_PASSWORD_FORMAT'),
       );
     }
 

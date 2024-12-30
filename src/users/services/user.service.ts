@@ -30,7 +30,7 @@ import { ApproveUserAuthDto } from '../dto/approve-user-auth.dto';
 import { GetUserAuthDto } from '../dto/get-unapproved-user.dto';
 import { UpdatePasswordByAdminDto } from '../dto/update-password-by-admin.dto';
 import { ConfigService } from '@nestjs/config';
-import { ERROR_MESSAGES } from '../../common/exceptions/error-messages';
+import { ErrorMessages } from '../../common/exceptions/root-error.message';
 
 @Injectable()
 export class UserService {
@@ -77,7 +77,9 @@ export class UserService {
     try {
       const result = await this.userRepository.getUserById(userId);
       if (!result) {
-        throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
+        throw new NotFoundException(
+          ErrorMessages.users.getMessage('USER_NOT_FOUND'),
+        );
       }
       return result;
     } catch (error) {
@@ -180,12 +182,14 @@ export class UserService {
       const userAuth = await this.getUserAuthById(userId);
 
       if (!userAuth) {
-        throw new NotFoundException(ERROR_MESSAGES.USER_AUTH_NOT_FOUND);
+        throw new NotFoundException(
+          ErrorMessages.users.getMessage('USER_AUTH_NOT_FOUND'),
+        );
       }
 
       if (userAuth.requestStatus !== UserAuthRequestType.Requested) {
         throw new BadRequestException(
-          ERROR_MESSAGES.INVALID_USER_AUTH_MUST_BE_REQUESTED,
+          ErrorMessages.users.getMessage('INVALID_USER_AUTH_MUST_BE_REQUESTED'),
         );
       }
 
@@ -212,7 +216,9 @@ export class UserService {
     try {
       const userAuth: UsersAuth = await this.getUserAuthById(userId);
       if (!userAuth) {
-        throw new NotFoundException(ERROR_MESSAGES.USER_AUTH_NOT_FOUND);
+        throw new NotFoundException(
+          ErrorMessages.users.getMessage('USER_AUTH_NOT_FOUND'),
+        );
       }
 
       await this.userRepository.deleteUserAuth(userId);
@@ -299,12 +305,16 @@ export class UserService {
     try {
       const getUserUpdatedById = await this.getUser(updateUserDto.updatedBy);
       if (!getUserUpdatedById) {
-        throw new HttpException('User updated not found', HttpStatus.NOT_FOUND);
+        throw new NotFoundException(
+          ErrorMessages.users.getMessage('USER_NOT_FOUND'),
+        );
       }
 
       const getUserById = await this.getUser(updateUserDto.userId);
       if (!getUserById) {
-        throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
+        throw new NotFoundException(
+          ErrorMessages.users.getMessage('USER_NOT_FOUND'),
+        );
       }
 
       if (getUserById.username != updateUserDto.username) {
@@ -315,7 +325,9 @@ export class UserService {
         updateUserDto.roleId,
       );
       if (!getRoleByRoleId) {
-        throw new NotFoundException(ERROR_MESSAGES.ROLE_ID_NOT_FOUND);
+        throw new NotFoundException(
+          ErrorMessages.users.getMessage('ROLE_ID_NOT_FOUND'),
+        );
       }
 
       const { roleId, userId, ...updatedDto } = updateUserDto;
@@ -361,7 +373,9 @@ export class UserService {
 
       const user = await this.userRepository.getUserById(userId);
       if (!user) {
-        throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
+        throw new NotFoundException(
+          ErrorMessages.users.getMessage('USER_NOT_FOUND'),
+        );
       }
 
       const isMatch = await bcrypt.compare(
@@ -369,7 +383,9 @@ export class UserService {
         user.password,
       );
       if (!isMatch) {
-        throw new BadRequestException(ERROR_MESSAGES.INVALID_OLD_PASSWORD);
+        throw new BadRequestException(
+          ErrorMessages.users.getMessage('INVALID_OLD_PASSWORD'),
+        );
       }
 
       const password = this.validatePassword(
@@ -406,7 +422,9 @@ export class UserService {
       const { newPassword, confirmNewPassword } = updatePasswordByAdminDto;
       const user = await this.getUser(userId);
       if (!user) {
-        throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
+        throw new NotFoundException(
+          ErrorMessages.users.getMessage('USER_NOT_FOUND'),
+        );
       }
 
       const decryptedPassword = this.utilsService.validateConfirmPassword(
@@ -453,7 +471,9 @@ export class UserService {
       const checkUser: Users = await this.getUserByEmail(email);
 
       if (checkUser) {
-        throw new NotFoundException(ERROR_MESSAGES.EMAIL_ALREADY_USED);
+        throw new NotFoundException(
+          ErrorMessages.users.getMessage('EMAIL_ALREADY_USED'),
+        );
       }
 
       const token: string = await this.jwtService.signAsync(
@@ -505,7 +525,9 @@ export class UserService {
     try {
       const payload: JwtPayload = await this.jwtService.verifyAsync(token);
       if (!payload) {
-        throw new BadRequestException(ERROR_MESSAGES.INVALID_TOKEN);
+        throw new BadRequestException(
+          ErrorMessages.users.getMessage('INVALID_TOKEN'),
+        );
       }
 
       const isTokenExist = await this.sessionService.getSession(
@@ -513,12 +535,16 @@ export class UserService {
       );
 
       if (!isTokenExist) {
-        throw new BadRequestException(ERROR_MESSAGES.EXPIRED_LINK);
+        throw new BadRequestException(
+          ErrorMessages.users.getMessage('EXPIRED_LINK'),
+        );
       }
 
       const user = await this.getUser(payload.userId);
       if (!user) {
-        throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
+        throw new NotFoundException(
+          ErrorMessages.users.getMessage('USER_NOT_FOUND'),
+        );
       }
 
       await Promise.all([
@@ -541,7 +567,9 @@ export class UserService {
     try {
       const user = await this.getUser(userId);
       if (!user) {
-        throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
+        throw new NotFoundException(
+          ErrorMessages.users.getMessage('USER_NOT_FOUND'),
+        );
       }
 
       await this.userRepository.updateUserEmail(userId, email);
@@ -610,11 +638,15 @@ export class UserService {
     const decryptedOldPassword = this.utilsService.decrypt(oldPassword);
 
     if (decryptedPassword !== decryptedConfirmPassword) {
-      throw new BadRequestException(ERROR_MESSAGES.PASSWORD_NOT_MATCH);
+      throw new BadRequestException(
+        ErrorMessages.users.getMessage('PASSWORD_NOT_MATCH'),
+      );
     }
 
     if (decryptedPassword === decryptedOldPassword) {
-      throw new BadRequestException(ERROR_MESSAGES.SAME_OLD_PASSWORD);
+      throw new BadRequestException(
+        ErrorMessages.users.getMessage('SAME_OLD_PASSWORD'),
+      );
     }
 
     return decryptedPassword;
@@ -631,11 +663,15 @@ export class UserService {
     ]);
 
     if (username && userByUsername) {
-      throw new BadRequestException(ERROR_MESSAGES.USERNAME_ALREADY_USED);
+      throw new BadRequestException(
+        ErrorMessages.users.getMessage('USERNAME_ALREADY_USED'),
+      );
     }
 
     if (email && userByEmail) {
-      throw new BadRequestException(ERROR_MESSAGES.EMAIL_ALREADY_USED);
+      throw new BadRequestException(
+        ErrorMessages.users.getMessage('EMAIL_ALREADY_USED'),
+      );
     }
 
     if (isApproval) {
