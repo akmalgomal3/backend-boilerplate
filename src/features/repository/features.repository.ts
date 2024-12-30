@@ -24,11 +24,9 @@ export class FeaturesRepository {
     search: string,
   ): Promise<[Features[], number]> {
     try {
-      const features = await this.repository.query(FeaturesQuery.GET_FEATURES, [
-        skip,
-        take,
-        search,
-      ]);
+      const features = await this.repository.query(
+        FeaturesQuery.GET_FEATURES(skip, take, search),
+      );
       const count = await this.repository.query(FeaturesQuery.COUNT_FEATURES);
 
       return [features, parseInt(count[0].count)];
@@ -40,8 +38,7 @@ export class FeaturesRepository {
   async getFeatureById(featureId: string): Promise<Features | null> {
     try {
       const data = await this.repository.query(
-        FeaturesQuery.GET_FEATURE_BY_ID,
-        [featureId],
+        FeaturesQuery.GET_FEATURE_BY_ID(featureId),
       );
 
       return data.length > 0 ? data[0] : null;
@@ -53,8 +50,7 @@ export class FeaturesRepository {
   async getFeatureByName(featureName: string): Promise<Features | null> {
     try {
       const data = await this.repository.query(
-        FeaturesQuery.GET_FEATURE_BY_NAME,
-        [featureName],
+        FeaturesQuery.GET_FEATURE_BY_NAME(featureName),
       );
       return data.length > 0 ? data[0] : null;
     } catch (error) {
@@ -111,13 +107,15 @@ export class FeaturesRepository {
     await queryRunner.startTransaction();
 
     try {
-      const newFeature = await queryRunner.query(FeaturesQuery.CREATE_FEATURE, [
-        dto.featureName,
-        dto.menuId || null,
-        dto.description || null,
-        dto.active ?? true,
-        userId,
-      ]);
+      const newFeature = await queryRunner.query(
+        FeaturesQuery.CREATE_FEATURE(
+          dto.featureName,
+          dto.menuId || null,
+          dto.description || null,
+          dto.active ?? true,
+          userId,
+        ),
+      );
 
       await queryRunner.commitTransaction();
       return newFeature[0];
@@ -140,14 +138,16 @@ export class FeaturesRepository {
     await queryRunner.startTransaction();
 
     try {
-      await queryRunner.query(FeaturesQuery.UPDATE_FEATURE, [
-        dto.featureName || null,
-        dto.menuId || null,
-        dto.description || null,
-        dto.active ?? null,
-        userId,
-        featureId,
-      ]);
+      await queryRunner.query(
+        FeaturesQuery.UPDATE_FEATURE(
+          dto.featureName || null,
+          dto.menuId || null,
+          dto.description || null,
+          dto.active ?? null,
+          userId,
+          featureId,
+        ),
+      );
 
       await queryRunner.commitTransaction();
     } catch (error) {
@@ -165,7 +165,7 @@ export class FeaturesRepository {
     await queryRunner.startTransaction();
 
     try {
-      await queryRunner.query(FeaturesQuery.DELETE_FEATURE, [featureId]);
+      await queryRunner.query(FeaturesQuery.DELETE_FEATURE(featureId));
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
