@@ -19,5 +19,9 @@ export class AuthErrorMessage extends BaseErrorMessages {
     EMAIL_ALREADY_USED: 'Email already registered, please use another email',
     INVALID_PASSWORD_FORMAT: 'Invalid password format, must be encrypted',
     INVALID_PASSWORD: 'Invalid password',
+    INVALID_LOGIN_NEED_APPROVAL_USERNAME:
+      'Username cannot be used because the status is ${status}, please contact the administrator for further information',
+    INVALID_LOGIN_NEED_APPROVAL_EMAIL:
+      'Email cannot be used because the status is ${status}, please contact the administrator for further information',
   };
 }

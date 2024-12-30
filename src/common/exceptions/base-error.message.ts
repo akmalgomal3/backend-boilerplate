@@ -7,4 +7,11 @@ export abstract class BaseErrorMessages {
     }
     return this.messages[key];
   }
+
+  dynamicMessage(message: string, params: Record<string, string>): string {
+    Object.keys(params).forEach((key: string) => {
+      message = message.replace(`\${${key}}`, params[key]);
+    });
+    return message;
+  }
 }
