@@ -140,19 +140,6 @@ export class MenusService {
         new NotFoundException(`Menu with id ${menuId} not exist!`);
       }
 
-      if (updateMenuDto.menuName != null) {
-        const nameAlreadyAvailable = await this.menusRepository.getMenuByName(
-          updateMenuDto.menuName,
-        );
-
-        if (nameAlreadyAvailable) {
-          new HttpException(
-            `Menu with name ${updateMenuDto.menuName} already available!`,
-            HttpStatus.CONFLICT,
-          );
-        }
-      }
-
       if (updateMenuDto.parentMenuId != null) {
         const isParentExist = await this.menusRepository.getMenuById(
           updateMenuDto.parentMenuId,
