@@ -19,6 +19,7 @@ import { UserService } from 'src/users/services/user.service';
 import { RolesService } from 'src/roles/service/roles.service';
 import { UpdateAccessFeatureDto } from '../dto/update-access-feature.dto';
 import { MenusRepository } from '../../menus/repository/menus.repository';
+import { ErrorMessages } from '../../common/exceptions/root-error.message';
 
 @Injectable()
 export class FeaturesService {
@@ -54,7 +55,8 @@ export class FeaturesService {
       };
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error get all features',
+        error.message ||
+          ErrorMessages.features.getMessage('ERROR_GET_FEATURES'),
         error.status || 500,
       );
     }
@@ -65,13 +67,21 @@ export class FeaturesService {
       const feature = await this.featuresRepository.getFeatureById(featureId);
 
       if (!feature) {
-        new NotFoundException(`Feature with ID ${featureId} not found`);
+        throw new NotFoundException(
+          ErrorMessages.features.dynamicMessage(
+            ErrorMessages.features.getMessage(
+              'ERROR_GET_FEATURE_BY_ID_NOT_FOUND',
+            ),
+            { featureId: featureId },
+          ),
+        );
       }
 
       return feature;
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error get feature by id',
+        error.message ||
+          ErrorMessages.features.getMessage('ERROR_GET_FEATURES_BY_ID'),
         error.status || 500,
       );
     }
@@ -83,13 +93,21 @@ export class FeaturesService {
         await this.featuresRepository.getFeatureByName(featureName);
 
       if (!feature) {
-        new NotFoundException(`Feature with name ${featureName} not found`);
+        throw new NotFoundException(
+          ErrorMessages.features.dynamicMessage(
+            ErrorMessages.features.getMessage(
+              'ERROR_GET_FEATURE_BY_NAME_NOT_FOUND',
+            ),
+            { featureName: featureName },
+          ),
+        );
       }
 
       return feature;
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error get feature by name',
+        error.message ||
+          ErrorMessages.features.getMessage('ERROR_GET_FEATURES_BY_NAME'),
         error.status || 500,
       );
     }
@@ -127,8 +145,13 @@ export class FeaturesService {
       );
 
       if (isAlreadyAvailable) {
-        new HttpException(
-          `Feature with name ${createFeatureDto.featureName} already available!`,
+        throw new HttpException(
+          ErrorMessages.features.dynamicMessage(
+            ErrorMessages.features.getMessage(
+              'ERROR_CREATE_FEATURE_ALREADY_AVAILABLE',
+            ),
+            { featureName: createFeatureDto.featureName },
+          ),
           HttpStatus.CONFLICT,
         );
       }
@@ -139,8 +162,13 @@ export class FeaturesService {
         );
 
         if (!isMenuExist) {
-          new NotFoundException(
-            `Menu with id ${createFeatureDto.menuId} not exist!`,
+          throw new NotFoundException(
+            ErrorMessages.features.dynamicMessage(
+              ErrorMessages.features.getMessage(
+                'ERROR_CREATE_FEATURE_MENU_NOT_EXIST',
+              ),
+              { menuId: createFeatureDto.menuId },
+            ),
           );
         }
       }
@@ -154,7 +182,8 @@ export class FeaturesService {
       );
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error create new feature',
+        error.message ||
+          ErrorMessages.features.getMessage('ERROR_CREATE_FEATURE'),
         error.status || 500,
       );
     }
@@ -168,7 +197,12 @@ export class FeaturesService {
     try {
       const isExist = await this.getFeatureById(featureId);
       if (!isExist) {
-        new NotFoundException(`Feature with id ${featureId} not exist!`);
+        throw new NotFoundException(
+          ErrorMessages.features.dynamicMessage(
+            ErrorMessages.features.getMessage('ERROR_UPDATE_FEATURE_NOT_FOUND'),
+            { featureId: featureId },
+          ),
+        );
       }
       if (updateFeatureDto.featureName != null) {
         const nameAlreadyAvailable =
@@ -177,8 +211,13 @@ export class FeaturesService {
           );
 
         if (nameAlreadyAvailable) {
-          new HttpException(
-            `Feature with name ${updateFeatureDto.featureName} already available!`,
+          throw new HttpException(
+            ErrorMessages.features.dynamicMessage(
+              ErrorMessages.features.getMessage(
+                'ERROR_UPDATE_FEATURE_ALREADY_AVAILABLE',
+              ),
+              { featureName: updateFeatureDto.featureName },
+            ),
             HttpStatus.CONFLICT,
           );
         }
@@ -190,8 +229,13 @@ export class FeaturesService {
         );
 
         if (!isMenuExist) {
-          new NotFoundException(
-            `Menu with id ${updateFeatureDto.menuId} not exist!`,
+          throw new NotFoundException(
+            ErrorMessages.features.dynamicMessage(
+              ErrorMessages.features.getMessage(
+                'ERROR_UPDATE_FEATURE_MENU_NOT_EXIST',
+              ),
+              { menuId: updateFeatureDto.menuId },
+            ),
           );
         }
       }
@@ -203,7 +247,8 @@ export class FeaturesService {
       );
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error update role',
+        error.message ||
+          ErrorMessages.features.getMessage('ERROR_UPDATE_FEATURE'),
         error.status || 500,
       );
     }
@@ -216,7 +261,8 @@ export class FeaturesService {
       await this.featuresRepository.deleteFeature(featureId);
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error delete role',
+        error.message ||
+          ErrorMessages.features.getMessage('ERROR_DELETE_FEATURE'),
         error.status || 500,
       );
     }
