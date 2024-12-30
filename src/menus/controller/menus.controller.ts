@@ -38,7 +38,6 @@ export class MenusController {
     const result = await this.menusService.getMenus(page, limit, search);
     return {
       data: result.data,
-      metadata: result.metadata,
     };
   }
 
@@ -107,19 +106,11 @@ export class MenusController {
 
   @ApiBearerAuth()
   @AuthorizedRoles(RoleType.Admin)
-  @Get('/accessMenu/:roleId')
-  async getAccessMenuByRoleId(
+  @Get('/accessMenu/create/body/:roleId')
+  async getAllToCreateAccessMenu(
     @Param('roleId', ParseUUIDPipe) roleId: string,
   ){
-    const result = await this.menusService.getAccessMenuByRoleId(roleId);
-    return { data: result }
-  }
-
-  @ApiBearerAuth()
-  @AuthorizedRoles(RoleType.Admin)
-  @Get('/accessMenu/create/body')
-  async getAllToCreateAccessMenu(){
-    const result = await this.menusService.getAllMenuToCreateAccessMenu();
+    const result = await this.menusService.getAllMenuToCreateAccessMenu(roleId);
     return { data: result }
   }
 
@@ -135,13 +126,14 @@ export class MenusController {
   }
 
   @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
   @Patch('/accessMenu/:roleId')
   async updateAccessMenu(
     @Param('roleId', ParseUUIDPipe) roleId: string,
     @Body() updateAccessMenuDto: CreateUpdateBulkAccessMenuDto,
     @User() user: JwtPayload,
   ){
-    const result = await this.menusService.createUpdateBulkAccessMenu({...updateAccessMenuDto, roleId, createdBy: user?.userId});
+    const result = await this.menusService.createUpdateBulkAccessMenu({...updateAccessMenuDto, roleId: user?.roleId, createdBy: user?.userId});
     return { data: result }
   }
 

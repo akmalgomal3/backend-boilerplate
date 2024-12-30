@@ -148,34 +148,6 @@ export class MenusRepository {
     }
   }
 
-  async getAccessMenuById(accessMenuId: string): Promise<Partial<AccessMenu>> {
-    try {
-      const query = AccessMenuQuery.GET_ACCESS_MENU_BY_ID;
-      const [accessMenu] = await this.repositoryAccessMenu.query(query, [
-        accessMenuId,
-      ]);
-
-      return {
-        accessMenuId: accessMenu.accessMenuId,
-        createdBy: accessMenu.createdBy,
-        createdAt: accessMenu.createdAt,
-        updatedAt: accessMenu.updatedAt,
-        updatedBy: accessMenu.updatedBy,
-        role: {
-          roleId: accessMenu.roleId,
-          roleName: accessMenu.roleName,
-          roleType: accessMenu.roleType,
-        },
-        menu: {
-          menuId: accessMenu.menuId,
-          menuName: accessMenu.menuName,
-        },
-      };
-    } catch (error) {
-      throw error;
-    }
-  }
-
   async getAccessMenuByRoleId(roleId: string): Promise<Menu[]> {
     try {
       const query = AccessMenuQuery.GET_ACCESS_MENU_BY_ROLE_ID;

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MenusService } from './service/menus.service';
 import { MenusController } from './controller/menus.controller';
 import { MenusRepository } from './repository/menus.repository';
@@ -7,7 +7,7 @@ import { RolesModule } from 'src/roles/roles.module';
 import { FeaturesModule } from 'src/features/features.module';
 
 @Module({
-  imports: [UsersModule, RolesModule, FeaturesModule],
+  imports: [forwardRef(() => FeaturesModule), UsersModule, RolesModule],
   controllers: [MenusController],
   providers: [MenusService, MenusRepository],
   exports: [MenusService, MenusRepository],

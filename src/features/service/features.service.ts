@@ -1,7 +1,9 @@
 import {
   BadRequestException,
+  forwardRef,
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -13,18 +15,24 @@ import {
   PaginatedResponseDto,
   PaginationDto,
 } from '../../common/dto/pagination.dto';
-import { CreateAccessFeatureDto } from '../dto/create-access-feature.dto';
-import { AccessFeature } from '../entity/access_feature.entity';
+import {
+  CreateUpdateAccessFeatureByMenuDto,
+  CreateUpdateAccessFeatureDto,
+  CreateUpdateBulkAccessFeatureDto,
+} from '../dto/create-update-access-feature.dto';
 import { UserService } from 'src/users/services/user.service';
 import { RolesService } from 'src/roles/service/roles.service';
-import { UpdateAccessFeatureDto } from '../dto/update-access-feature.dto';
 import { MenusRepository } from '../../menus/repository/menus.repository';
+import { MenusService } from 'src/menus/service/menus.service';
+import { Menu } from 'src/menus/entity/menus.entity';
 
 @Injectable()
 export class FeaturesService {
   constructor(
     private featuresRepository: FeaturesRepository,
     private menusRepository: MenusRepository,
+    @Inject(forwardRef(() => MenusService))
+    private menuService: MenusService,
     private usersService: UserService,
     private rolesService: RolesService,
   ) {}
@@ -222,63 +230,23 @@ export class FeaturesService {
     }
   }
 
-  async createAccessFeature(
-    createAccessFeatureDto: CreateAccessFeatureDto,
-  ): Promise<AccessFeature> {
+  async getAllFeaturesToCreateAccessFeature(roleId: string): Promise<{ globalFeatures: Features[]; menus: Menu[] }> {
     try {
-      const { roleId, featureId, createdBy } = createAccessFeatureDto;
-
-      await Promise.all([
-        this.usersService.getUser(createdBy),
-        this.rolesService.getRoleById(roleId),
-        this.getFeatureById(featureId),
-      ]);
-
-      const validateAccessFeature =
-        await this.featuresRepository.getAccessFeatureByRoleFeatureId(
-          roleId,
-          featureId,
-        );
-      console.log('masuk create access feature');
-
-      if (validateAccessFeature) {
-        new BadRequestException('Access feature already exist');
-      }
-
-      return await this.featuresRepository.createAccessFeature(
-        createAccessFeatureDto,
-      );
+      return await this.menuService.getAccessMenuByRoleIdToCreateAccessFeature(roleId)
     } catch (error) {
-      new HttpException(
-        error.message || 'Error get access menu by role',
+      throw new HttpException(
+        error.message || 'Error get all menu by features to create access feature',
         error.status || 500,
       );
     }
   }
 
-  async getAccessFeatureNoMenuId(): Promise<Features[]> {
+  async getAccessFeatureNoMenuId(roleId: string): Promise<Features[]> {
     try {
-      return await this.featuresRepository.getAccessFeatureNoMenuId();
+      return await this.featuresRepository.getAccessFeatureNoMenuId(roleId);
     } catch (error) {
       throw new HttpException(
         error.message || 'Error get access feature no menu id',
-        error.status || 500,
-      );
-    }
-  }
-
-  async getAccessFeatureById(accessFeatureId: string) {
-    try {
-      const accessFeature =
-        await this.featuresRepository.getAccessFeatureById(accessFeatureId);
-      if (!accessFeature) {
-        throw new NotFoundException('Access menu not found');
-      }
-
-      return accessFeature;
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Error get access menu by role',
         error.status || 500,
       );
     }
@@ -301,45 +269,96 @@ export class FeaturesService {
     }
   }
 
-  async updateAccessFeatureById(
-    accessFeatureId: string,
-    updateAccessFeatureDto: UpdateAccessFeatureDto,
-  ): Promise<AccessFeature> {
+  async getAllFeatureNoMenuIdAccessByRoleId(roleId: string): Promise<Features[]> {
     try {
-      const { roleId, featureId, updatedBy } = updateAccessFeatureDto;
-
-      await Promise.all([
-        this.usersService.getUser(updatedBy),
-        this.rolesService.getRoleById(roleId),
-        this.getFeatureById(featureId),
-        this.getAccessFeatureById(accessFeatureId),
-      ]);
-
-      return await this.featuresRepository.updateAccessFeatureById(
-        accessFeatureId,
-        updateAccessFeatureDto,
-      );
+      return await this.featuresRepository.getAllFeatureNoMenuIdAccessByRoleId(roleId)
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error update access menu by id',
+        error.message || 'Error get all access feature menu by role id',
+        error.status || 500,
+      );
+    
+    }
+  }
+
+  async getAllFeatureAccessByMenuRoleId(menuId: string, roleId: string): Promise<Features[]> {
+    try {
+      return await this.featuresRepository.getAllFeatureAccessByMenuRoleId(menuId, roleId)
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error get all access feature menu by role id',
+        error.status || 500,
+      );
+    
+    }
+  }
+
+  async bulkCreateUpdateAccessFeature(
+    createBulkAccessFeatureDto: CreateUpdateBulkAccessFeatureDto,
+  ): Promise<{ globalFeatures: Features[]; menus: Menu[] }> 
+  {
+    try {
+      const { roleId, createdBy, globalFeatures, menus } = createBulkAccessFeatureDto;
+
+      await Promise.all([
+        this.usersService.getUser(createdBy),
+        this.rolesService.getRoleById(roleId),
+      ]);
+
+      const collectFeatures = this.collectFeatures(menus, globalFeatures);
+      await this.featuresRepository.createBulkAccessFeature(
+        roleId,
+        createdBy,
+        collectFeatures,
+      );
+
+      return await this.menuService.getAccessMenuByRoleIdToCreateAccessFeature(roleId);
+    } catch (error) {
+      new HttpException(
+        error.message || 'Error create access menu by role',
         error.status || 500,
       );
     }
   }
 
-  async deleteAccessFeatureById(
-    accessFeatureId: string,
-  ): Promise<AccessFeature> {
+  async deleteAccessFeatureByRoleId(roleId: string): Promise<void> {
     try {
-      await this.getAccessFeatureById(accessFeatureId);
-      return await this.featuresRepository.deleteAccessMenuFeature(
-        accessFeatureId,
-      );
+      await this.featuresRepository.deleteAccessFeatureByRoleId(null, roleId);
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error delete access menu by id',
+        error.message || 'Error delete access feature by role id',
         error.status || 500,
       );
     }
+  }
+
+  private collectFeatures(
+    menusWithFeature: CreateUpdateAccessFeatureByMenuDto[],
+    globalFeatures: CreateUpdateAccessFeatureDto[] = [],
+  ): CreateUpdateAccessFeatureDto[] {
+    const collect: CreateUpdateAccessFeatureDto[] = [];
+
+    menusWithFeature.forEach((menu) => {
+      if (menu.children.length > 0) {
+        const features = this.collectFeatures(menu.children);
+        collect.push(...features);
+      }
+      
+      menu.features.forEach((feature) => {
+        if (
+          feature.canAccess ||
+          feature.canRead   ||
+          feature.canUpdate ||
+          feature.canDelete ||
+          feature.canInsert
+        ) {
+          collect.push(feature);
+        }
+      });
+    });
+
+    globalFeatures.forEach((feature) => collect.push(feature));
+
+    return collect;
   }
 }

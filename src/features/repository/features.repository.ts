@@ -1,12 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { CreateFeatureDto } from '../dto/create-features.dto';
 import { UpdateFeatureDto } from '../dto/update-features.dto';
 import { Features } from '../entity/features.entity';
 import { FeaturesQuery } from '../query/features.query';
-import { CreateAccessFeatureDto } from '../dto/create-access-feature.dto';
-import { UpdateAccessFeatureDto } from '../dto/update-access-feature.dto';
-import { AccessFeature } from '../entity/access_feature.entity';
+import {
+  CreateUpdateAccessFeatureDto,
+} from '../dto/create-update-access-feature.dto';
 
 @Injectable()
 export class FeaturesRepository {
@@ -175,47 +175,32 @@ export class FeaturesRepository {
     }
   }
 
-  async createAccessFeature(createAccessFeatureDto: CreateAccessFeatureDto) {
+  async getAccessFeatureNoMenuId(roleId: string): Promise<Features[]> {
     try {
-      const {
-        roleId,
-        featureId,
-        canAccess,
-        canRead,
-        canInsert,
-        canUpdate,
-        canDelete,
-        createdBy,
-      } = createAccessFeatureDto;
-
-      const query = `
-        INSERT INTO access_feature 
-          (role_id, feature_id, can_access, can_read, can_insert, can_update, can_delete, created_by, created_at, updated_at) 
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) 
-        RETURNING 
-                  -- access_feature_id as "accessFeatureId", 
-                  role_id as "roleId", 
-                  feature_id as "featureId", 
-                  can_access as "canAccess", 
-                  can_read as "canRead", 
-                  can_insert as "canInsert", 
-                  can_update as "canUpdate", 
-                  can_delete as "canDelete", 
-                  created_by as "createdBy"`;
-
-      const values = [
-        roleId,
-        featureId,
-        canAccess,
-        canRead,
-        canInsert,
-        canUpdate,
-        canDelete,
-        createdBy,
-      ];
-
-      const [create] = await this.repository.query(query, values);
-      return create;
+      const query = `SELECT 
+                      af.access_feature_id as "accessFeatureId",
+                      af.role_id as "roleId",
+                      r.role_name as "roleName",
+                      r.role_type as "roleType",
+                      af.feature_id as "featureId",
+                      f.feature_name as "featureName",
+                      f.active as active,
+                      f.menu_id as "menuId",
+                      af.can_access as "canAccess",
+                      af.can_read as "canRead",
+                      af.can_insert as "canInsert",
+                      af.can_update as "canUpdate",
+                      af.can_delete as "canDelete",
+                      af.created_at as "createdAt",
+                      af.updated_at as "updatedAt",
+                      af.created_by as "createdBy",
+                      af.updated_by as "updatedBy"
+                    FROM access_feature af
+                    LEFT JOIN features f ON af.feature_id = f.feature_id
+                    LEFT JOIN roles r ON af.role_id = r.role_id
+                    WHERE f.menu_id IS NULL AND af.role_id = $1`;
+      const features = await this.repository.query(query, [roleId]);
+      return features;
     } catch (error) {
       throw error;
     }
@@ -258,67 +243,72 @@ export class FeaturesRepository {
     }
   }
 
-  async getAccessFeatureByRoleFeatureId(
+  async getAllFeatureNoMenuIdAccessByRoleId(
     roleId: string,
-    featureId: string,
-  ): Promise<AccessFeature | null> {
+  ): Promise<Features[]> {
     try {
-      const query = `
-        SELECT 
-          af.access_feature_id as "accessFeatureId",
-          af.role_id as "roleId",
-          r.role_name as "roleName",
-          r.role_type as "roleType",
-          af.feature_id as "featureId",
-          f.feature_name as "featureName",
-          f.active as active,
-          f.menu_id as "menuId",
-          af.can_access as "canAccess",
-          af.can_read as "canRead",
-          af.can_insert as "canInsert",
-          af.can_update as "canUpdate",
-          af.can_delete as "canDelete",
-          af.created_at as "createdAt",
-          af.updated_at as "updatedAt",
-          af.created_by as "createdBy",
-          af.updated_by as "updatedBy"
-        FROM access_feature af
-        INNER JOIN features f ON af.feature_id = f.feature_id
-        INNER JOIN roles r ON af.role_id = r.role_id
-        WHERE af.role_id = $1 AND af.feature_id = $2
-      `;
-
-      const [result] = await this.repository.query(query, [roleId, featureId]);
+      const query = `SELECT features.feature_id as "featureId", 
+                            features.feature_name as "featureName",
+                            COALESCE(access_feature.can_access, false) as "canAccess", 
+                            COALESCE(access_feature.can_read, false) as "canRead",
+                            COALESCE(access_feature.can_update , false) as "canUpdate",
+                            COALESCE(access_feature.can_delete, false) as "canDelete",
+                            CASE WHEN 
+                              access_feature.access_feature_id IS NOT NULL THEN true 
+                              ELSE false 
+                            END as "selected"
+                    FROM features
+                    LEFT JOIN access_feature on features.feature_id = access_feature.feature_id 
+                    AND access_feature.role_id = $1
+                    WHERE features.menu_id IS NULL AND features.active = true`;
+      const result = await this.repository.query(query, [roleId]);
       return result;
     } catch (error) {
       throw error;
     }
   }
 
-  async getAccessFeatureNoMenuId(): Promise<Features[]> {
+  async getAllFeatureAccessByMenuRoleId(
+    menuId: string,
+    roleId: string,
+  ): Promise<Features[]> {
     try {
-      const query = `SELECT 
-                      af.access_feature_id as "accessFeatureId",
-                      af.role_id as "roleId",
-                      r.role_name as "roleName",
-                      r.role_type as "roleType",
-                      af.feature_id as "featureId",
-                      f.feature_name as "featureName",
-                      f.active as active,
-                      f.menu_id as "menuId",
-                      af.can_access as "canAccess",
-                      af.can_read as "canRead",
-                      af.can_insert as "canInsert",
-                      af.can_update as "canUpdate",
-                      af.can_delete as "canDelete",
-                      af.created_at as "createdAt",
-                      af.updated_at as "updatedAt",
-                      af.created_by as "createdBy",
-                      af.updated_by as "updatedBy"
-                    FROM access_feature af
-                    INNER JOIN features f ON af.feature_id = f.feature_id
-                    INNER JOIN roles r ON af.role_id = r.role_id
-                    WHERE f.menu_id IS NULL`;
+      const query = `SELECT features.feature_id as "featureId", 
+                            features.feature_name as "featureName",
+                            COALESCE(access_feature.can_access, false) as "canAccess", 
+                            COALESCE(access_feature.can_read, false) as "canRead",
+                            COALESCE(access_feature.can_insert, false) as "canInsert",
+                            COALESCE(access_feature.can_update , false) as "canUpdate",
+                            COALESCE(access_feature.can_delete, false) as "canDelete",
+                            CASE WHEN 
+                              access_feature.access_feature_id IS NOT NULL THEN true 
+                              ELSE false 
+                            END as "selected"
+                    FROM features
+                    LEFT JOIN access_feature on features.feature_id = access_feature.feature_id 
+                    AND access_feature.role_id = $1
+                    WHERE features.menu_id = $2 AND features.active = true`;
+      const result = await this.repository.query(query, [roleId, menuId]);
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getFeaturesNoMenuIdToCreateAccessFeature(): Promise<Features[]> {
+    try {
+      let query = `SELECT 
+        feature_id as "featureId", 
+        feature_name as "featureName", 
+        false as "canAccess",
+        false as "canRead",
+        false as "canInsert",
+        false as "canUpdate",
+        false as "canDelete",
+        false as "selected" 
+      FROM features
+      WHERE menu_id IS NULL AND active = true`;
+
       const features = await this.repository.query(query);
       return features;
     } catch (error) {
@@ -326,48 +316,65 @@ export class FeaturesRepository {
     }
   }
 
-  async getAccessFeatureById(
-    accessFeatureId: string,
-  ): Promise<Partial<AccessFeature>> {
+  async getFeaturesByMenuIdToCreateAccessFeature(
+    menuId: string = null,
+  ): Promise<Features[]> {
     try {
-      const query = `
-        SELECT 
-          af.access_feature_id as "accessFeatureId",
-          af.role_id as "roleId",
-          r.role_name as "roleName",
-          r.role_type as "roleType",
-          af.feature_id as "featureId",
-          f.menu_id as "menuId",
-          f.feature_name as "featureName",
-          f.active as active,
-          af.can_access as "canAccess",
-          af.can_read as "canRead",
-          af.can_insert as "canInsert",
-          af.can_update as "canUpdate",
-          af.can_delete as "canDelete",
-          af.created_at as "createdAt",
-          af.updated_at as "updatedAt",
-          af.created_by as "createdBy",
-          af.updated_by as "updatedBy"
-        FROM access_feature af
-        LEFT JOIN features f ON af.feature_id = f.feature_id
-        LEFT JOIN roles r ON af.role_id = r.role_id
-        WHERE af.access_feature_id = $1
-      `;
+      let query = `SELECT 
+        feature_id as "featureId", 
+        feature_name as "featureName", 
+        false as "canAccess",
+        false as "canRead",
+        false as "canInsert",
+        false as "canUpdate",
+        false as "canDelete",
+        false as "selected" 
+      FROM features
+      WHERE menu_id = $1 AND active = true`;
 
-      const [result] = await this.repository.query(query, [accessFeatureId]);
-      return result;
+      const features = await this.repository.query(query, [menuId]);
+      return features;
     } catch (error) {
       throw error;
     }
   }
 
-  async updateAccessFeatureById(
-    accessFeatureId: string,
-    updateAccessFeatureDto: UpdateAccessFeatureDto,
+  async createBulkAccessFeature(
+    roleId: string,
+    createdBy: string,
+    features: CreateUpdateAccessFeatureDto[],
+  ): Promise<void> {
+    const queryRunner = this.repository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      await this.deleteAccessFeatureByRoleId(queryRunner, roleId);
+      features.map(
+        async (feature) =>
+          await this.createAccessFeature(queryRunner, {
+            ...feature,
+            roleId,
+            createdBy,
+          }),
+      );
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async createAccessFeature(
+    trx: QueryRunner,
+    createAccessFeatureDto: CreateUpdateAccessFeatureDto,
   ) {
     try {
       const {
+        createdBy,
         roleId,
         featureId,
         canAccess,
@@ -375,33 +382,22 @@ export class FeaturesRepository {
         canInsert,
         canUpdate,
         canDelete,
-        updatedBy,
-      } = updateAccessFeatureDto;
+      } = createAccessFeatureDto;
 
       const query = `
-      UPDATE access_feature
-      SET 
-        role_id = COALESCE($1, role_id),
-        feature_id = COALESCE($2, feature_id),
-        can_access = COALESCE($3, can_access),
-        can_read = COALESCE($4, can_read),
-        can_insert = COALESCE($5, can_insert),
-        can_update = COALESCE($6, can_update),
-        can_delete = COALESCE($7, can_delete),
-        updated_by = COALESCE($8, updated_by),
-        updated_at = NOW()
-      WHERE access_feature_id = $9
-      RETURNING access_feature_id as "accessFeatureId", 
-                role_id as "roleId", 
-                feature_id as "featureId", 
-                can_access as "canAccess", 
-                can_read as "canRead", 
-                can_insert as "canInsert", 
-                can_update as "canUpdate", 
-                can_delete as "canDelete", 
-                updated_by as "updatedBy", 
-                updated_at as "updatedAt"
-      `;
+        INSERT INTO access_feature 
+          (role_id, feature_id, can_access, can_read, can_insert, can_update, can_delete, created_by, created_at, updated_at) 
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) 
+        RETURNING 
+                  -- access_feature_id as "accessFeatureId", 
+                  role_id as "roleId", 
+                  feature_id as "featureId", 
+                  can_access as "canAccess", 
+                  can_read as "canRead", 
+                  can_insert as "canInsert", 
+                  can_update as "canUpdate", 
+                  can_delete as "canDelete", 
+                  created_by as "createdBy"`;
 
       const values = [
         roleId,
@@ -411,36 +407,24 @@ export class FeaturesRepository {
         canInsert,
         canUpdate,
         canDelete,
-        updatedBy,
-        accessFeatureId,
+        createdBy,
       ];
 
-      const [updated] = await this.repository.query(query, values);
-      return updated;
+      const [create] = await trx.query(query, values);
+      return create;
     } catch (error) {
       throw error;
     }
   }
 
-  async deleteAccessMenuFeature(
-    accessFeatureId: string,
-  ): Promise<AccessFeature> {
+  async deleteAccessFeatureByRoleId(
+    trx: QueryRunner = null,
+    roleId: string,
+  ): Promise<void> {
     try {
-      const query = `
-        DELETE FROM access_feature
-        WHERE access_feature_id = $1
-        RETURNING access_feature_id as "accessFeatureId", 
-                  role_id as "roleId", 
-                  feature_id as "featureId", 
-                  can_access as "canAccess", 
-                  can_read as "canRead", 
-                  can_insert as "canInsert", 
-                  can_update as "canUpdate", 
-                  can_delete as "canDelete"
-      `;
-
-      const [deleted] = await this.repository.query(query, [accessFeatureId]);
-      return deleted;
+      if (!trx) trx = this.repository.manager.connection.createQueryRunner();
+      const query = `DELETE FROM access_feature WHERE role_id = $1`;
+      await trx.query(query, [roleId]);
     } catch (error) {
       throw error;
     }

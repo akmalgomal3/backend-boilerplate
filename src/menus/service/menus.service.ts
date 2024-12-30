@@ -1,7 +1,9 @@
 import {
   BadRequestException,
+  forwardRef,
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -22,6 +24,7 @@ import { Features } from 'src/features/entity/features.entity';
 export class MenusService {
   constructor(
     private menusRepository: MenusRepository,
+    @Inject(forwardRef(() => FeaturesService))
     private featuresService: FeaturesService,
     private roleService: RolesService,
     private userService: UserService,
@@ -31,7 +34,7 @@ export class MenusService {
     page: number = 1,
     limit: number = 10,
     search: string = '',
-  ): Promise<{ data: {}; metadata: {} }> {
+  ): Promise<{ data: { globalFeatures: Features[]; menus: Menu[] } }> {
     try {
       const skip = (page - 1) * limit;
       const [menus, totalItems] = await this.menusRepository.getMenus(
@@ -40,18 +43,12 @@ export class MenusService {
         search,
       );
       const totalPages = Math.ceil(totalItems / limit);
-      const hierarchicalMenus = await this.buildMenuHierarchy(menus);
+      const hierarchicalMenus = await this.buildMenuHierarchy(menus, null);
 
       return {
         data: {
-          globalFeature: await this.featuresService.getFeatureNoMenuId(),
+          globalFeatures: await this.featuresService.getFeatureNoMenuId(),
           menus: hierarchicalMenus,
-        },
-        metadata: {
-          page: Number(page),
-          limit: Number(limit),
-          totalPages: Number(totalPages),
-          totalItems: Number(totalItems),
         },
       };
     } catch (error) {
@@ -228,47 +225,59 @@ export class MenusService {
     }
   }
 
-  async getAccessMenuByCurrentUser(roleId: string): Promise<{globalFeature: Features[], menus: Menu[]}> {
+  async getAccessMenuByCurrentUser(
+    roleId: string,
+  ): Promise<{ globalFeatures: Features[]; menus: Menu[] }> {
     try {
       const getAccessMenu =
         await this.menusRepository.getAccessMenuByRoleId(roleId);
-      const hierarchicalMenus = await this.buildMenuHierarchy(getAccessMenu, roleId);
+      const hierarchicalMenus = await this.buildMenuHierarchy(
+        getAccessMenu,
+        roleId,
+        true,
+        true,
+      );
       return {
-          globalFeature: await this.featuresService.getFeatureNoMenuId(),
-          menus: hierarchicalMenus,
+        globalFeatures: await this.featuresService.getAccessFeatureNoMenuId(roleId),
+        menus: hierarchicalMenus,
       };
     } catch (error) {
       throw new HttpException(
         error.message || 'Error get access menu by current user',
-        error.status || 500
-      )
-    }
-  }
-
-
-  async getAccessMenuByRoleId(roleId: string): Promise<Menu[] | []> {
-    try {
-      const getAccessMenu =
-        await this.menusRepository.getAllMenuAccessByRoleId(roleId);
-      const formatMenu = await this.buildMenuHierarchy(
-        getAccessMenu,
-        roleId,
-        false,
-      );
-
-      return formatMenu;
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Error get access menu by role',
         error.status || 500,
       );
     }
   }
 
-  async getAllMenuToCreateAccessMenu(): Promise<Menu[] | []> {
+  async getAccessMenuByRoleIdToCreateAccessFeature(
+    roleId: string,
+  ): Promise<{ globalFeatures: Features[]; menus: Menu[] }> {
     try {
-      const menus = await this.menusRepository.getMenusToCreateAccess();
-      const formatMenu = await this.buildMenuHierarchy(menus, null, false);
+      const getAccessMenu =
+        await this.menusRepository.getAccessMenuByRoleId(roleId);
+      const hierarchicalMenus = await this.buildMenuHierarchy(
+        getAccessMenu,
+        roleId,
+        true,
+        false,
+      );
+      return {
+        globalFeatures:
+          await this.featuresService.getAllFeatureNoMenuIdAccessByRoleId(roleId),
+        menus: hierarchicalMenus,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error get access menu with features by role',
+        error.status || 500,
+      );
+    }
+  }
+
+  async getAllMenuToCreateAccessMenu(roleId: string): Promise<Menu[] | []> {
+    try {
+      const menus = await this.menusRepository.getAllMenuAccessByRoleId(roleId);
+      const formatMenu = await this.buildMenuHierarchy(menus, null);
       return formatMenu;
     } catch (error) {
       throw new HttpException(
@@ -295,7 +304,8 @@ export class MenusService {
         createdBy,
         collectIds,
       );
-      return await this.getAccessMenuByRoleId(roleId);
+
+      return await this.getAllMenuToCreateAccessMenu(roleId);
     } catch (error) {
       throw new HttpException(
         error.message || 'Error create bulk access menu',
@@ -319,7 +329,8 @@ export class MenusService {
   private async buildMenuHierarchy(
     menus: Menu[],
     roleId: string | null = null,
-    isPrintFeature: boolean = true,
+    isPrintFeature: boolean = false,
+    isAccessFeature: boolean = false,
   ): Promise<Menu[]> {
     try {
       const menuMap = new Map(
@@ -332,7 +343,11 @@ export class MenusService {
       const rootMenus: Menu[] = [];
       for (const menu of menuMap.values()) {
         if (isPrintFeature) {
-          const features = await this.buildFeatureMenu(roleId, menu.menuId);
+          const features = await this.buildFeatureMenu(
+            roleId,
+            menu.menuId,
+            isAccessFeature,
+          );
           if (features) menu.features.push(...features);
         }
 
@@ -359,20 +374,25 @@ export class MenusService {
     }
   }
 
-  private async buildFeatureMenu(
+  async buildFeatureMenu(
     roleId: string | null,
     menuId: string,
+    isAccessFeature: boolean = false,
   ): Promise<Features[] | []> {
     try {
       let features: Features[] = [];
 
-      if (!roleId) {
-        features = await this.featuresService.getFeatureByMenuId(menuId);
-      } else { 
+      if (roleId && isAccessFeature) {
         features = await this.featuresService.getAccessFeatureByRoleMenuId(
           roleId,
           menuId,
         );
+      } else {
+        features =
+          await this.featuresService.getAllFeatureAccessByMenuRoleId(
+            menuId,
+            roleId, 
+          );
       }
 
       return features;
