@@ -37,7 +37,7 @@ export class UserRepository {
           email: true,
           fullName: true,
           phoneNumber: true,
-          role: { roleName: true },
+          role: { roleId: true, roleName: true, roleType: true },
         },
         relations: { role: true },
         skip,
@@ -72,10 +72,11 @@ export class UserRepository {
       `;
 
       const [user] = await this.repository.query(query, [userId]);
+      const {roleId, roleName, roleType, ...userOne} = user
 
       return user
         ? {
-            ...user,
+            ...userOne,
             role: {
               roleId: user.roleId,
               roleName: user.roleName,
