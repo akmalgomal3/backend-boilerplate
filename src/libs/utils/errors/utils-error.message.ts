@@ -1,7 +1,7 @@
 import { BaseErrorMessages } from '../../../common/exceptions/base-error.message';
 
 export class UtilsErrorMessage extends BaseErrorMessages {
-  messages: {
+  messages = {
     INVALID_PASSWORD_LENGTH: 'Password must be between 8 to 12 characters long.',
     INVALID_PASSWORD_UPPERCASE: 'Password must contain at least one uppercase letter.',
     INVALID_PASSWORD_LOWERCASE: 'Password must contain at least one lowercase letter.',

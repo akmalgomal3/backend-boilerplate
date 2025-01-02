@@ -1,7 +1,7 @@
 import { BaseErrorMessages } from '../../common/exceptions/base-error.message';
 
 export class UsersErrorMessage extends BaseErrorMessages {
-  messages: {
+  messages = {
     USER_NOT_FOUND: 'User is not found',
     USER_AUTH_NOT_FOUND: 'User auth is not found',
     INVALID_USER_AUTH_MUST_BE_REQUESTED: 'User auth status is not requested',
