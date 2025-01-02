@@ -153,7 +153,7 @@ export class UserController {
     @Body() updateBanUserDto: UpdateBanUserDto,
     @User() user: JwtPayload,
   ) {
-    const result = await this.userService.updateBanUser(
+    const result = await this.userService.updateUserBan(
       userId,
       user?.userId,
       updateBanUserDto?.active,

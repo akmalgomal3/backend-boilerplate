@@ -1,21 +1,21 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty } from "class-validator";
+import { IsEmpty } from "class-validator";
 
 export class UpdateUserDto {
     userId?: string
 
     @ApiProperty({ example: 'akmaliatrias202' })
-    readonly username?: string;
+    readonly username?: string | null;
  
     @ApiProperty({ example: 'akmalia trias trias' })
-    readonly fullName?: string;
+    readonly fullName?: string| null;
 
     @ApiProperty({ example: '2024-05-20' })
-    readonly birthdate?: string;
+    readonly birthdate?: string | null;
 
 
     @ApiProperty({ example: '5ce865a6-e419-4f77-9b0f-0377900f4342' })
-    readonly roleId?: string;
+    readonly roleId?: string | null;
 
     updatedBy?: string
 }

@@ -31,6 +31,7 @@ import { GetUserAuthDto } from '../dto/get-unapproved-user.dto';
 import { UpdatePasswordByAdminDto } from '../dto/update-password-by-admin.dto';
 import { ConfigService } from '@nestjs/config';
 import { ErrorMessages } from '../../common/exceptions/root-error.message';
+import { format } from 'date-fns';
 
 @Injectable()
 export class UserService {
@@ -291,7 +292,7 @@ export class UserService {
 
   async banUser(userId: string, bannedBy: string) {
     try {
-      return await this.userRepository.banUser(userId, bannedBy);
+      return await this.userRepository.updateUserBan(userId, bannedBy);
     } catch (e) {
       throw new HttpException(
         e.message || 'Error banning user',
@@ -316,17 +317,27 @@ export class UserService {
         await this.rolesService.getRoleById(updateUserDto.roleId);
       }
 
+      console.log(getUserUpdated.birthdate, "HALOW");
+      
+      updateUserDto = {
+        roleId: updateUserDto.roleId ?? getUserUpdated.role?.roleId,
+        username: updateUserDto.username ?? getUserUpdated.username,
+        fullName: updateUserDto.fullName ?? getUserUpdated.fullName,
+        birthdate: updateUserDto.birthdate ?? format(new Date(getUserUpdated.birthdate), 'yyyy-MM-dd'),
+        updatedBy: updateUserDto.updatedBy,
+      }
+
       const updateUser = await this.userRepository.updateUserById(
         userId,
-        updateUserDto,
+        updateUserDto
       );
 
       const userAuth = await this.getUserAuthById(userId);
       if (userAuth) {
-        await this.userRepository.updateUserAuthByUsername(
-          getUserUpdated.username,
-          updateUserDto,
-        );
+        await this.userRepository.updateUserAuthByUserId(
+          userAuth.userId, 
+          updateUserDto
+        )
       }
 
       return updateUser;
@@ -335,13 +346,13 @@ export class UserService {
     }
   }
 
-  async updateBanUser(
+  async updateUserBan(
     userId: string,
-    bannerId: string,
+    bannedBy: string,
     isActive: boolean,
   ): Promise<Users> {
     try {
-      await this.userRepository.banUser(userId, bannerId, isActive);
+      await this.userRepository.updateUserBan(userId, bannedBy, isActive);
 
       if (isActive) {
         await this.userLogActivitiesService.deleteUserActivityByDescription(
