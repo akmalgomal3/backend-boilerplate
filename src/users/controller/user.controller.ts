@@ -33,6 +33,7 @@ import { UpdatePasswordByAdminDto } from '../dto/update-password-by-admin.dto';
 export class UserController {
   constructor(private userService: UserService) {}
 
+  @ApiBearerAuth()
   @Get('/')
   async getUsers(@Query('page') page: number, @Query('limit') limit: number) {
     const result = await this.userService.getUsers({ page, limit });
@@ -42,6 +43,7 @@ export class UserController {
     };
   }
 
+  @ApiBearerAuth()
   @Get('/:userId')
   async getUser(@Param('userId', ParseUUIDPipe) userId: string) {
     const result = await this.userService.getUser(userId);
