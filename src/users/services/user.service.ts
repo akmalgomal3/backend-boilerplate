@@ -36,7 +36,6 @@ import { ErrorMessages } from '../../common/exceptions/root-error.message';
 export class UserService {
   constructor(
     private userRepository: UserRepository,
-    @Inject(forwardRef(() => UserLogActivitiesService))
     private userLogActivitiesService: UserLogActivitiesService,
     private rolesService: RolesService,
     private utilsService: UtilsService,
@@ -301,47 +300,38 @@ export class UserService {
     }
   }
 
-  async updateUserByUserId(updateUserDto: UpdateUserDto): Promise<Users> {
+  async updateUserByUserId(
+    userId: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<Users> {
     try {
-      const getUserUpdatedById = await this.getUser(updateUserDto.updatedBy);
-      if (!getUserUpdatedById) {
-        throw new NotFoundException(
-          ErrorMessages.users.getMessage('USER_NOT_FOUND'),
-        );
-      }
+      await this.getUser(updateUserDto.updatedBy);
+      const getUserUpdated = await this.getUser(userId);
 
-      const getUserById = await this.getUser(updateUserDto.userId);
-      if (!getUserById) {
-        throw new NotFoundException(
-          ErrorMessages.users.getMessage('USER_NOT_FOUND'),
-        );
-      }
-
-      if (getUserById.username != updateUserDto.username) {
+      if (getUserUpdated.username != updateUserDto.username) {
         await this.validateUsernameEmail(updateUserDto.username);
       }
 
-      const getRoleByRoleId = await this.rolesService.getRoleById(
-        updateUserDto.roleId,
+      if (updateUserDto.roleId) {
+        await this.rolesService.getRoleById(updateUserDto.roleId);
+      }
+
+      const updateUser = await this.userRepository.updateUserById(
+        userId,
+        updateUserDto,
       );
-      if (!getRoleByRoleId) {
-        throw new NotFoundException(
-          ErrorMessages.users.getMessage('ROLE_ID_NOT_FOUND'),
+
+      const userAuth = await this.getUserAuthById(userId);
+      if (userAuth) {
+        await this.userRepository.updateUserAuthByUsername(
+          getUserUpdated.username,
+          updateUserDto,
         );
       }
 
-      const { roleId, userId, ...updatedDto } = updateUserDto;
-      const updateUser = await this.userRepository.updateUserById(
-        userId,
-        updatedDto,
-        getRoleByRoleId,
-      );
       return updateUser;
     } catch (e) {
-      throw new HttpException(
-        e.message || 'Error update user',
-        e.status || 500,
-      );
+      throw e;
     }
   }
 
@@ -358,6 +348,7 @@ export class UserService {
           userId,
         );
       }
+
       return this.getUser(userId);
     } catch (e) {
       throw new HttpException(
@@ -615,14 +606,13 @@ export class UserService {
     }
   }
 
-  async deleteUserByUserId(userId: string): Promise<Number> {
+  async hardDeleteUserByUserId(userId: string): Promise<void> {
     try {
-      await this.userLogActivitiesService.deleteUserActivityByUserId(userId);
-      const deleteUser = await this.userRepository.deleteByUserId(userId);
-      return deleteUser;
+      const user = await this.getUser(userId);
+      await this.userRepository.hardDeleteUserByUserId(userId, user?.username);
     } catch (e) {
       throw new HttpException(
-        e.message || 'Error delete user',
+        e.message || 'Error hard delete user',
         e.status || 500,
       );
     }

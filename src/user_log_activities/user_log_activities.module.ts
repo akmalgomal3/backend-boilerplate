@@ -8,7 +8,6 @@ import { UsersModule } from 'src/users/user.module';
 
 @Module({
   imports: [
-    forwardRef(() => UsersModule),
     MongooseModule.forFeature([{ name: UserLogActivities.name, schema: UserLogActivitiesSchema }]), 
   ],
   providers: [UserLogActivitiesService, UserLogActivitiesRepository],

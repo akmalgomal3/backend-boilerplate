@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DataSource, Like, Repository } from 'typeorm';
+import { DataSource, Like, QueryRunner, Repository } from 'typeorm';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { Users } from '../entity/user.entity';
@@ -14,6 +14,9 @@ import { Roles } from 'src/roles/entity/roles.entity';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserAuthRequestType } from '../../common/enums/request-type.enum';
 import { ErrorMessages } from '../../common/exceptions/root-error.message';
+import { SessionService } from 'src/libs/session/service/session.service';
+import { UserLogActivitiesService } from 'src/user_log_activities/service/user_log_activities.service';
+import { DeviceType } from 'src/common/enums/device-type.enum';
 
 @Injectable()
 export class UserRepository {
@@ -23,6 +26,8 @@ export class UserRepository {
   constructor(
     @Inject('DB_POSTGRES')
     private dataSource: DataSource,
+    private sessionService: SessionService,
+    private userLogActivitiesService: UserLogActivitiesService,
   ) {
     this.repository = this.dataSource.getRepository(Users);
     this.repositoryAuth = this.dataSource.getRepository(UsersAuth);
@@ -72,15 +77,28 @@ export class UserRepository {
       `;
 
       const [user] = await this.repository.query(query, [userId]);
-      const {roleId, roleName, roleType, ...userOne} = user
-
       return user
         ? {
-            ...userOne,
+            userId: user.userId,
+            username: user.username,
+            fullName: user.fullName,
+            email: user.email,
+            password: user.password,
+            active: user.active,
+            birthdate: user.birthdate,
+            createdAt: user.createdAt,
+            createdBy: user.createdBy,
+            updatedAt: user.updatedAt, 
+            updatedBy: user.updatedBy,
+            phoneNumber: user.phoneNumber,
             role: {
               roleId: user.roleId,
               roleName: user.roleName,
               roleType: user.roleType,
+              createdAt: user.createdAt,  
+              createdBy: user.createdBy,
+              updatedAt: user.updatedAt,
+              updatedBy: user.updatedBy,
             },
           }
         : null;
@@ -599,16 +617,37 @@ export class UserRepository {
     }
   }
 
+  async updateUserAuthByUsername(
+    username: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<UsersAuth> {
+    try {
+      await this.repositoryAuth.update(
+        { username },
+        { ...updateUserDto, updatedAt: new Date() },
+      );
+
+      return await this.getUserByUsername(username);
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error updating user email',
+        error.status || 500,
+      );
+    }
+  }
+
   async updateUserById(
     userId: string,
     updateUserDto: UpdateUserDto,
-    role: Roles,
   ): Promise<Users> {
     try {
       const dto = {
-        ...updateUserDto,
-        role: role,
+        userId,
+        role: {
+          roleId: updateUserDto.roleId,
+        },
         updatedAt: new Date(),
+        ...updateUserDto,
       };
 
       await this.repository.update(userId, dto);
@@ -621,10 +660,68 @@ export class UserRepository {
     }
   }
 
-  async deleteByUserId(userId: string): Promise<Number> {
+  async hardDeleteUserByUserId(userId: string, username: string): Promise<void> {
+    const queryRunner = this.dataSource.createQueryRunner();
     try {
-      const deleteUser = await this.repository.delete(userId);
-      return deleteUser?.affected;
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      await this.deleteUserAuthByUsername(queryRunner, username)
+      const userAuth = await this.getUserAuthByUsername(username);
+      if(userAuth){
+        await this.deleteUserByUsername(queryRunner, username)
+      }
+
+      await Promise.all([
+        this.sessionService.deleteSession(
+          `session:${userId}:${DeviceType.WEB}`,
+        ),
+        this.sessionService.deleteSession(
+          `refresh:${userId}:${DeviceType.WEB}`,
+        ),
+        this.sessionService.deleteSession(
+          `session:${userId}:${DeviceType.MOBILE}`,
+        ),
+        this.sessionService.deleteSession(
+          `refresh:${userId}:${DeviceType.MOBILE}`,
+        ),
+      ]);
+
+      await this.userLogActivitiesService.deleteUserActivityByUserId(userId)
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new HttpException(
+        error.message || 'Error hard delete user',
+        error.status || 500,
+      );
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async deleteUserAuthByUsername(
+    trx: QueryRunner,
+    username: string,
+  ): Promise<void> {
+    try {
+      const query = `DELETE FROM users_auth WHERE username = $1`;
+      await trx.query(query, [username]);
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error delete user auth',
+        error.status || 500,
+      );
+    }
+  }
+
+  async deleteUserByUsername(
+    trx: QueryRunner,
+    username: string,
+  ): Promise<void> {
+    try {
+      const query = `DELETE FROM users WHERE username = $1`;
+      await trx.query(query, [username]);
     } catch (error) {
       throw new HttpException(
         error.message || 'Error delete user',

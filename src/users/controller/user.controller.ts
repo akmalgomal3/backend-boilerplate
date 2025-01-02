@@ -171,9 +171,8 @@ export class UserController {
     @Body() updateUserDto: UpdateUserDto,
     @User() user: JwtPayload,
   ) {
-    const result = await this.userService.updateUserByUserId({
+    const result = await this.userService.updateUserByUserId(userId, {
       ...updateUserDto,
-      userId: userId,
       updatedBy: user?.userId,
     });
 
@@ -183,12 +182,14 @@ export class UserController {
   }
 
   @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
   @Delete('/:userId')
-  async deleteUser(@Param('userId', ParseUUIDPipe) userId: string) {
-    const result = await this.userService.deleteUserByUserId(userId);
-
+  async deleteUser(
+    @Param('userId', ParseUUIDPipe) userId: string
+  ) {
+    await this.userService.hardDeleteUserByUserId(userId);
     return {
-      data: { effected: result },
+      data: null,
     };
   }
 

@@ -10,10 +10,14 @@ import { ApiResponse } from '../types/response.type';
 import { UserLogActivitiesService } from 'src/user_log_activities/service/user_log_activities.service';
 import { CreateUserLogActivityByUserDTO } from 'src/user_log_activities/dto/create_user_log_activity_by_user.dto';
 import { JwtPayload } from '../types/jwt-payload.type';
+import { UserService } from 'src/users/services/user.service';
 
 @Catch(HttpException)
 export class HttpExceptionFilter implements ExceptionFilter {
-  constructor(private userLogActivitiesService: UserLogActivitiesService) {}
+  constructor(
+    private userLogActivitiesService: UserLogActivitiesService,
+    private userServices: UserService
+  ) {}
 
   async catch(exception: HttpException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -30,20 +34,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const url = request.url;
 
     if (url.includes('login')) {
-      user = request.body;
+      const findUser = await this.userServices.getUserByUsername(request?.body?.username);
+      if(findUser?.userId){
+        user = request?.body;
+        user.userId = findUser?.userId;
+      }
     }
 
-    console.error('HTTP Exception:', {
-      status,
-      message,
-      method: request.method,
-      url: request.url,
-      params: request.params,
-      body: request.body,
-      stack: exception.stack,
-    });
-
-    if (user) {
+    if (user && user.userId) {
       const userLogActivity: CreateUserLogActivityByUserDTO = {
         method: request.method,
         url: request.url,
@@ -55,6 +53,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
       await this.userLogActivitiesService.createByUser(user, userLogActivity);
     }
+
+    console.error('HTTP Exception:', {
+      status,
+      message,
+      method: request.method,
+      url: request.url,
+      params: request.params,
+      body: request.body,
+      stack: exception.stack,
+    });
 
     const apiResponse: ApiResponse<null> = {
       success: false,
