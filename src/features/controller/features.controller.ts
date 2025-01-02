@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -14,10 +15,10 @@ import { UpdateFeatureDto } from '../dto/update-features.dto';
 import { User } from '../../common/decorators/user.decorator';
 import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import { CreateAccessFeatureDto } from '../dto/create-access-feature.dto';
-import { UpdateAccessFeatureDto } from '../dto/update-access-feature.dto';
+import { CreateUpdateBulkAccessFeatureDto } from '../dto/create-update-access-feature.dto';
 import { AuthorizedRoles } from '../../common/decorators/authorized-roles.decorator';
 import { RoleType } from '../../common/enums/user-roles.enum';
+
 
 @ApiBearerAuth()
 @Controller('features')
@@ -103,66 +104,54 @@ export class FeaturesController {
     return this.featuresService.deleteFeature(featureId);
   }
 
-  @Post('/accessFeature')
   @ApiBearerAuth()
-  async createAccessFeature(
-    @Body() createAccessFeature: CreateAccessFeatureDto,
+  @AuthorizedRoles(RoleType.Admin)
+  @Get('/accessFeature/create/body/:roleId')
+  async getAllFeatureToCreateAccessFeature(
+    @Param('roleId', ParseUUIDPipe) roleId: string,
+  ){
+    const result = await this.featuresService.getAllFeaturesToCreateAccessFeature(roleId);
+    return {
+      data: result,
+    };
+  }
+
+  @Post('/accessFeature/create')
+  @AuthorizedRoles(RoleType.Admin)
+  @ApiBearerAuth()
+  async createBulkAccessFeature(
+    @Body() createBulkAccessFeature: CreateUpdateBulkAccessFeatureDto,
     @User() user: JwtPayload,
   ) {
-    const result = await this.featuresService.createAccessFeature({
-      createdBy: user?.userId,
-      ...createAccessFeature,
-    });
-
+    const result = await this.featuresService.bulkCreateUpdateAccessFeature({createdBy: user?.userId, ...createBulkAccessFeature});
     return {
       data: result,
     };
   }
 
-  @Get('/accessFeature/:roleId/:menuId')
+  @Patch('/accessFeature/:roleId')
+  @AuthorizedRoles(RoleType.Admin)
   @ApiBearerAuth()
-  async getAccessFeatureByMenuId(
-    @Param('roleId') roleId: string,
-    @Param('menuId') menuId: string,
-  ) {
-    const result = await this.featuresService.getAccessFeatureByRoleMenuId(
-      roleId,
-      menuId,
-    );
-
-    return {
-      data: result,
-    };
-  }
-
-  @Patch('/accessFeature/:accessFeatureId')
-  @ApiBearerAuth()
-  async updateAccessFeature(
-    @Param('accessFeatureId') accessFeatureId: string,
-    @Body() updateAccessFeatureDto: UpdateAccessFeatureDto,
+  async updateBulkAccessFeature(
+    @Body() updateBulkAccessFeatureFto: CreateUpdateBulkAccessFeatureDto,
     @User() user: JwtPayload,
   ) {
-    const result = await this.featuresService.updateAccessFeatureById(
-      accessFeatureId,
-      {
-        updatedBy: user?.userId,
-        ...updateAccessFeatureDto,
-      },
-    );
-
+    const result = await this.featuresService.bulkCreateUpdateAccessFeature({createdBy: user?.userId, ...updateBulkAccessFeatureFto});
     return {
       data: result,
     };
   }
 
-  @Delete('/accessFeature/:accessFeatureId')
+  @Delete('/accessFeature/:roleId')
+  @AuthorizedRoles(RoleType.Admin)
   @ApiBearerAuth()
-  async deleteAccessFeature(@Param('accessFeatureId') accessFeatureId: string) {
-    const result =
-      await this.featuresService.deleteAccessFeatureById(accessFeatureId);
-
+  async deleteAccessFeatureByRoleId(
+    @Param('roleId', ParseUUIDPipe) roleId: string,
+  ) {
+    const result = await this.featuresService.deleteAccessFeatureByRoleId(roleId);
     return {
       data: result,
     };
   }
+
 }
