@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, JoinColumn } from 'typeorm';
+import { AccessMenu } from './access_menu.entity';
 
 @Entity('menus')
 export class Menu {
@@ -43,4 +44,7 @@ export class Menu {
 
   @Column({ type: 'uuid', nullable: true })
   updatedBy: string;
+
+  @OneToMany(() => AccessMenu, (accessMenu) => accessMenu.menu) 
+  accessMenu: AccessMenu[];
 }
