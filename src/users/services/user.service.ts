@@ -304,7 +304,7 @@ export class UserService {
   async updateUserByUserId(
     userId: string,
     updateUserDto: UpdateUserDto,
-  ): Promise<Users> {
+  ): Promise<Partial<Users>> {
     try {
       await this.getUser(updateUserDto.updatedBy);
       const getUserUpdated = await this.getUser(userId);
@@ -317,27 +317,27 @@ export class UserService {
         await this.rolesService.getRoleById(updateUserDto.roleId);
       }
 
-      console.log(getUserUpdated.birthdate, "HALOW");
-      
       updateUserDto = {
         roleId: updateUserDto.roleId ?? getUserUpdated.role?.roleId,
         username: updateUserDto.username ?? getUserUpdated.username,
         fullName: updateUserDto.fullName ?? getUserUpdated.fullName,
-        birthdate: updateUserDto.birthdate ?? format(new Date(getUserUpdated.birthdate), 'yyyy-MM-dd'),
+        birthdate:
+          updateUserDto.birthdate ??
+          format(new Date(getUserUpdated.birthdate), 'yyyy-MM-dd'),
         updatedBy: updateUserDto.updatedBy,
-      }
+      };
 
       const updateUser = await this.userRepository.updateUserById(
         userId,
-        updateUserDto
+        updateUserDto,
       );
 
       const userAuth = await this.getUserAuthById(userId);
       if (userAuth) {
         await this.userRepository.updateUserAuthByUserId(
-          userAuth.userId, 
-          updateUserDto
-        )
+          userAuth.userId,
+          updateUserDto,
+        );
       }
 
       return updateUser;
