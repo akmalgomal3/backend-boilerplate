@@ -1,5 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DataSource, EntityNotFoundError, QueryRunner, Repository } from 'typeorm';
+import {
+  DataSource,
+  EntityNotFoundError,
+  ILike,
+  QueryRunner,
+  Repository,
+} from 'typeorm';
 import { CreateMenuDto } from '../dto/create-menu.dto';
 import { UpdateMenuDto } from '../dto/update-menu.dto';
 import { Menu } from '../entity/menus.entity';
@@ -27,12 +33,19 @@ export class MenusRepository {
     search: string,
   ): Promise<[Menu[], number]> {
     try {
-      const menus = await this.repository.query(
-        MenusQuery.GET_MENUS(skip, take, search),
-      );
-      const count = await this.repository.query(MenusQuery.COUNT_MENUS);
+      const [menus, totalCount] = await this.repository.findAndCount({
+        where: [
+          { menuName: ILike(`%${search}%`) },
+          { description: ILike(`%${search}%`) },
+        ],
+        skip,
+        take,
+        order: {
+          hierarchyLevel: 'ASC',
+        },
+      });
 
-      return [menus, parseInt(count[0].count)];
+      return [menus, totalCount];
     } catch (error) {
       throw error;
     }
@@ -40,10 +53,11 @@ export class MenusRepository {
 
   async getMenuById(menuId: string): Promise<Menu | null> {
     try {
-      const data = await this.repository.query(
-        MenusQuery.GET_MENU_BY_ID(menuId),
-      );
-      return data.length > 0 ? data[0] : null;
+      const menu = await this.repository.findOne({
+        where: { menuId },
+      });
+
+      return menu || null;
     } catch (error) {
       throw error;
     }
@@ -51,10 +65,11 @@ export class MenusRepository {
 
   async getMenuByName(menuName: string): Promise<Menu | null> {
     try {
-      const data = await this.repository.query(
-        MenusQuery.GET_MENU_BY_NAME(menuName),
-      );
-      return data.length > 0 ? data[0] : null;
+      const menu = await this.repository.findOne({
+        where: { menuName: ILike(menuName) },
+      });
+
+      return menu || null;
     } catch (error) {
       throw error;
     }
@@ -76,21 +91,23 @@ export class MenusRepository {
     await queryRunner.startTransaction();
 
     try {
-      const newMenu = await queryRunner.query(
-        MenusQuery.CREATE_MENU(
-          dto.menuName,
-          dto.parentMenuId || null,
-          dto.routePath,
-          dto.icon || null,
-          dto.hierarchyLevel,
-          dto.description || null,
-          dto.active ?? true,
-          userId,
-        ),
-      );
+      const newMenu = this.repository.create({
+        menuName: dto.menuName,
+        parentMenuId: dto.parentMenuId || null,
+        routePath: dto.routePath,
+        icon: dto.icon || null,
+        hierarchyLevel: dto.hierarchyLevel,
+        description: dto.description || null,
+        active: dto.active ?? true,
+        createdBy: userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const savedMenu = await queryRunner.manager.save(newMenu);
 
       await queryRunner.commitTransaction();
-      return newMenu[0];
+      return savedMenu.menuId;
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -110,19 +127,19 @@ export class MenusRepository {
     await queryRunner.startTransaction();
 
     try {
-      await queryRunner.query(
-        MenusQuery.UPDATE_MENU(
-          dto.menuName || null,
-          dto.parentMenuId || null,
-          dto.routePath || null,
-          dto.icon || null,
-          dto.hierarchyLevel || null,
-          dto.description || null,
-          dto.active ?? null,
-          userId,
-          menuId,
-        ),
-      );
+      const updateData = {
+        menuName: dto.menuName || undefined,
+        parentMenuId: dto.parentMenuId || undefined,
+        routePath: dto.routePath || undefined,
+        icon: dto.icon || undefined,
+        hierarchyLevel: dto.hierarchyLevel || undefined,
+        description: dto.description || undefined,
+        active: dto.active ?? undefined,
+        updatedBy: userId,
+        updatedAt: new Date(),
+      };
+
+      await queryRunner.manager.update(Menu, { menuId }, updateData);
 
       await queryRunner.commitTransaction();
     } catch (error) {
@@ -140,7 +157,7 @@ export class MenusRepository {
     await queryRunner.startTransaction();
 
     try {
-      await queryRunner.query(MenusQuery.DELETE_MENU(menuId));
+      await queryRunner.manager.delete(Menu, { menuId });
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -153,13 +170,22 @@ export class MenusRepository {
   async getAccessMenuByRoleId(roleId: string): Promise<Menu[]> {
     try {
       const [getAccessMenu] = await this.repository.findAndCount({
-        select: ['menuId', 'menuName', 'parentMenuId', 'hierarchyLevel', 'routePath', 'icon', 'active', 'description'],
-        where: { 
+        select: [
+          'menuId',
+          'menuName',
+          'parentMenuId',
+          'hierarchyLevel',
+          'routePath',
+          'icon',
+          'active',
+          'description',
+        ],
+        where: {
           active: true,
-          accessMenu: { role: { roleId } } 
+          accessMenu: { role: { roleId } },
         },
         order: { hierarchyLevel: 'ASC' },
-      })
+      });
       return getAccessMenu;
     } catch (error) {
       throw error;
@@ -178,19 +204,21 @@ export class MenusRepository {
 
   async getAccessMenuById(accessMenuId: string): Promise<AccessMenu> {
     try {
-      const getById = await this.repositoryAccessMenu.findOneByOrFail({ accessMenuId });
+      const getById = await this.repositoryAccessMenu.findOneByOrFail({
+        accessMenuId,
+      });
       return getById;
     } catch (error) {
-      if (error instanceof EntityNotFoundError){
+      if (error instanceof EntityNotFoundError) {
         ErrorMessages.menus.dynamicMessage(
-          ErrorMessages.menus.getMessage('ERRROR_GET_ONE_ACCESS_MENU_BY_ID'), 
-          { accessMenuId }
+          ErrorMessages.menus.getMessage('ERRROR_GET_ONE_ACCESS_MENU_BY_ID'),
+          { accessMenuId },
         );
       }
 
       throw error;
     }
-  } 
+  }
 
   async createBulkAccessMenu(
     roleId: string,
@@ -225,14 +253,14 @@ export class MenusRepository {
     { roleId, menuId, createdBy },
   ): Promise<string> {
     try {
-      const create = await trx.manager.insert(AccessMenu,{
-        role: {roleId},
-        menu: {menuId},
+      const create = await trx.manager.insert(AccessMenu, {
+        role: { roleId },
+        menu: { menuId },
         createdBy,
         createdAt: new Date(),
         updatedAt: new Date(),
-      })
-     
+      });
+
       return await create.identifiers[0].accessMenuId;
     } catch (error) {
       throw error;

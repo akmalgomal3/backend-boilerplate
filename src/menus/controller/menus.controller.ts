@@ -73,7 +73,9 @@ export class MenusController {
       user.userId,
     );
     return {
-      data: result,
+      data: {
+        menuId: result,
+      },
     };
   }
 
@@ -97,11 +99,11 @@ export class MenusController {
 
   @ApiBearerAuth()
   @Get('/accessMenu/user')
-  async getAccessMenuByCurrentUser(
-    @User() user: JwtPayload,
-  ){
-    const result = await this.menusService.getAccessMenuByCurrentUser(user?.roleId);
-    return { data: result }
+  async getAccessMenuByCurrentUser(@User() user: JwtPayload) {
+    const result = await this.menusService.getAccessMenuByCurrentUser(
+      user?.roleId,
+    );
+    return { data: result };
   }
 
   @ApiBearerAuth()
@@ -109,9 +111,9 @@ export class MenusController {
   @Get('/accessMenu/create/body/:roleId')
   async getAllToCreateAccessMenu(
     @Param('roleId', ParseUUIDPipe) roleId: string,
-  ){
+  ) {
     const result = await this.menusService.getAllMenuToCreateAccessMenu(roleId);
-    return { data: result }
+    return { data: result };
   }
 
   @ApiBearerAuth()
@@ -120,9 +122,12 @@ export class MenusController {
   async createAccessMenu(
     @Body() createAccessMenuDto: CreateUpdateBulkAccessMenuDto,
     @User() user: JwtPayload,
-  ){
-    const result = await this.menusService.createUpdateBulkAccessMenu({...createAccessMenuDto, createdBy: user?.userId});
-    return { data: result }
+  ) {
+    const result = await this.menusService.createUpdateBulkAccessMenu({
+      ...createAccessMenuDto,
+      createdBy: user?.userId,
+    });
+    return { data: result };
   }
 
   @ApiBearerAuth()
@@ -132,17 +137,19 @@ export class MenusController {
     @Param('roleId', ParseUUIDPipe) roleId: string,
     @Body() updateAccessMenuDto: CreateUpdateBulkAccessMenuDto,
     @User() user: JwtPayload,
-  ){
-    const result = await this.menusService.createUpdateBulkAccessMenu({...updateAccessMenuDto, roleId: user?.roleId, createdBy: user?.userId});
-    return { data: result }
+  ) {
+    const result = await this.menusService.createUpdateBulkAccessMenu({
+      ...updateAccessMenuDto,
+      roleId: user?.roleId,
+      createdBy: user?.userId,
+    });
+    return { data: result };
   }
 
   @ApiBearerAuth()
   @Delete('/accessMenu/:roleId')
-  async deleteAccessMenu(
-    @Param('roleId', ParseUUIDPipe) roleId: string,
-  ){
+  async deleteAccessMenu(@Param('roleId', ParseUUIDPipe) roleId: string) {
     const result = await this.menusService.deleteAccessMenuByRoleId(roleId);
-    return { data: result }
+    return { data: result };
   }
 }
