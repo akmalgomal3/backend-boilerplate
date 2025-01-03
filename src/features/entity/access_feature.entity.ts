@@ -17,11 +17,11 @@ export class AccessFeature {
 
   @ManyToOne(() => Features)
   @JoinColumn({ name: 'feature_id' })
-  feature: Partial<Features>;
+  feature: Features;
 
   @ManyToOne(() => Roles)
   @JoinColumn({ name: 'role_id' })
-  role: Partial<Roles>;
+  role: Roles;
 
   @Column({ default: false })
   canAccess: boolean;

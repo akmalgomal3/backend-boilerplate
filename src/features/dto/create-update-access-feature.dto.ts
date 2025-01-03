@@ -11,10 +11,12 @@ export class CreateUpdateBulkAccessFeatureDto {
   @IsUUID()
   roleId: string;
 
+  @ApiProperty({ example: [] })
   @IsNotEmpty()
   @IsArray()
   globalFeatures: CreateUpdateAccessFeatureDto[];
-
+  
+  @ApiProperty({ example: [] })
   @IsNotEmpty()
   @IsArray()
   menus: CreateUpdateAccessFeatureByMenuDto[];
