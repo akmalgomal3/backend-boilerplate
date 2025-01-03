@@ -15,8 +15,6 @@ import { PaginatedResponseDto } from 'src/common/dto/pagination.dto';
 export class UserLogActivitiesService {
   constructor(
     private readonly userActivityRepository: UserLogActivitiesRepository,
-    @Inject(forwardRef(() => UserService))
-    private userService: UserService,
     private readonly utilsService: UtilsService,
   ) {}
 
@@ -43,17 +41,8 @@ export class UserLogActivitiesService {
     createUserLogActivitiyByUserDTO: CreateUserLogActivityByUserDTO,
   ): Promise<UserActivity>{
     try {
-      if (!user || !user?.username) {
+      if (!user || !user?.username || !user?.userId) {
         return;
-      }
-
-      if (!user?.userId && user?.username) {
-        const userData = await this.userService.getUserByUsername(user.username);
-        if(!userData?.userId){
-          return;
-        }
-
-        user.userId = userData.userId;
       }
 
       let { userId, username, deviceType, ipAddress } = user;

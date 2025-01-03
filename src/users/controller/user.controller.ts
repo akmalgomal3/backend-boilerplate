@@ -33,6 +33,7 @@ import { UpdatePasswordByAdminDto } from '../dto/update-password-by-admin.dto';
 export class UserController {
   constructor(private userService: UserService) {}
 
+  @ApiBearerAuth()
   @Get('/')
   async getUsers(@Query('page') page: number, @Query('limit') limit: number) {
     const result = await this.userService.getUsers({ page, limit });
@@ -42,6 +43,7 @@ export class UserController {
     };
   }
 
+  @ApiBearerAuth()
   @Get('/:userId')
   async getUser(@Param('userId', ParseUUIDPipe) userId: string) {
     const result = await this.userService.getUser(userId);
@@ -151,7 +153,7 @@ export class UserController {
     @Body() updateBanUserDto: UpdateBanUserDto,
     @User() user: JwtPayload,
   ) {
-    const result = await this.userService.updateBanUser(
+    const result = await this.userService.updateUserBan(
       userId,
       user?.userId,
       updateBanUserDto?.active,
@@ -169,9 +171,8 @@ export class UserController {
     @Body() updateUserDto: UpdateUserDto,
     @User() user: JwtPayload,
   ) {
-    const result = await this.userService.updateUserByUserId({
+    const result = await this.userService.updateUserByUserId(userId, {
       ...updateUserDto,
-      userId: userId,
       updatedBy: user?.userId,
     });
 
@@ -181,12 +182,14 @@ export class UserController {
   }
 
   @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
   @Delete('/:userId')
-  async deleteUser(@Param('userId', ParseUUIDPipe) userId: string) {
-    const result = await this.userService.deleteUserByUserId(userId);
-
+  async deleteUser(
+    @Param('userId', ParseUUIDPipe) userId: string
+  ) {
+    await this.userService.hardDeleteUserByUserId(userId);
     return {
-      data: { effected: result },
+      data: null,
     };
   }
 
