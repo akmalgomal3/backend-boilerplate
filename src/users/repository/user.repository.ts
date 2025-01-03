@@ -60,33 +60,16 @@ export class UserRepository {
 
   async getUserById(userId: string): Promise<Users> {
     try {
-      const query = UserQuery.GET_USER_BY_USER_ID(userId);
-      const [user] = await this.repository.query(query);
-      return user
-        ? {
-            userId: user.userId,
-            username: user.username,
-            fullName: user.fullName,
-            email: user.email,
-            password: user.password,
-            active: user.active,
-            birthdate: user.birthdate,
-            createdAt: user.createdAt,
-            createdBy: user.createdBy,
-            updatedAt: user.updatedAt, 
-            updatedBy: user.updatedBy,
-            phoneNumber: user.phoneNumber,
-            role: {
-              roleId: user.roleId,
-              roleName: user.roleName,
-              roleType: user.roleType,
-              createdAt: user.createdAt,  
-              createdBy: user.createdBy,
-              updatedAt: user.updatedAt,
-              updatedBy: user.updatedBy,
-            },
-          }
-        : null;
+      const user = await this.repository.findOne({
+        where: {
+          userId,
+        },
+        relations: {
+          role: true,
+        },
+      });
+
+      return user;
     } catch (error) {
       throw new HttpException(
         error.message || 'Error getting user by id',
@@ -97,19 +80,16 @@ export class UserRepository {
 
   async getUserAuthById(userId: string): Promise<UsersAuth> {
     try {
-      const query = UserQuery.GET_USER_AUTH_BY_USER_ID(userId);
-      const [user] = await this.repository.query(query);
+      const userAuth = await this.repositoryAuth.findOne({
+        where: {
+          userId,
+        },
+        relations: {
+          role: true,
+        },
+      });
 
-      return user
-        ? {
-            ...user,
-            role: {
-              roleId: user.roleId,
-              roleName: user.roleName,
-              roleType: user.roleType,
-            },
-          }
-        : null;
+      return userAuth;
     } catch (error) {
       throw new HttpException(
         error.message || 'Error getting user by id',
@@ -120,19 +100,16 @@ export class UserRepository {
 
   async getUserByUsername(username: string): Promise<Users> {
     try {
-      const query = UserQuery.GET_USER_BY_USERNAME(username);
-      const [user] = await this.repository.query(query);
+      const user = await this.repository.findOne({
+        where: {
+          username,
+        },
+        relations: {
+          role: true,
+        },
+      });
 
-      return user
-        ? {
-            ...user,
-            role: {
-              roleId: user.roleId,
-              roleName: user.roleName,
-              roleType: user.roleType,
-            },
-          }
-        : null;
+      return user;
     } catch (error) {
       throw new HttpException(
         error.message || 'Error getting user by username',
@@ -143,19 +120,16 @@ export class UserRepository {
 
   async getUserAuthByUsername(username: string): Promise<UsersAuth> {
     try {
-      const query = UserQuery.GET_USER_AUTH_BY_USERNAME(username);
-      const [user] = await this.repository.query(query);
+      const user = await this.repositoryAuth.findOne({
+        where: {
+          username,
+        },
+        relations: {
+          role: true,
+        },
+      });
 
-      return user
-        ? {
-            ...user,
-            role: {
-              roleId: user.roleId,
-              roleName: user.roleName,
-              roleType: user.roleType,
-            },
-          }
-        : null;
+      return user;
     } catch (error) {
       throw new HttpException(
         error.message || 'Error getting user by username',
@@ -166,19 +140,16 @@ export class UserRepository {
 
   async getUserByEmail(email: string): Promise<Users> {
     try {
-      const query = UserQuery.GET_USER_BY_EMAIL(email);
-      const [user] = await this.repository.query(query);
+      const user = await this.repository.findOne({
+        where: {
+          email,
+        },
+        relations: {
+          role: true,
+        },
+      });
 
-      return user
-        ? {
-            ...user,
-            role: {
-              roleId: user.roleId,
-              roleName: user.roleName,
-              roleType: user.roleType,
-            },
-          }
-        : null;
+      return user;
     } catch (error) {
       throw new HttpException(
         error.message || 'Error getting user by email',
@@ -189,10 +160,16 @@ export class UserRepository {
 
   async getUserAuthByEmail(email: string): Promise<UsersAuth> {
     try {
-      const query = UserQuery.GET_USER_AUTH_BY_EMAIL(email);
-      const data = await this.repository.query(query);
+      const userAuth = await this.repositoryAuth.findOne({
+        where: {
+          email,
+        },
+        relations: {
+          role: true,
+        },
+      });
 
-      return data[0];
+      return userAuth;
     } catch (error) {
       throw new HttpException(
         error.message || 'Error getting user by email',
@@ -206,7 +183,6 @@ export class UserRepository {
     isActive: boolean = true,
   ): Promise<Users> {
     try {
-      // const user_id = uuidv4();
       const {
         email,
         username,
@@ -218,28 +194,23 @@ export class UserRepository {
         createdBy,
       } = createUserDto;
 
-      const query = UserQuery.CREATE_USER(
+      const user = await this.repository.save({
         email,
         username,
         password,
-        fullName,   
+        fullName,
         phoneNumber,
         birthdate,
-        roleId,
+        role: {
+          roleId,
+        },
         createdBy,
-        isActive
-      )
+        active: isActive,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
-      const data = await this.repository.query(query);
-
-      return data[0]
-        ? {
-            ...data[0],
-            role: {
-              roleId: data[0].roleId,
-            },
-          }
-        : {};
+      return user;
     } catch (error) {
       throw new HttpException(
         error.message || 'Error creating user',
@@ -264,29 +235,24 @@ export class UserRepository {
         phoneNumber,
       } = createUserDto;
 
-      const query = UserQuery.CREATE_USER_AUTH(
+      const userAuth = await this.repositoryAuth.save({
         userId,
         email,
         username,
+        password,
         fullName,
-        password, 
-        roleId, 
+        phoneNumber,
         birthdate,
-        phoneNumber, 
-        'Requested', 
-        userId, 
-        isActive
-      )
-      const data = await this.repository.query(query);
+        role: {
+          roleId,
+        },
+        active: isActive,
+        requestStatus: UserAuthRequestType.Requested,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
-      return data[0]
-        ? {
-            ...data[0],
-            role: {
-              roleId: data[0].roleId,
-            },
-          }
-        : {};
+      return userAuth;
     } catch (error) {
       throw new HttpException(
         error.message || 'Error creating user',
@@ -301,13 +267,18 @@ export class UserRepository {
     requestStatus: UserAuthRequestType,
   ): Promise<UsersAuth> {
     try {
-      const query = UserQuery.UPDATE_USER_AUTH_STATUS(
-        userAuthId,
-        updaterId,
-        requestStatus,  
-      )
-      const [data] = await this.repository.query(query);
-      return data[0];
+      await this.repositoryAuth.update(
+        {
+          userId: userAuthId,
+        },
+        {
+          requestStatus,
+          updatedBy: updaterId,
+          updatedAt: new Date(),
+        },
+      );
+
+      return await this.getUserAuthById(userAuthId);
     } catch (error) {
       throw new HttpException(
         error.message || 'Error declining user',
@@ -357,7 +328,10 @@ export class UserRepository {
       await queryRunner.connect();
       await queryRunner.startTransaction();
 
-      const userAuthInfo = await this.getUserAuthById(userAuthId);
+      const userAuthInfo = await queryRunner.manager.findOne(UsersAuth, {
+        where: { userId: userAuthId },
+        relations: { role: true },
+      });
       if (!userAuthInfo) {
         throw new NotFoundException(
           ErrorMessages.users.getMessage('USER_AUTH_NOT_FOUND'),
@@ -370,27 +344,33 @@ export class UserRepository {
         );
       }
 
-      await this.updateUserAuthStatus(
-        userAuthInfo.userId,
-        approverId,
-        UserAuthRequestType.Approved,
+      await queryRunner.manager.update(
+        UsersAuth,
+        { userId: userAuthId },
+        {
+          requestStatus: UserAuthRequestType.Approved,
+          updatedBy: approverId,
+          updatedAt: new Date(),
+        },
       );
 
-      const queryCreateUser = UserQuery.CREATE_USER(
-        userAuthInfo.email,
-        userAuthInfo.username,
-        userAuthInfo.password,
-        userAuthInfo.fullName,
-        userAuthInfo.phoneNumber,
-        userAuthInfo.birthdate,
-        roleId,
-        approverId,
-        true,
-      )
-      const newUser = await queryRunner.query(queryCreateUser);
+      const newUser = await queryRunner.manager.save(Users, {
+        email: userAuthInfo.email,
+        username: userAuthInfo.username,
+        fullName: userAuthInfo.fullName,
+        password: userAuthInfo.password,
+        role: { roleId },
+        birthdate: userAuthInfo.birthdate,
+        phoneNumber: userAuthInfo.phoneNumber,
+        createdBy: approverId,
+        active: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
       await queryRunner.commitTransaction();
 
-      return newUser[0];
+      return await this.getUserById(newUser.userId);
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw new HttpException(
@@ -408,8 +388,16 @@ export class UserRepository {
     isActive: boolean = false,
   ): Promise<void> {
     try {
-      const query = UserQuery.UPDATE_USER_BAN(userId, updatedBy, isActive);
-      await this.repository.query(query);
+      await this.repository.update(
+        {
+          userId,
+        },
+        {
+          active: isActive,
+          updatedBy,
+          updatedAt: new Date(),
+        },
+      );
     } catch (error) {
       throw new HttpException(
         error.message || 'Error banned user',
@@ -422,12 +410,26 @@ export class UserRepository {
     userId: string,
     password: string,
     updaterId: string,
-  ): Promise<Users> {
+  ): Promise<Partial<Users>> {
     try {
-      const query = UserQuery.UPDATE_USER_PASSWORD(userId, updaterId, password);
-      const user = await this.repository.query(query);
+      await this.repository.update(
+        {
+          userId,
+        },
+        {
+          password,
+          updatedBy: updaterId,
+          updatedAt: new Date(),
+        },
+      );
 
-      return user[0];
+      const user = await this.getUserById(userId);
+
+      return {
+        userId: user.userId,
+        username: user.username,
+        email: user.email,
+      };
     } catch (error) {
       throw new HttpException(
         error.message || 'Error updating user password',
@@ -436,12 +438,32 @@ export class UserRepository {
     }
   }
 
-  async updateUserAuthEmail(userAuthId: string, email: string): Promise<Users> {
+  async updateUserAuthEmail(
+    userAuthId: string,
+    email: string,
+  ): Promise<Partial<UsersAuth>> {
     try {
-      const query = UserQuery.UPDATE_USER_AUTH_EMAIL_BY_ID(userAuthId, email);
-      const user = await this.repository.query(query);
+      await this.repositoryAuth.update(
+        {
+          userId: userAuthId,
+        },
+        {
+          email,
+          updatedAt: new Date(),
+          updatedBy: userAuthId,
+        },
+      );
 
-      return user[0];
+      const user = await this.getUserAuthById(userAuthId);
+
+      return {
+        userId: user.userId,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
+        phoneNumber: user.phoneNumber,
+        birthdate: user.birthdate,
+      };
     } catch (error) {
       throw new HttpException(
         error.message || 'Error updating user email',
@@ -450,12 +472,32 @@ export class UserRepository {
     }
   }
 
-  async updateUserEmail(userId: string, email: string): Promise<Users> {
+  async updateUserEmail(
+    userId: string,
+    email: string,
+  ): Promise<Partial<Users>> {
     try {
-      const query = UserQuery.UPDATE_USER_EMAIL_BY_USER_ID(userId, email);
-      const user = await this.repository.query(query, [userId, email, userId]);
+      await this.repository.update(
+        {
+          userId,
+        },
+        {
+          email,
+          updatedAt: new Date(),
+          updatedBy: userId,
+        },
+      );
 
-      return user[0];
+      const user = await this.getUserById(userId);
+
+      return {
+        userId: user.userId,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
+        phoneNumber: user.phoneNumber,
+        birthdate: user.birthdate,
+      };
     } catch (error) {
       throw new HttpException(
         error.message || 'Error updating user email',
@@ -467,19 +509,28 @@ export class UserRepository {
   async updateUserAuthByUserId(
     userId: string,
     updateUserDto: UpdateUserDto,
-  ): Promise<UsersAuth> {
+  ): Promise<Partial<UsersAuth>> {
     try {
-      const query = UserQuery.UPDATE_USER_AUTH_BY_USER_ID(
-        userId,
-        updateUserDto.roleId,
-        updateUserDto.username,
-        updateUserDto.fullName,
-        updateUserDto.birthdate,
-        updateUserDto.updatedBy,
+      await this.repositoryAuth.update(
+        {
+          userId,
+        },
+        {
+          role: {
+            roleId: updateUserDto.roleId,
+          },
+          username: updateUserDto.username,
+          fullName: updateUserDto.fullName,
+          birthdate: updateUserDto.birthdate,
+          updatedBy: updateUserDto.updatedBy,
+          updatedAt: new Date(),
+        },
       );
 
-      await this.repositoryAuth.query(query)
-      return await this.getUserAuthById(userId);
+      const userAuth = await this.getUserAuthById(userId);
+      return {
+        userId: userAuth.userId,
+      };
     } catch (error) {
       throw new HttpException(
         error.message || 'Error updating user email',
@@ -491,19 +542,26 @@ export class UserRepository {
   async updateUserById(
     userId: string,
     updateUserDto: UpdateUserDto,
-  ): Promise<Users> {
+  ): Promise<Partial<Users>> {
     try {
-      const query = UserQuery.UPDATE_USER_BY_USER_ID(
-        userId,
-        updateUserDto.roleId,
-        updateUserDto.username,
-        updateUserDto.fullName,
-        updateUserDto.birthdate,
-        updateUserDto.updatedBy,
-      )
+      await this.repository.update(
+        {
+          userId,
+        },
+        {
+          role: {
+            roleId: updateUserDto.roleId,
+          },
+          username: updateUserDto.username,
+          fullName: updateUserDto.fullName,
+          birthdate: updateUserDto.birthdate,
+          updatedBy: updateUserDto.updatedBy,
+          updatedAt: new Date(),
+        },
+      );
 
-      await this.repository.query(query);
-      return await this.getUserById(userId);
+      const user = await this.getUserById(userId);
+      return user;
     } catch (error) {
       throw new HttpException(
         error.message || 'Error updating user',
@@ -514,8 +572,9 @@ export class UserRepository {
 
   async deleteUserAuth(userAuthId: string): Promise<void> {
     try {
-      const query = UserQuery.DELETE_USER_AUTH_BY_ID(userAuthId);
-      await this.repository.query(query);
+      await this.repositoryAuth.delete({
+        userId: userAuthId,
+      });
     } catch (error) {
       throw new HttpException(
         error.message || 'Error deleting user',
@@ -524,17 +583,20 @@ export class UserRepository {
     }
   }
 
-  async hardDeleteUserByUserId(userId: string, username: string): Promise<void> {
+  async hardDeleteUserByUserId(
+    userId: string,
+    username: string,
+  ): Promise<void> {
     const queryRunner = this.dataSource.createQueryRunner();
     try {
       await queryRunner.connect();
       await queryRunner.startTransaction();
 
-      await this.deleteTrxUserByUserId(queryRunner, userId)
+      await this.deleteTrxUserByUserId(queryRunner, userId);
 
       const userAuth = await this.getUserAuthByUsername(username);
-      if(userAuth && userAuth?.userId){
-        await this.deleteTrxUserAuthById(queryRunner, userAuth?.userId)
+      if (userAuth && userAuth?.userId) {
+        await this.deleteTrxUserAuthById(queryRunner, userAuth?.userId);
       }
 
       await Promise.all([
@@ -550,9 +612,9 @@ export class UserRepository {
         this.sessionService.deleteSession(
           `refresh:${userId}:${DeviceType.MOBILE}`,
         ),
+        await this.userLogActivitiesService.deleteUserActivityByUserId(userId),
       ]);
 
-      await this.userLogActivitiesService.deleteUserActivityByUserId(userId)
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -570,8 +632,9 @@ export class UserRepository {
     userAuthId: string,
   ): Promise<void> {
     try {
-      const query = UserQuery.DELETE_USER_AUTH_BY_ID(userAuthId);
-      await trx.query(query);
+      await trx.manager.delete(UsersAuth, {
+        userId: userAuthId,
+      });
     } catch (error) {
       throw new HttpException(
         error.message || 'Error delete user auth',
@@ -580,13 +643,11 @@ export class UserRepository {
     }
   }
 
-  async deleteTrxUserByUserId(
-    trx: QueryRunner,
-    userId: string,
-  ): Promise<void> {
+  async deleteTrxUserByUserId(trx: QueryRunner, userId: string): Promise<void> {
     try {
-      const query = UserQuery.DELETE_USER_BY_USER_ID(userId);
-      await trx.query(query);
+      await trx.manager.delete(Users, {
+        userId,
+      });
     } catch (error) {
       throw new HttpException(
         error.message || 'Error delete user',
