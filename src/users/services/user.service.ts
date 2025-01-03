@@ -31,12 +31,12 @@ import { GetUserAuthDto } from '../dto/get-unapproved-user.dto';
 import { UpdatePasswordByAdminDto } from '../dto/update-password-by-admin.dto';
 import { ConfigService } from '@nestjs/config';
 import { ErrorMessages } from '../../common/exceptions/root-error.message';
+import { format } from 'date-fns';
 
 @Injectable()
 export class UserService {
   constructor(
     private userRepository: UserRepository,
-    @Inject(forwardRef(() => UserLogActivitiesService))
     private userLogActivitiesService: UserLogActivitiesService,
     private rolesService: RolesService,
     private utilsService: UtilsService,
@@ -292,7 +292,7 @@ export class UserService {
 
   async banUser(userId: string, bannedBy: string) {
     try {
-      return await this.userRepository.banUser(userId, bannedBy);
+      return await this.userRepository.updateUserBan(userId, bannedBy);
     } catch (e) {
       throw new HttpException(
         e.message || 'Error banning user',
@@ -301,63 +301,65 @@ export class UserService {
     }
   }
 
-  async updateUserByUserId(updateUserDto: UpdateUserDto): Promise<Users> {
+  async updateUserByUserId(
+    userId: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<Users> {
     try {
-      const getUserUpdatedById = await this.getUser(updateUserDto.updatedBy);
-      if (!getUserUpdatedById) {
-        throw new NotFoundException(
-          ErrorMessages.users.getMessage('USER_NOT_FOUND'),
-        );
-      }
+      await this.getUser(updateUserDto.updatedBy);
+      const getUserUpdated = await this.getUser(userId);
 
-      const getUserById = await this.getUser(updateUserDto.userId);
-      if (!getUserById) {
-        throw new NotFoundException(
-          ErrorMessages.users.getMessage('USER_NOT_FOUND'),
-        );
-      }
-
-      if (getUserById.username != updateUserDto.username) {
+      if (getUserUpdated.username != updateUserDto.username) {
         await this.validateUsernameEmail(updateUserDto.username);
       }
 
-      const getRoleByRoleId = await this.rolesService.getRoleById(
-        updateUserDto.roleId,
-      );
-      if (!getRoleByRoleId) {
-        throw new NotFoundException(
-          ErrorMessages.users.getMessage('ROLE_ID_NOT_FOUND'),
-        );
+      if (updateUserDto.roleId) {
+        await this.rolesService.getRoleById(updateUserDto.roleId);
       }
 
-      const { roleId, userId, ...updatedDto } = updateUserDto;
+      console.log(getUserUpdated.birthdate, "HALOW");
+      
+      updateUserDto = {
+        roleId: updateUserDto.roleId ?? getUserUpdated.role?.roleId,
+        username: updateUserDto.username ?? getUserUpdated.username,
+        fullName: updateUserDto.fullName ?? getUserUpdated.fullName,
+        birthdate: updateUserDto.birthdate ?? format(new Date(getUserUpdated.birthdate), 'yyyy-MM-dd'),
+        updatedBy: updateUserDto.updatedBy,
+      }
+
       const updateUser = await this.userRepository.updateUserById(
         userId,
-        updatedDto,
-        getRoleByRoleId,
+        updateUserDto
       );
+
+      const userAuth = await this.getUserAuthById(userId);
+      if (userAuth) {
+        await this.userRepository.updateUserAuthByUserId(
+          userAuth.userId, 
+          updateUserDto
+        )
+      }
+
       return updateUser;
     } catch (e) {
-      throw new HttpException(
-        e.message || 'Error update user',
-        e.status || 500,
-      );
+      throw e;
     }
   }
 
-  async updateBanUser(
+  async updateUserBan(
     userId: string,
-    bannerId: string,
+    bannedBy: string,
     isActive: boolean,
   ): Promise<Users> {
     try {
-      await this.userRepository.banUser(userId, bannerId, isActive);
+      await this.userRepository.updateUserBan(userId, bannedBy, isActive);
 
       if (isActive) {
         await this.userLogActivitiesService.deleteUserActivityByDescription(
           userId,
         );
       }
+
       return this.getUser(userId);
     } catch (e) {
       throw new HttpException(
@@ -615,14 +617,13 @@ export class UserService {
     }
   }
 
-  async deleteUserByUserId(userId: string): Promise<Number> {
+  async hardDeleteUserByUserId(userId: string): Promise<void> {
     try {
-      await this.userLogActivitiesService.deleteUserActivityByUserId(userId);
-      const deleteUser = await this.userRepository.deleteByUserId(userId);
-      return deleteUser;
+      const user = await this.getUser(userId);
+      await this.userRepository.hardDeleteUserByUserId(userId, user?.username);
     } catch (e) {
       throw new HttpException(
-        e.message || 'Error delete user',
+        e.message || 'Error hard delete user',
         e.status || 500,
       );
     }
