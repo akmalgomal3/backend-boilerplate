@@ -44,6 +44,6 @@ export class Features {
   updatedBy: string;
 
   @OneToMany(() => AccessFeature, (accessFeature) => accessFeature.feature)
-  accessFeature: AccessFeature;
+  accessFeature: AccessFeature[];
 }
     

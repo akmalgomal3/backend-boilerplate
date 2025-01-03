@@ -194,8 +194,8 @@ export class MenusRepository {
 
   async getAllMenuAccessByRoleId(roleId: string): Promise<Menu[]> {
     try {
-      const query = AccessMenuQuery.GET_ALL_MENU_ACCESS_BY_ROLE_ID;
-      const accessMenu = await this.repositoryAccessMenu.query(query, [roleId]);
+      const query = AccessMenuQuery.GET_ALL_MENU_ACCESS_BY_ROLE_ID(roleId);
+      const accessMenu = await this.repositoryAccessMenu.query(query);
       return accessMenu;
     } catch (error) {
       throw error;

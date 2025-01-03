@@ -1,6 +1,6 @@
 export const AccessMenuQuery = {
-    GET_ALL_MENU_ACCESS_BY_ROLE_ID: `
-        SELECT 
+    GET_ALL_MENU_ACCESS_BY_ROLE_ID: (roleId: string) =>
+        `SELECT 
             access_menu.access_menu_id as "accessMenuId",
             access_menu.role_id as "roleId", 
             CASE WHEN 
@@ -17,7 +17,7 @@ export const AccessMenuQuery = {
         FROM menus 
         LEFT JOIN 
             access_menu ON menus.menu_id = access_menu.menu_id 
-            AND access_menu.role_id = $1
+            AND access_menu.role_id = '${roleId}'
         WHERE menus.active = true
         ORDER BY menus.hierarchy_level ASC
     `,
