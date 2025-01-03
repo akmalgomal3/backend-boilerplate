@@ -1,12 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DataSource, QueryRunner, Repository } from 'typeorm';
+import { DataSource, ILike, QueryRunner, Repository } from 'typeorm';
 import { CreateFeatureDto } from '../dto/create-features.dto';
 import { UpdateFeatureDto } from '../dto/update-features.dto';
 import { Features } from '../entity/features.entity';
-import { FeaturesQuery } from '../query/features.query';
-import {
-  CreateUpdateAccessFeatureDto,
-} from '../dto/create-update-access-feature.dto';
+import { CreateUpdateAccessFeatureDto } from '../dto/create-update-access-feature.dto';
 
 @Injectable()
 export class FeaturesRepository {
@@ -24,12 +21,13 @@ export class FeaturesRepository {
     search: string,
   ): Promise<[Features[], number]> {
     try {
-      const features = await this.repository.query(
-        FeaturesQuery.GET_FEATURES(skip, take, search),
-      );
-      const count = await this.repository.query(FeaturesQuery.COUNT_FEATURES);
+      const [features, count] = await this.repository.findAndCount({
+        where: { featureName: ILike(`%${search}%`) },
+        skip,
+        take,
+      });
 
-      return [features, parseInt(count[0].count)];
+      return [features, count];
     } catch (error) {
       throw error;
     }
@@ -37,11 +35,11 @@ export class FeaturesRepository {
 
   async getFeatureById(featureId: string): Promise<Features | null> {
     try {
-      const data = await this.repository.query(
-        FeaturesQuery.GET_FEATURE_BY_ID(featureId),
-      );
+      const feature = await this.repository.findOne({
+        where: { featureId },
+      });
 
-      return data.length > 0 ? data[0] : null;
+      return feature || null;
     } catch (error) {
       throw error;
     }
@@ -49,10 +47,11 @@ export class FeaturesRepository {
 
   async getFeatureByName(featureName: string): Promise<Features | null> {
     try {
-      const data = await this.repository.query(
-        FeaturesQuery.GET_FEATURE_BY_NAME(featureName),
-      );
-      return data.length > 0 ? data[0] : null;
+      const feature = await this.repository.findOne({
+        where: { featureName: ILike(featureName) },
+      });
+
+      return feature || null;
     } catch (error) {
       throw error;
     }
@@ -107,18 +106,20 @@ export class FeaturesRepository {
     await queryRunner.startTransaction();
 
     try {
-      const newFeature = await queryRunner.query(
-        FeaturesQuery.CREATE_FEATURE(
-          dto.featureName,
-          dto.menuId || null,
-          dto.description || null,
-          dto.active ?? true,
-          userId,
-        ),
-      );
+      const newFeature = this.repository.create({
+        featureName: dto.featureName,
+        menuId: dto.menuId || null,
+        description: dto.description || null,
+        active: dto.active ?? true,
+        createdBy: userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const savedFeature = await queryRunner.manager.save(newFeature);
 
       await queryRunner.commitTransaction();
-      return newFeature[0];
+      return savedFeature.featureId;
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -138,16 +139,16 @@ export class FeaturesRepository {
     await queryRunner.startTransaction();
 
     try {
-      await queryRunner.query(
-        FeaturesQuery.UPDATE_FEATURE(
-          dto.featureName || null,
-          dto.menuId || null,
-          dto.description || null,
-          dto.active ?? null,
-          userId,
-          featureId,
-        ),
-      );
+      const updateData = {
+        featureName: dto.featureName || undefined,
+        menuId: dto.menuId || undefined,
+        description: dto.description || undefined,
+        active: dto.active ?? undefined,
+        updatedBy: userId,
+        updatedAt: new Date(),
+      };
+
+      await queryRunner.manager.update(Features, { featureId }, updateData);
 
       await queryRunner.commitTransaction();
     } catch (error) {
@@ -165,7 +166,7 @@ export class FeaturesRepository {
     await queryRunner.startTransaction();
 
     try {
-      await queryRunner.query(FeaturesQuery.DELETE_FEATURE(featureId));
+      await queryRunner.manager.delete(Features, { featureId });
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -297,7 +298,7 @@ export class FeaturesRepository {
 
   async getFeaturesNoMenuIdToCreateAccessFeature(): Promise<Features[]> {
     try {
-      let query = `SELECT 
+      const query = `SELECT 
         feature_id as "featureId", 
         feature_name as "featureName", 
         false as "canAccess",
@@ -320,7 +321,7 @@ export class FeaturesRepository {
     menuId: string = null,
   ): Promise<Features[]> {
     try {
-      let query = `SELECT 
+      const query = `SELECT 
         feature_id as "featureId", 
         feature_name as "featureName", 
         false as "canAccess",

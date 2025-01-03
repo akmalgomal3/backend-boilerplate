@@ -19,7 +19,6 @@ import { CreateUpdateBulkAccessFeatureDto } from '../dto/create-update-access-fe
 import { AuthorizedRoles } from '../../common/decorators/authorized-roles.decorator';
 import { RoleType } from '../../common/enums/user-roles.enum';
 
-
 @ApiBearerAuth()
 @Controller('features')
 export class FeaturesController {
@@ -78,7 +77,9 @@ export class FeaturesController {
       user.userId,
     );
     return {
-      data: result,
+      data: {
+        featureId: result,
+      },
     };
   }
 
@@ -109,8 +110,9 @@ export class FeaturesController {
   @Get('/accessFeature/create/body/:roleId')
   async getAllFeatureToCreateAccessFeature(
     @Param('roleId', ParseUUIDPipe) roleId: string,
-  ){
-    const result = await this.featuresService.getAllFeaturesToCreateAccessFeature(roleId);
+  ) {
+    const result =
+      await this.featuresService.getAllFeaturesToCreateAccessFeature(roleId);
     return {
       data: result,
     };
@@ -123,7 +125,10 @@ export class FeaturesController {
     @Body() createBulkAccessFeature: CreateUpdateBulkAccessFeatureDto,
     @User() user: JwtPayload,
   ) {
-    const result = await this.featuresService.bulkCreateUpdateAccessFeature({createdBy: user?.userId, ...createBulkAccessFeature});
+    const result = await this.featuresService.bulkCreateUpdateAccessFeature({
+      createdBy: user?.userId,
+      ...createBulkAccessFeature,
+    });
     return {
       data: result,
     };
@@ -136,7 +141,10 @@ export class FeaturesController {
     @Body() updateBulkAccessFeatureFto: CreateUpdateBulkAccessFeatureDto,
     @User() user: JwtPayload,
   ) {
-    const result = await this.featuresService.bulkCreateUpdateAccessFeature({createdBy: user?.userId, ...updateBulkAccessFeatureFto});
+    const result = await this.featuresService.bulkCreateUpdateAccessFeature({
+      createdBy: user?.userId,
+      ...updateBulkAccessFeatureFto,
+    });
     return {
       data: result,
     };
@@ -148,10 +156,10 @@ export class FeaturesController {
   async deleteAccessFeatureByRoleId(
     @Param('roleId', ParseUUIDPipe) roleId: string,
   ) {
-    const result = await this.featuresService.deleteAccessFeatureByRoleId(roleId);
+    const result =
+      await this.featuresService.deleteAccessFeatureByRoleId(roleId);
     return {
       data: result,
     };
   }
-
 }
