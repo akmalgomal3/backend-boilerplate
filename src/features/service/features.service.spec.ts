@@ -11,6 +11,7 @@ import {
   HttpStatus,
   NotFoundException,
 } from '@nestjs/common';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 describe('FeaturesService', () => {
   let service: FeaturesService;
@@ -80,14 +81,18 @@ describe('FeaturesService', () => {
       },
     ];
 
+    const pagination = new PaginationDto();
+    pagination.page = 1;
+    pagination.limit = 10;
+
     it('should return features data with pagination', async () => {
       const mockTotalItems = 2;
+
       mockFeaturesRepository.getFeatures.mockResolvedValue([
         mockFeatures,
         mockTotalItems,
       ]);
-
-      const result = await service.getFeatures(1, 10);
+      const result = await service.getFeatures(pagination, '');
 
       expect(repository.getFeatures).toHaveBeenCalledWith(0, 10);
       expect(result).toEqual({
@@ -105,7 +110,9 @@ describe('FeaturesService', () => {
       mockFeaturesRepository.getFeatures.mockRejectedValue(
         new Error('Database error'),
       );
-      await expect(service.getFeatures(1, 10)).rejects.toThrow(HttpException);
+      await expect(service.getFeatures(pagination, '')).rejects.toThrow(
+        HttpException,
+      );
     });
   });
 
