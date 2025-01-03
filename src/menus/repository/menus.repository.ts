@@ -1,11 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DataSource, QueryRunner, Repository } from 'typeorm';
+import { DataSource, EntityNotFoundError, QueryRunner, Repository } from 'typeorm';
 import { CreateMenuDto } from '../dto/create-menu.dto';
 import { UpdateMenuDto } from '../dto/update-menu.dto';
 import { Menu } from '../entity/menus.entity';
 import { MenusQuery } from '../query/menus.query';
 import { AccessMenu } from '../entity/access_menu.entity';
 import { AccessMenuQuery } from '../query/access_menu.query';
+import { ErrorMessages } from 'src/common/exceptions/root-error.message';
 
 @Injectable()
 export class MenusRepository {
@@ -151,9 +152,15 @@ export class MenusRepository {
 
   async getAccessMenuByRoleId(roleId: string): Promise<Menu[]> {
     try {
-      const query = AccessMenuQuery.GET_ACCESS_MENU_BY_ROLE_ID;
-      const accessMenu = await this.repositoryAccessMenu.query(query, [roleId]);
-      return accessMenu;
+      const [getAccessMenu] = await this.repository.findAndCount({
+        select: ['menuId', 'menuName', 'parentMenuId', 'hierarchyLevel', 'routePath', 'icon', 'active', 'description'],
+        where: { 
+          active: true,
+          accessMenu: { role: { roleId } } 
+        },
+        order: { hierarchyLevel: 'ASC' },
+      })
+      return getAccessMenu;
     } catch (error) {
       throw error;
     }
@@ -168,6 +175,22 @@ export class MenusRepository {
       throw error;
     }
   }
+
+  async getAccessMenuById(accessMenuId: string): Promise<AccessMenu> {
+    try {
+      const getById = await this.repositoryAccessMenu.findOneByOrFail({ accessMenuId });
+      return getById;
+    } catch (error) {
+      if (error instanceof EntityNotFoundError){
+        ErrorMessages.menus.dynamicMessage(
+          ErrorMessages.menus.getMessage('ERRROR_GET_ONE_ACCESS_MENU_BY_ID'), 
+          { accessMenuId }
+        );
+      }
+
+      throw error;
+    }
+  } 
 
   async createBulkAccessMenu(
     roleId: string,
@@ -200,12 +223,17 @@ export class MenusRepository {
   private async createAccessMenu(
     trx: QueryRunner,
     { roleId, menuId, createdBy },
-  ): Promise<AccessMenu> {
+  ): Promise<string> {
     try {
-      const query = AccessMenuQuery.CREATE_ACCESS_MENU;
-      const [create] = await trx.query(query, [roleId, menuId, createdBy]);
-
-      return create;
+      const create = await trx.manager.insert(AccessMenu,{
+        role: {roleId},
+        menu: {menuId},
+        createdBy,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+     
+      return await create.identifiers[0].accessMenuId;
     } catch (error) {
       throw error;
     }
@@ -217,10 +245,7 @@ export class MenusRepository {
   ): Promise<void> {
     try {
       if (!trx) trx = this.repository.manager.connection.createQueryRunner();
-      const query = AccessMenuQuery.DELETE_ACCESS_MENU_BY_ROLE_ID;
-      const deleteAccessMenu = await trx.query(query, [roleId]);
-
-      return deleteAccessMenu;
+      await trx.manager.delete(AccessMenu, { role: { roleId } });
     } catch (error) {
       throw error;
     }

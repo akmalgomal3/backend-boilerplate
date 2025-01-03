@@ -15,5 +15,6 @@ export class MenusErrorMessage extends BaseErrorMessages {
     ERROR_DELETE_MENU: 'Error delete menu',
     ERROR_BUILD_MENU_HIERARCHY: 'Error mapping menu and features',
     ERROR_GET_ALL_MENU_CHILD_ID: 'Error get all child to delete menu',
+    ERRROR_GET_ONE_ACCESS_MENU_BY_ID: 'Error get access menu with ${accessMenuId}',
   };
 }
