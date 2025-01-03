@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DataSource, ILike, IsNull, QueryRunner, Repository } from 'typeorm';
+import { DataSource, ILike, IsNull, Not, QueryRunner, Repository } from 'typeorm';
 import { CreateFeatureDto } from '../dto/create-features.dto';
 import { UpdateFeatureDto } from '../dto/update-features.dto';
 import { Features } from '../entity/features.entity';
@@ -164,30 +164,9 @@ export class FeaturesRepository {
 
   async getAccessFeatureNoMenuId(roleId: string): Promise<Features[]> {
     try {
-      const query = `SELECT 
-                      af.access_feature_id as "accessFeatureId",
-                      af.role_id as "roleId",
-                      r.role_name as "roleName",
-                      r.role_type as "roleType",
-                      af.feature_id as "featureId",
-                      f.feature_name as "featureName",
-                      f.active as active,
-                      f.menu_id as "menuId",
-                      af.can_access as "canAccess",
-                      af.can_read as "canRead",
-                      af.can_insert as "canInsert",
-                      af.can_update as "canUpdate",
-                      af.can_delete as "canDelete",
-                      af.created_at as "createdAt",
-                      af.updated_at as "updatedAt",
-                      af.created_by as "createdBy",
-                      af.updated_by as "updatedBy"
-                    FROM access_feature af
-                    LEFT JOIN features f ON af.feature_id = f.feature_id
-                    LEFT JOIN roles r ON af.role_id = r.role_id
-                    WHERE f.menu_id IS NULL AND af.role_id = $1`;
-      const features = await this.repository.query(query, [roleId]);
-      return features;
+      const query = AccessFeatureQuery.GET_ACCESS_FEATURE_NO_MENU_ID(roleId)
+      const features = await this.repository.query(query);
+      return features
     } catch (error) {
       throw error;
     }
@@ -199,7 +178,7 @@ export class FeaturesRepository {
   ): Promise<Features[]> {
     try {
       const getAccessFeature = await this.repository.find({
-        relations: ['accessFeature'],
+        // relations: ['accessFeature'],
         where: {
           menuId,
           active: true,
@@ -239,50 +218,6 @@ export class FeaturesRepository {
       );
       const result = await this.repository.query(query);
       return result;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async getFeaturesNoMenuIdToCreateAccessFeature(): Promise<Features[]> {
-    try {
-      const query = `SELECT 
-        feature_id as "featureId", 
-        feature_name as "featureName", 
-        false as "canAccess",
-        false as "canRead",
-        false as "canInsert",
-        false as "canUpdate",
-        false as "canDelete",
-        false as "selected" 
-      FROM features
-      WHERE menu_id IS NULL AND active = true`;
-
-      const features = await this.repository.query(query);
-      return features;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async getFeaturesByMenuIdToCreateAccessFeature(
-    menuId: string = null,
-  ): Promise<Features[]> {
-    try {
-      const query = `SELECT 
-        feature_id as "featureId", 
-        feature_name as "featureName", 
-        false as "canAccess",
-        false as "canRead",
-        false as "canInsert",
-        false as "canUpdate",
-        false as "canDelete",
-        false as "selected" 
-      FROM features
-      WHERE menu_id = $1 AND active = true`;
-
-      const features = await this.repository.query(query, [menuId]);
-      return features;
     } catch (error) {
       throw error;
     }
