@@ -17,7 +17,7 @@ export class AccessMenu {
 
   @ManyToOne(() => Menu)
   @JoinColumn({ name: 'menu_id' })
-  menu: Partial<Menu>;
+  menu: Menu;
 
   @ManyToOne(() => Roles)
   @JoinColumn({ name: 'role_id' })
