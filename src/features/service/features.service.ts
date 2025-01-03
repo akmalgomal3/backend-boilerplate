@@ -276,12 +276,17 @@ export class FeaturesService {
     }
   }
 
-  async getAllFeaturesToCreateAccessFeature(roleId: string): Promise<{ globalFeatures: Features[]; menus: Menu[] }> {
+  async getAllFeaturesToCreateAccessFeature(
+    roleId: string,
+  ): Promise<{ globalFeatures: Features[]; menus: Menu[] }> {
     try {
-      return await this.menuService.getAccessMenuByRoleIdToCreateAccessFeature(roleId)
+      return await this.menuService.getAccessMenuByRoleIdToCreateAccessFeature(
+        roleId,
+      );
     } catch (error) {
       throw new HttpException(
-        error.message || 'Error get all menu by features to create access feature',
+        error.message ||
+          'Error get all menu by features to create access feature',
         error.status || 500,
       );
     }
@@ -315,36 +320,44 @@ export class FeaturesService {
     }
   }
 
-  async getAllFeatureNoMenuIdAccessByRoleId(roleId: string): Promise<Features[]> {
+  async getAllFeatureNoMenuIdAccessByRoleId(
+    roleId: string,
+  ): Promise<Features[]> {
     try {
-      return await this.featuresRepository.getAllFeatureNoMenuIdAccessByRoleId(roleId)
+      return await this.featuresRepository.getAllFeatureNoMenuIdAccessByRoleId(
+        roleId,
+      );
     } catch (error) {
       throw new HttpException(
         error.message || 'Error get all access feature menu by role id',
         error.status || 500,
       );
-    
     }
   }
 
-  async getAllFeatureAccessByMenuRoleId(menuId: string, roleId: string): Promise<Features[]> {
+  async getAllFeatureAccessByMenuRoleId(
+    menuId: string,
+    roleId: string,
+  ): Promise<Features[]> {
     try {
-      return await this.featuresRepository.getAllFeatureAccessByMenuRoleId(menuId, roleId)
+      return await this.featuresRepository.getAllFeatureAccessByMenuRoleId(
+        menuId,
+        roleId,
+      );
     } catch (error) {
       throw new HttpException(
         error.message || 'Error get all access feature menu by role id',
         error.status || 500,
       );
-    
     }
   }
 
   async bulkCreateUpdateAccessFeature(
     createBulkAccessFeatureDto: CreateUpdateBulkAccessFeatureDto,
-  ): Promise<{ globalFeatures: Features[]; menus: Menu[] }> 
-  {
+  ): Promise<{ globalFeatures: Features[]; menus: Menu[] }> {
     try {
-      const { roleId, createdBy, globalFeatures, menus } = createBulkAccessFeatureDto;
+      const { roleId, createdBy, globalFeatures, menus } =
+        createBulkAccessFeatureDto;
 
       await Promise.all([
         this.usersService.getUser(createdBy),
@@ -358,9 +371,11 @@ export class FeaturesService {
         collectFeatures,
       );
 
-      return await this.menuService.getAccessMenuByRoleIdToCreateAccessFeature(roleId);
+      return await this.menuService.getAccessMenuByRoleIdToCreateAccessFeature(
+        roleId,
+      );
     } catch (error) {
-      new HttpException(
+      throw new HttpException(
         error.message || 'Error create access menu by role',
         error.status || 500,
       );
@@ -389,11 +404,11 @@ export class FeaturesService {
         const features = this.collectFeatures(menu.children);
         collect.push(...features);
       }
-      
+
       menu.features.forEach((feature) => {
         if (
           feature.canAccess ||
-          feature.canRead   ||
+          feature.canRead ||
           feature.canUpdate ||
           feature.canDelete ||
           feature.canInsert
@@ -403,7 +418,17 @@ export class FeaturesService {
       });
     });
 
-    globalFeatures.forEach((feature) => collect.push(feature));
+    globalFeatures.forEach((feature) => {
+      if (
+        feature.canAccess ||
+        feature.canRead ||
+        feature.canUpdate ||
+        feature.canDelete ||
+        feature.canInsert
+      ) {
+        collect.push(feature);
+      }
+    });
 
     return collect;
   }
