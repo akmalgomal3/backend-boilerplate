@@ -4,7 +4,9 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { AccessFeature } from './access_feature.entity';
 
 @Entity('features')
 export class Features {
@@ -40,4 +42,8 @@ export class Features {
 
   @Column({ type: 'uuid', nullable: true })
   updatedBy: string;
+
+  @OneToMany(() => AccessFeature, (accessFeature) => accessFeature.feature)
+  accessFeature: AccessFeature;
 }
+    

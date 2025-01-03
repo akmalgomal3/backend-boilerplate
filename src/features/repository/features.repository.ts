@@ -1,18 +1,23 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DataSource, ILike, QueryRunner, Repository } from 'typeorm';
+import { DataSource, ILike, IsNull, QueryRunner, Repository } from 'typeorm';
 import { CreateFeatureDto } from '../dto/create-features.dto';
 import { UpdateFeatureDto } from '../dto/update-features.dto';
 import { Features } from '../entity/features.entity';
 import { CreateUpdateAccessFeatureDto } from '../dto/create-update-access-feature.dto';
+import { AccessFeature } from '../entity/access_feature.entity';
+import { AccessFeatureQuery } from '../query/access_feature.query';
 
 @Injectable()
 export class FeaturesRepository {
   private repository: Repository<Features>;
+  private accessFeatureRepository: Repository<AccessFeature>;
+
   constructor(
     @Inject('DB_POSTGRES')
     private dataSource: DataSource,
   ) {
     this.repository = this.dataSource.getRepository(Features);
+    this.accessFeatureRepository = this.dataSource.getRepository(AccessFeature);
   }
 
   async getFeatures(
@@ -59,20 +64,10 @@ export class FeaturesRepository {
 
   async getFeatureNoMenuId(): Promise<Features[]> {
     try {
-      const query = `SELECT 
-                      feature_id as "featureId",
-                      feature_name as "featureName",
-                      menu_id as "menuId", 
-                      description, 
-                      active, 
-                      created_at as "createdAt",
-                      created_by as "createdBy",
-                      updated_at as "updatedAt",
-                      updated_by as "updatedBy"
-                    FROM features 
-                      WHERE menu_id IS NULL`;
-      const features = await this.repository.query(query);
-      return features;
+      const getFeatureNoMenuId = await this.repository.find({
+        where: { menuId: IsNull() },
+      });
+      return getFeatureNoMenuId;
     } catch (error) {
       throw error;
     }
@@ -80,20 +75,11 @@ export class FeaturesRepository {
 
   async getFeatureByMenuId(menuId: string): Promise<Features[]> {
     try {
-      const query = `SELECT 
-                      feature_id as "featureId",
-                      feature_name as "featureName",
-                      menu_id as "menuId", 
-                      description, 
-                      active, 
-                      created_at as "createdAt",
-                      created_by as "createdBy",
-                      updated_at as "updatedAt",
-                      updated_by as "updatedBy"
-                    FROM features 
-                      WHERE menu_id = $1`;
-      const features = await this.repository.query(query, [menuId]);
-      return features;
+      const getFeatureByMenuId = await this.repository.find({
+        where: { menuId },
+      });
+
+      return getFeatureByMenuId;
     } catch (error) {
       throw error;
     }
@@ -212,33 +198,18 @@ export class FeaturesRepository {
     menuId: string,
   ): Promise<Features[]> {
     try {
-      const query = `
-        SELECT 
-          af.access_feature_id as "accessFeatureId",
-          -- af.role_id as "roleId",
-          -- r.role_name as "roleName",
-          -- r.role_type as "roleType",
-          af.feature_id as "featureId",
-          f.feature_name as "featureName",
-          f.active as active,
-          f.menu_id as "menuId",
-          af.can_access as "canAccess",
-          af.can_read as "canRead",
-          af.can_insert as "canInsert",
-          af.can_update as "canUpdate",
-          af.can_delete as "canDelete",
-          af.created_at as "createdAt",
-          af.updated_at as "updatedAt",
-          af.created_by as "createdBy",
-          af.updated_by as "updatedBy"
-        FROM access_feature af
-        INNER JOIN features f ON af.feature_id = f.feature_id
-        -- INNER JOIN roles r ON af.role_id = r.role_id
-        WHERE af.role_id = $1 AND f.menu_id = $2 AND f.active = true
-      `;
+      const getAccessFeature = await this.repository.find({
+        relations: ['accessFeature'],
+        where: {
+          menuId,
+          active: true,
+          accessFeature: {
+            role: { roleId },
+          },
+        },
+      });
 
-      const result = await this.repository.query(query, [roleId, menuId]);
-      return result;
+      return getAccessFeature;
     } catch (error) {
       throw error;
     }
@@ -248,21 +219,9 @@ export class FeaturesRepository {
     roleId: string,
   ): Promise<Features[]> {
     try {
-      const query = `SELECT features.feature_id as "featureId", 
-                            features.feature_name as "featureName",
-                            COALESCE(access_feature.can_access, false) as "canAccess", 
-                            COALESCE(access_feature.can_read, false) as "canRead",
-                            COALESCE(access_feature.can_update , false) as "canUpdate",
-                            COALESCE(access_feature.can_delete, false) as "canDelete",
-                            CASE WHEN 
-                              access_feature.access_feature_id IS NOT NULL THEN true 
-                              ELSE false 
-                            END as "selected"
-                    FROM features
-                    LEFT JOIN access_feature on features.feature_id = access_feature.feature_id 
-                    AND access_feature.role_id = $1
-                    WHERE features.menu_id IS NULL AND features.active = true`;
-      const result = await this.repository.query(query, [roleId]);
+      const query =
+        AccessFeatureQuery.GET_ALL_FEATURE_NO_MENU_ID_ACCESS_BY_ROLE_ID(roleId);
+      const result = await this.repository.query(query);
       return result;
     } catch (error) {
       throw error;
@@ -274,22 +233,11 @@ export class FeaturesRepository {
     roleId: string,
   ): Promise<Features[]> {
     try {
-      const query = `SELECT features.feature_id as "featureId", 
-                            features.feature_name as "featureName",
-                            COALESCE(access_feature.can_access, false) as "canAccess", 
-                            COALESCE(access_feature.can_read, false) as "canRead",
-                            COALESCE(access_feature.can_insert, false) as "canInsert",
-                            COALESCE(access_feature.can_update , false) as "canUpdate",
-                            COALESCE(access_feature.can_delete, false) as "canDelete",
-                            CASE WHEN 
-                              access_feature.access_feature_id IS NOT NULL THEN true 
-                              ELSE false 
-                            END as "selected"
-                    FROM features
-                    LEFT JOIN access_feature on features.feature_id = access_feature.feature_id 
-                    AND access_feature.role_id = $1
-                    WHERE features.menu_id = $2 AND features.active = true`;
-      const result = await this.repository.query(query, [roleId, menuId]);
+      const query = AccessFeatureQuery.GET_ALL_FEATURE_ACCESS_BY_MENU_ROLE_ID(
+        menuId,
+        roleId,
+      );
+      const result = await this.repository.query(query);
       return result;
     } catch (error) {
       throw error;
@@ -352,13 +300,13 @@ export class FeaturesRepository {
     try {
       await this.deleteAccessFeatureByRoleId(queryRunner, roleId);
       features.map(
-        async (feature) =>
+        async (feature) =>  
           await this.createAccessFeature(queryRunner, {
             ...feature,
             roleId,
             createdBy,
-          }),
-      );
+          })
+        );
 
       await queryRunner.commitTransaction();
     } catch (error) {
@@ -372,7 +320,7 @@ export class FeaturesRepository {
   async createAccessFeature(
     trx: QueryRunner,
     createAccessFeatureDto: CreateUpdateAccessFeatureDto,
-  ) {
+  ): Promise<void>{
     try {
       const {
         createdBy,
@@ -384,35 +332,19 @@ export class FeaturesRepository {
         canUpdate,
         canDelete,
       } = createAccessFeatureDto;
-
-      const query = `
-        INSERT INTO access_feature 
-          (role_id, feature_id, can_access, can_read, can_insert, can_update, can_delete, created_by, created_at, updated_at) 
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) 
-        RETURNING 
-                  -- access_feature_id as "accessFeatureId", 
-                  role_id as "roleId", 
-                  feature_id as "featureId", 
-                  can_access as "canAccess", 
-                  can_read as "canRead", 
-                  can_insert as "canInsert", 
-                  can_update as "canUpdate", 
-                  can_delete as "canDelete", 
-                  created_by as "createdBy"`;
-
-      const values = [
-        roleId,
-        featureId,
-        canAccess,
-        canRead,
-        canInsert,
+      
+      await trx.manager.insert(AccessFeature, {
+        createdBy, 
+        role: { roleId },
+        feature: { featureId }, 
+        canAccess, 
+        canRead, 
+        canInsert, 
         canUpdate,
         canDelete,
-        createdBy,
-      ];
-
-      const [create] = await trx.query(query, values);
-      return create;
+        createdAt: new Date(), 
+        updatedAt: new Date()
+      })
     } catch (error) {
       throw error;
     }
@@ -424,8 +356,7 @@ export class FeaturesRepository {
   ): Promise<void> {
     try {
       if (!trx) trx = this.repository.manager.connection.createQueryRunner();
-      const query = `DELETE FROM access_feature WHERE role_id = $1`;
-      await trx.query(query, [roleId]);
+      await trx.manager.delete(AccessFeature, { role: { roleId }});
     } catch (error) {
       throw error;
     }
