@@ -1,9 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, ILike, Repository } from 'typeorm';
 import { CreateRoleDto } from '../dto/create-roles.dto';
 import { UpdateRoleDto } from '../dto/update-roles.dto';
 import { Roles } from '../entity/roles.entity';
 import { RolesQuery } from '../query/roles.query';
+import { RoleType } from '../../common/enums/user-roles.enum';
 
 @Injectable()
 export class RolesRepository {
@@ -35,11 +36,11 @@ export class RolesRepository {
 
   async getRoleById(roleId: string): Promise<Roles | null> {
     try {
-      const data = await this.repository.query(
-        RolesQuery.GET_ROLE_BY_ID(roleId),
-      );
+      const role = await this.repository.findOne({
+        where: { roleId },
+      });
 
-      return data.length > 0 ? data[0] : null;
+      return role || null;
     } catch (error) {
       throw error;
     }
@@ -47,11 +48,11 @@ export class RolesRepository {
 
   async getRoleByName(roleName: string): Promise<Roles | null> {
     try {
-      const data = await this.repository.query(
-        RolesQuery.GET_ROLE_BY_NAME(roleName),
-      );
+      const role = await this.repository.findOne({
+        where: { roleName: ILike(roleName) },
+      });
 
-      return data.length > 0 ? data[0] : null;
+      return role || null;
     } catch (error) {
       throw error;
     }
@@ -64,16 +65,18 @@ export class RolesRepository {
     await queryRunner.startTransaction();
 
     try {
-      const newRole = await queryRunner.query(
-        RolesQuery.CREATE_ROLE(
-          dto.roleType,
-          dto.roleName,
-          dto.createdBy || null,
-        ),
-      );
+      const newRole = this.repository.create({
+        roleType: dto.roleType,
+        roleName: dto.roleName,
+        createdBy: dto.createdBy || null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const savedRole = await queryRunner.manager.save(newRole);
 
       await queryRunner.commitTransaction();
-      return newRole[0];
+      return savedRole.roleId;
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -89,14 +92,14 @@ export class RolesRepository {
     await queryRunner.startTransaction();
 
     try {
-      await queryRunner.query(
-        RolesQuery.UPDATE_ROLE(
-          dto.roleType || null,
-          dto.roleName || null,
-          dto.updatedBy || null,
-          roleId,
-        ),
-      );
+      const updateData = {
+        roleName: dto.roleName || undefined,
+        roleType: dto.roleType || undefined,
+        updatedBy: dto.updatedBy || undefined,
+        updatedAt: new Date(),
+      };
+
+      await queryRunner.manager.update(Roles, { roleId }, updateData);
 
       await queryRunner.commitTransaction();
     } catch (error) {
@@ -114,7 +117,7 @@ export class RolesRepository {
     await queryRunner.startTransaction();
 
     try {
-      await queryRunner.query(RolesQuery.DELETE_ROLE(roleId));
+      await queryRunner.manager.delete(Roles, { roleId });
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -126,9 +129,14 @@ export class RolesRepository {
 
   async getBaseRole(): Promise<Roles | null> {
     try {
-      const data = await this.repository.query(RolesQuery.GET_BASE_ROLE);
+      const role = await this.repository.findOne({
+        where: {
+          roleType: RoleType.Operator,
+          roleName: 'Base Operator',
+        },
+      });
 
-      return data.length > 0 ? data[0] : null;
+      return role || null;
     } catch (error) {
       throw error;
     }
