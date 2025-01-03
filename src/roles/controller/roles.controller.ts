@@ -68,7 +68,9 @@ export class RolesController {
       user.userId,
     );
     return {
-      data: result,
+      data: {
+        roleId: result,
+      },
     };
   }
 
