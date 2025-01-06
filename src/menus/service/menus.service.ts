@@ -64,7 +64,6 @@ export class MenusService {
     try {
       const menu = await this.menusRepository.getMenuById(menuId);
 
-      console.log(!menu);
       if (!menu) {
         throw new NotFoundException(
           ErrorMessages.menus.dynamicMessage(
