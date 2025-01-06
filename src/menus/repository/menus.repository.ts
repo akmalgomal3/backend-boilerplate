@@ -40,7 +40,7 @@ export class MenusRepository {
       return [menus, parseInt(count[0].count)];
     } catch (error) {
       throw new HttpException(
-        error.message || 'get all menu',
+        error.message || 'Error get all menu',
         error.status || 500,
       );
     }
@@ -54,7 +54,7 @@ export class MenusRepository {
       return data.length > 0 ? data[0] : null;
     } catch (error) {
       throw new HttpException(
-        error.message || 'get menu by menu id',
+        error.message || 'Error get menu by menu id',
         error.status || 500,
       );
     }
@@ -68,7 +68,7 @@ export class MenusRepository {
       return data.length > 0 ? data[0] : null;
     } catch (error) {
       throw new HttpException(
-        error.message || 'get menu by name',
+        error.message || 'Error get menu by name',
         error.status || 500,
       );
     }
@@ -80,7 +80,7 @@ export class MenusRepository {
       return await this.repository.query(query);
     } catch (error) {
       throw new HttpException(
-        error.message || 'get menu to create access menu',
+        error.message || 'Error get menu to create access menu',
         error.status || 500,
       );
     }
@@ -111,7 +111,7 @@ export class MenusRepository {
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw new HttpException(
-        error.message || 'error create menu',
+        error.message || 'Error create menu',
         error.status || 500,
       );
     } finally {
@@ -148,7 +148,7 @@ export class MenusRepository {
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw new HttpException(
-        error.message || 'update menu by menu id',
+        error.message || 'Error update menu by menu id',
         error.status || 500,
       );
     } finally {
@@ -168,7 +168,7 @@ export class MenusRepository {
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw new HttpException(
-        error.message || 'delete menu by menu id',
+        error.message || 'Error delete menu by menu id',
         error.status || 500,
       );
     } finally {
@@ -197,7 +197,10 @@ export class MenusRepository {
       });
       return getAccessMenu;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error get access menu by role id',
+        error.status || 500,
+      );
     }
   }
 
@@ -207,7 +210,10 @@ export class MenusRepository {
       const accessMenu = await this.repositoryAccessMenu.query(query);
       return accessMenu;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error get all menu access by role id',
+        error.status || 500,
+      );
     }
   }
 
@@ -226,7 +232,7 @@ export class MenusRepository {
       }
 
       throw new HttpException(
-        error.message || 'get access menu by access menu id',
+        error.message || 'Error get access menu by access menu id',
         error.status || 500,
       );
     }
@@ -255,7 +261,7 @@ export class MenusRepository {
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw new HttpException(
-        error.message || 'create bulk access menu',
+        error.message || 'Error create bulk access menu',
         error.status || 500,
       );
     } finally {
@@ -279,7 +285,7 @@ export class MenusRepository {
       return await create.identifiers[0].accessMenuId;
     } catch (error) {
       throw new HttpException(
-        error.message || 'create access menu',
+        error.message || 'Error create access menu',
         error.status || 500,
       );
     }
@@ -294,7 +300,7 @@ export class MenusRepository {
       await trx.manager.delete(AccessMenu, { role: { roleId } });
     } catch (error) {
       throw new HttpException(
-        error.message || 'delete access menu by role id',
+        error.message || 'Error delete access menu by role id',
         error.status || 500,
       );
     }
