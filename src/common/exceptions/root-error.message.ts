@@ -4,6 +4,7 @@ import { UtilsErrorMessage } from '../../libs/utils/errors/utils-error.message';
 import { RolesErrorMessage } from '../../roles/exception/roles.exceptions';
 import { MenusErrorMessage } from '../../menus/exception/menus.exception';
 import { FeaturesErrorMessage } from '../../features/exception/features.exception';
+import { UserLogActivitiesErrorMessage } from 'src/user_log_activities/errors/user-log-activities-error.message';
 
 export class ErrorMessages {
   static auth: AuthErrorMessage = new AuthErrorMessage();
@@ -12,4 +13,5 @@ export class ErrorMessages {
   static roles: RolesErrorMessage = new RolesErrorMessage();
   static menus: MenusErrorMessage = new MenusErrorMessage();
   static features: FeaturesErrorMessage = new FeaturesErrorMessage();
+  static userLogActivities: UserLogActivitiesErrorMessage = new UserLogActivitiesErrorMessage();
 }

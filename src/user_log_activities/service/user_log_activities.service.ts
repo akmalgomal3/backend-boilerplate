@@ -10,6 +10,7 @@ import { UtilsService } from 'src/libs/utils/services/utils.service';
 import { UserActivity } from '../types/user_activitity.type';
 import { GetUserActivityDto } from '../dto/get_user_activity_current.dto';
 import { PaginatedResponseDto } from 'src/common/dto/pagination.dto';
+import { ErrorMessages } from 'src/common/exceptions/root-error.message';
 
 @Injectable()
 export class UserLogActivitiesService {
@@ -108,7 +109,9 @@ export class UserLogActivitiesService {
   async getUserActivityCurrentUser(userId: string = null, getUserActivityCurrentUserDto: GetUserActivityDto): Promise<PaginatedResponseDto<UserActivity>>{
     try {
       if(!userId){
-        throw new BadRequestException('User id is required')
+        throw new BadRequestException(
+          ErrorMessages.userLogActivities.getMessage('USER_ID_IS_REQUIRED')
+        );
       }
 
       const {page = 1, limit = 10 } = getUserActivityCurrentUserDto
