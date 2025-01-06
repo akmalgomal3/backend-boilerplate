@@ -1,5 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { DataSource, EntityNotFoundError, QueryRunner, Repository } from 'typeorm';
+import { HttpException, Inject, Injectable } from '@nestjs/common';
+import {
+  DataSource,
+  EntityNotFoundError,
+  QueryRunner,
+  Repository,
+} from 'typeorm';
 import { CreateMenuDto } from '../dto/create-menu.dto';
 import { UpdateMenuDto } from '../dto/update-menu.dto';
 import { Menu } from '../entity/menus.entity';
@@ -34,7 +39,10 @@ export class MenusRepository {
 
       return [menus, parseInt(count[0].count)];
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'get all menu',
+        error.status || 500,
+      );
     }
   }
 
@@ -45,7 +53,10 @@ export class MenusRepository {
       );
       return data.length > 0 ? data[0] : null;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'get menu by menu id',
+        error.status || 500,
+      );
     }
   }
 
@@ -56,7 +67,10 @@ export class MenusRepository {
       );
       return data.length > 0 ? data[0] : null;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'get menu by name',
+        error.status || 500,
+      );
     }
   }
 
@@ -65,7 +79,10 @@ export class MenusRepository {
       const query = MenusQuery.GET_MENUS_TO_CREATE_ACCESS;
       return await this.repository.query(query);
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'get menu to create access menu',
+        error.status || 500,
+      );
     }
   }
 
@@ -93,7 +110,10 @@ export class MenusRepository {
       return newMenu[0];
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw error;
+      throw new HttpException(
+        error.message || 'error create menu',
+        error.status || 500,
+      );
     } finally {
       await queryRunner.release();
     }
@@ -127,7 +147,10 @@ export class MenusRepository {
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw error;
+      throw new HttpException(
+        error.message || 'update menu by menu id',
+        error.status || 500,
+      );
     } finally {
       await queryRunner.release();
     }
@@ -144,7 +167,10 @@ export class MenusRepository {
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw error;
+      throw new HttpException(
+        error.message || 'delete menu by menu id',
+        error.status || 500,
+      );
     } finally {
       await queryRunner.release();
     }
@@ -153,13 +179,22 @@ export class MenusRepository {
   async getAccessMenuByRoleId(roleId: string): Promise<Menu[]> {
     try {
       const [getAccessMenu] = await this.repository.findAndCount({
-        select: ['menuId', 'menuName', 'parentMenuId', 'hierarchyLevel', 'routePath', 'icon', 'active', 'description'],
-        where: { 
+        select: [
+          'menuId',
+          'menuName',
+          'parentMenuId',
+          'hierarchyLevel',
+          'routePath',
+          'icon',
+          'active',
+          'description',
+        ],
+        where: {
           active: true,
-          accessMenu: { role: { roleId } } 
+          accessMenu: { role: { roleId } },
         },
         order: { hierarchyLevel: 'ASC' },
-      })
+      });
       return getAccessMenu;
     } catch (error) {
       throw error;
@@ -178,19 +213,24 @@ export class MenusRepository {
 
   async getAccessMenuById(accessMenuId: string): Promise<AccessMenu> {
     try {
-      const getById = await this.repositoryAccessMenu.findOneByOrFail({ accessMenuId });
+      const getById = await this.repositoryAccessMenu.findOneByOrFail({
+        accessMenuId,
+      });
       return getById;
     } catch (error) {
-      if (error instanceof EntityNotFoundError){
+      if (error instanceof EntityNotFoundError) {
         ErrorMessages.menus.dynamicMessage(
-          ErrorMessages.menus.getMessage('ERRROR_GET_ONE_ACCESS_MENU_BY_ID'), 
-          { accessMenuId }
+          ErrorMessages.menus.getMessage('ERRROR_GET_ONE_ACCESS_MENU_BY_ID'),
+          { accessMenuId },
         );
       }
 
-      throw error;
+      throw new HttpException(
+        error.message || 'get access menu by access menu id',
+        error.status || 500,
+      );
     }
-  } 
+  }
 
   async createBulkAccessMenu(
     roleId: string,
@@ -214,7 +254,10 @@ export class MenusRepository {
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw error;
+      throw new HttpException(
+        error.message || 'create bulk access menu',
+        error.status || 500,
+      );
     } finally {
       await queryRunner.release();
     }
@@ -225,17 +268,20 @@ export class MenusRepository {
     { roleId, menuId, createdBy },
   ): Promise<string> {
     try {
-      const create = await trx.manager.insert(AccessMenu,{
-        role: {roleId},
-        menu: {menuId},
+      const create = await trx.manager.insert(AccessMenu, {
+        role: { roleId },
+        menu: { menuId },
         createdBy,
         createdAt: new Date(),
         updatedAt: new Date(),
-      })
-     
+      });
+
       return await create.identifiers[0].accessMenuId;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'create access menu',
+        error.status || 500,
+      );
     }
   }
 
@@ -247,7 +293,10 @@ export class MenusRepository {
       if (!trx) trx = this.repository.manager.connection.createQueryRunner();
       await trx.manager.delete(AccessMenu, { role: { roleId } });
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'delete access menu by role id',
+        error.status || 500,
+      );
     }
   }
 }
