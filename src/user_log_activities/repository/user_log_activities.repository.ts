@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { HttpException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { UserLogActivities } from '../entity/user_log_activities.entity';
 import { InjectModel } from '@nestjs/mongoose';
@@ -17,7 +17,10 @@ export class UserLogActivitiesRepository {
     try {
       return await this.userActivitiesModel.create(createUserLogActivitiy);
     } catch (e) {
-      throw new InternalServerErrorException(e?.message)
+      throw new HttpException(
+        e.message || 'Error create user log activities',
+        e.status || 500,
+      );
     }
   }
 
@@ -28,7 +31,10 @@ export class UserLogActivitiesRepository {
 
       return [data, totalItems]
     } catch (e) {
-      throw new InternalServerErrorException(e?.message)
+      throw new HttpException(
+        e.message || 'Error get user log activities by current user',
+        e.status || 500,
+      );
     }
   }
 
@@ -39,7 +45,10 @@ export class UserLogActivitiesRepository {
 
       return [data, totalItems]
     } catch (e) {
-      throw new InternalServerErrorException(e?.message)
+      throw new HttpException(
+        e.message || 'Error get user log activities by filter',
+        e.status || 500,
+      );
     }
   }
 
@@ -134,7 +143,10 @@ export class UserLogActivitiesRepository {
 
       return [data, totalItems]
     } catch (e) {
-      throw new InternalServerErrorException(e?.message)
+      throw new HttpException(
+        e.message || 'Error get user log activities logged in user',
+        e.status || 500,
+      );
     }
   }
 
@@ -143,7 +155,10 @@ export class UserLogActivitiesRepository {
       const result = await this.userActivitiesModel.updateOne({_id: id}, {$set: {"auth_details.logout_time": new Date()}}).exec();
       return result.modifiedCount || 0;
     } catch (e) {
-      throw new InternalServerErrorException(e?.message)
+      throw new HttpException(
+        e.message || 'Error update user log activities logout time by user',
+        e.status || 500,
+      );
     }
   }
 
@@ -152,7 +167,10 @@ export class UserLogActivitiesRepository {
       const result = await this.userActivitiesModel.updateMany(filter, { $set: {is_deleted: true}}).exec();
       return result.modifiedCount || 0;
     } catch (e) {
-      throw new InternalServerErrorException(e?.message)
+      throw new HttpException(
+        e.message || 'Error soft delete user log activities by filter',
+        e.status || 500,
+      );
     }
   }
 
