@@ -1,5 +1,12 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { DataSource, ILike, IsNull, Not, QueryRunner, Repository } from 'typeorm';
+import { HttpException, Inject, Injectable } from '@nestjs/common';
+import {
+  DataSource,
+  ILike,
+  IsNull,
+  Not,
+  QueryRunner,
+  Repository,
+} from 'typeorm';
 import { CreateFeatureDto } from '../dto/create-features.dto';
 import { UpdateFeatureDto } from '../dto/update-features.dto';
 import { Features } from '../entity/features.entity';
@@ -34,7 +41,10 @@ export class FeaturesRepository {
 
       return [features, count];
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error get all features',
+        error.status || 500,
+      );
     }
   }
 
@@ -46,7 +56,10 @@ export class FeaturesRepository {
 
       return feature || null;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error get feature by feature id',
+        error.status || 500,
+      );
     }
   }
 
@@ -58,7 +71,10 @@ export class FeaturesRepository {
 
       return feature || null;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error get feature by feature name',
+        error.status || 500,
+      );
     }
   }
 
@@ -69,7 +85,10 @@ export class FeaturesRepository {
       });
       return getFeatureNoMenuId;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error get features no menu id',
+        error.status || 500,
+      );
     }
   }
 
@@ -81,7 +100,10 @@ export class FeaturesRepository {
 
       return getFeatureByMenuId;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error get features by menu id',
+        error.status || 500,
+      );
     }
   }
 
@@ -108,7 +130,10 @@ export class FeaturesRepository {
       return savedFeature.featureId;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw error;
+      throw new HttpException(
+        error.message || 'Error create feature',
+        error.status || 500,
+      );
     } finally {
       await queryRunner.release();
     }
@@ -139,7 +164,10 @@ export class FeaturesRepository {
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw error;
+      throw new HttpException(
+        error.message || 'Error update feature by feature id',
+        error.status || 500,
+      );
     } finally {
       await queryRunner.release();
     }
@@ -156,7 +184,10 @@ export class FeaturesRepository {
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw error;
+      throw new HttpException(
+        error.message || 'Error delete feature by feature id',
+        error.status || 500,
+      );
     } finally {
       await queryRunner.release();
     }
@@ -164,11 +195,14 @@ export class FeaturesRepository {
 
   async getAccessFeatureNoMenuId(roleId: string): Promise<Features[]> {
     try {
-      const query = AccessFeatureQuery.GET_ACCESS_FEATURE_NO_MENU_ID(roleId)
+      const query = AccessFeatureQuery.GET_ACCESS_FEATURE_NO_MENU_ID(roleId);
       const features = await this.repository.query(query);
-      return features
+      return features;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error get access features no menu id',
+        error.status || 500,
+      );
     }
   }
 
@@ -190,7 +224,10 @@ export class FeaturesRepository {
 
       return getAccessFeature;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error get access features by role menu id',
+        error.status || 500,
+      );
     }
   }
 
@@ -203,7 +240,10 @@ export class FeaturesRepository {
       const result = await this.repository.query(query);
       return result;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error get all features no menu id access by role id',
+        error.status || 500,
+      );
     }
   }
 
@@ -219,7 +259,10 @@ export class FeaturesRepository {
       const result = await this.repository.query(query);
       return result;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error get all features access by menu role id',
+        error.status || 500,
+      );
     }
   }
 
@@ -235,18 +278,21 @@ export class FeaturesRepository {
     try {
       await this.deleteAccessFeatureByRoleId(queryRunner, roleId);
       features.map(
-        async (feature) =>  
+        async (feature) =>
           await this.createAccessFeature(queryRunner, {
             ...feature,
             roleId,
             createdBy,
-          })
-        );
+          }),
+      );
 
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw error;
+      throw new HttpException(
+        error.message || 'Error create bulk access feature',
+        error.status || 500,
+      );
     } finally {
       await queryRunner.release();
     }
@@ -255,7 +301,7 @@ export class FeaturesRepository {
   async createAccessFeature(
     trx: QueryRunner,
     createAccessFeatureDto: CreateUpdateAccessFeatureDto,
-  ): Promise<void>{
+  ): Promise<void> {
     try {
       const {
         createdBy,
@@ -267,21 +313,24 @@ export class FeaturesRepository {
         canUpdate,
         canDelete,
       } = createAccessFeatureDto;
-      
+
       await trx.manager.insert(AccessFeature, {
-        createdBy, 
+        createdBy,
         role: { roleId },
-        feature: { featureId }, 
-        canAccess, 
-        canRead, 
-        canInsert, 
+        feature: { featureId },
+        canAccess,
+        canRead,
+        canInsert,
         canUpdate,
         canDelete,
-        createdAt: new Date(), 
-        updatedAt: new Date()
-      })
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error create access feature',
+        error.status || 500,
+      );
     }
   }
 
@@ -291,9 +340,12 @@ export class FeaturesRepository {
   ): Promise<void> {
     try {
       if (!trx) trx = this.repository.manager.connection.createQueryRunner();
-      await trx.manager.delete(AccessFeature, { role: { roleId }});
+      await trx.manager.delete(AccessFeature, { role: { roleId } });
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error delete access feature by role id',
+        error.status || 500,
+      );
     }
   }
 }
