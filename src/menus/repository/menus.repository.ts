@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpException, Inject, Injectable } from '@nestjs/common';
 import {
   DataSource,
   EntityNotFoundError,
@@ -47,7 +47,10 @@ export class MenusRepository {
 
       return [menus, totalCount];
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error get all menu',
+        error.status || 500,
+      );
     }
   }
 
@@ -59,7 +62,10 @@ export class MenusRepository {
 
       return menu || null;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error get menu by menu id',
+        error.status || 500,
+      );
     }
   }
 
@@ -71,7 +77,10 @@ export class MenusRepository {
 
       return menu || null;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error get menu by name',
+        error.status || 500,
+      );
     }
   }
 
@@ -80,7 +89,10 @@ export class MenusRepository {
       const query = MenusQuery.GET_MENUS_TO_CREATE_ACCESS;
       return await this.repository.query(query);
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error get menu to create access menu',
+        error.status || 500,
+      );
     }
   }
 
@@ -110,7 +122,10 @@ export class MenusRepository {
       return savedMenu.menuId;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw error;
+      throw new HttpException(
+        error.message || 'Error create menu',
+        error.status || 500,
+      );
     } finally {
       await queryRunner.release();
     }
@@ -144,7 +159,10 @@ export class MenusRepository {
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw error;
+      throw new HttpException(
+        error.message || 'Error update menu by menu id',
+        error.status || 500,
+      );
     } finally {
       await queryRunner.release();
     }
@@ -161,7 +179,10 @@ export class MenusRepository {
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw error;
+      throw new HttpException(
+        error.message || 'Error delete menu by menu id',
+        error.status || 500,
+      );
     } finally {
       await queryRunner.release();
     }
@@ -188,7 +209,10 @@ export class MenusRepository {
       });
       return getAccessMenu;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error get access menu by role id',
+        error.status || 500,
+      );
     }
   }
 
@@ -198,7 +222,10 @@ export class MenusRepository {
       const accessMenu = await this.repositoryAccessMenu.query(query);
       return accessMenu;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error get all menu access by role id',
+        error.status || 500,
+      );
     }
   }
 
@@ -216,7 +243,10 @@ export class MenusRepository {
         );
       }
 
-      throw error;
+      throw new HttpException(
+        error.message || 'Error get access menu by access menu id',
+        error.status || 500,
+      );
     }
   }
 
@@ -242,7 +272,10 @@ export class MenusRepository {
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw error;
+      throw new HttpException(
+        error.message || 'Error create bulk access menu',
+        error.status || 500,
+      );
     } finally {
       await queryRunner.release();
     }
@@ -263,7 +296,10 @@ export class MenusRepository {
 
       return await create.identifiers[0].accessMenuId;
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error create access menu',
+        error.status || 500,
+      );
     }
   }
 
@@ -275,7 +311,10 @@ export class MenusRepository {
       if (!trx) trx = this.repository.manager.connection.createQueryRunner();
       await trx.manager.delete(AccessMenu, { role: { roleId } });
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error delete access menu by role id',
+        error.status || 500,
+      );
     }
   }
 }
