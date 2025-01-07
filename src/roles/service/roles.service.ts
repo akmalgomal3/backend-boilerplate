@@ -14,6 +14,7 @@ import {
 } from '../../common/dto/pagination.dto';
 import { RoleType } from '../../common/enums/user-roles.enum';
 import { ErrorMessages } from '../../common/exceptions/root-error.message';
+import { HeaderTable } from '../../common/types/header-table.type';
 import { FormInfo } from 'src/common/types/form-info.type';
 
 @Injectable()
@@ -246,55 +247,115 @@ export class RolesService {
     }
   }
 
+  async getRoleHeader(): Promise<HeaderTable[]> {
+    try {
+      return [
+        {
+          key: 'roleName',
+          label: 'Role Name',
+          filterable: true,
+          sortable: true,
+          editable: true,
+          searchable: true,
+          type: 'string',
+          option: {},
+          inlineEdit: true,
+        },
+        {
+          key: 'roleType',
+          label: 'Role Type',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'enum',
+          option: {
+            type: 'url',
+            value: '/options/enum/RoleType',
+          },
+          inlineEdit: false,
+        },
+        {
+          key: 'createdAt',
+          label: 'Created At',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: false,
+          type: 'date',
+          option: {},
+          inlineEdit: false,
+        },
+        {
+          key: 'updatedAt',
+          label: 'Last Updated',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: false,
+          type: 'date',
+          option: {},
+          inlineEdit: false,
+        },
+      ];
+    } catch (e) {
+      throw new HttpException(
+        e.message ||
+          ErrorMessages.roles.getMessage('ERROR_GETTING_ROLE_HEADER'),
+        e.status || 500,
+      );
+    }
+  }
+
   async formCreateUpdateRole(
-    // formName: string, 
+    // formName: string,
     roleId: string = null
   ): Promise<FormInfo>{
     const formInfo: FormInfo = {
-      id: null, 
-      title: `Create Role`, 
+      id: null,
+      title: `Create Role`,
       description: `Create Role`,
       fields: [
         {
-          type: "text", 
-          key: "roleId", 
-          label: "Role Id", 
-          value: "", 
-          required: true, 
-          placeholder: "", 
-          option: {}, 
-          visible: true, 
-          disable: true, 
-          prefix: "", 
+          type: "text",
+          key: "roleId",
+          label: "Role Id",
+          value: "",
+          required: true,
+          placeholder: "",
+          option: {},
+          visible: true,
+          disable: true,
+          prefix: "",
           suffix: ""
         },
         {
-          type: "text", 
-          key: "roleName", 
-          label: "Role Name", 
-          value: "", 
-          required: true, 
-          placeholder: "input role name", 
-          option: {}, 
-          visible: false, 
-          disable: false, 
-          prefix: "<UserOutlined />", 
+          type: "text",
+          key: "roleName",
+          label: "Role Name",
+          value: "",
+          required: true,
+          placeholder: "input role name",
+          option: {},
+          visible: false,
+          disable: false,
+          prefix: "<UserOutlined />",
           suffix: ""
-        }, 
+        },
         {
-          type: "enum", 
-          key: "roleType", 
-          label: "Role Type", 
-          value: "", 
-          required: true, 
-          placeholder: "input role type", 
+          type: "enum",
+          key: "roleType",
+          label: "Role Type",
+          value: "",
+          required: true,
+          placeholder: "input role type",
           option: {
-            type: "url", 
+            type: "url",
             value: "/options/enum/user-roles"
-          }, 
-          visible: false, 
-          disable: false, 
-          prefix:"", 
+          },
+          visible: false,
+          disable: false,
+          prefix:"",
           suffix: ""
         }
       ]
@@ -304,7 +365,7 @@ export class RolesService {
       formInfo.title = "Update Role"
       formInfo.description = "Update Role"
       formInfo.id = roleId
-      
+
       const roleOne = await this.getRoleById(roleId)
       for (const field of formInfo.fields){
         field.value = roleOne[field.key]
