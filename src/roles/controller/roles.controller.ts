@@ -19,6 +19,7 @@ import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AuthorizedRoles } from '../../common/decorators/authorized-roles.decorator';
 import { RoleType } from '../../common/enums/user-roles.enum';
 import { FormInfo } from 'src/common/types/form-info.type';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiBearerAuth()
 @AuthorizedRoles(RoleType.Admin)
@@ -26,18 +27,16 @@ import { FormInfo } from 'src/common/types/form-info.type';
 export class RolesController {
   constructor(private rolesService: RolesService) {}
 
-  @ApiQuery({ name: 'page', required: false })
-  @ApiQuery({ name: 'limit', required: false })
-  @ApiQuery({ name: 'search', required: false })
-  @Get()
-  async getRoles(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-    @Query('search') search: string = '',
-  ) {
-    const result = await this.rolesService.getRoles({ page, limit }, search);
+  @Post()
+  async getRoles(@Body() paginationDto: PaginationDto) {
+    const result = await this.rolesService.getRoles(paginationDto);
     return {
-      data: result.data,
+      data: {
+        body: result.data,
+        sort: paginationDto.sorts || [],
+        filter: paginationDto.filters || [],
+        search: paginationDto.search || [],
+      },
       metadata: result.metadata,
     };
   }
