@@ -16,24 +16,45 @@ import { RoleType } from '../../common/enums/user-roles.enum';
 import { ErrorMessages } from '../../common/exceptions/root-error.message';
 import { HeaderTable } from '../../common/types/header-table.type';
 import { FormInfo } from 'src/common/types/form-info.type';
-import { IsUUID } from 'class-validator';
 
 @Injectable()
 export class RolesService {
   constructor(private roleRepository: RolesRepository) {}
 
-  async getRoles(
-    dto: PaginationDto,
-    search: string,
-  ): Promise<PaginatedResponseDto<Roles>> {
+  async getRoles(dto: PaginationDto): Promise<PaginatedResponseDto<Roles>> {
     try {
-      const { page = 1, limit = 10 } = dto;
+      const { page = 1, limit = 10, filters, sorts, search } = dto;
       const skip = (page - 1) * limit;
 
+      const filterConditions =
+        filters.length > 0
+          ? filters.map((filter) => ({
+              key: filter.key,
+              value: filter.value,
+              start: filter.start,
+              end: filter.end,
+            }))
+          : [];
+      const sortConditions =
+        sorts.length > 0
+          ? sorts.map((sort) => ({
+              key: sort.key,
+              direction: sort.direction,
+            }))
+          : [];
+      const searchQuery =
+        search.length > 0
+          ? {
+              query: search[0].query,
+              searchBy: search[0].searchBy,
+            }
+          : null;
       const [data, totalItems] = await this.roleRepository.getRoles(
         skip,
         limit,
-        search,
+        filterConditions,
+        sortConditions,
+        searchQuery,
       );
       const totalPages = Math.ceil(totalItems / limit);
 
@@ -308,70 +329,68 @@ export class RolesService {
     }
   }
 
-  async formCreateUpdateRole(
-    roleId: string = null
-  ): Promise<FormInfo>{
+  async formCreateUpdateRole(roleId: string = null): Promise<FormInfo> {
     const formInfo: FormInfo = {
       id: null,
       title: `Create Role`,
       description: `Create Role`,
       fields: [
         {
-          type: "text",
-          key: "roleId",
-          label: "Role Id",
-          value: "",
+          type: 'text',
+          key: 'roleId',
+          label: 'Role Id',
+          value: '',
           required: true,
-          placeholder: "",
+          placeholder: '',
           option: {},
           visible: true,
           disable: true,
-          prefix: "",
-          suffix: ""
+          prefix: '',
+          suffix: '',
         },
         {
-          type: "text",
-          key: "roleName",
-          label: "Role Name",
-          value: "",
+          type: 'text',
+          key: 'roleName',
+          label: 'Role Name',
+          value: '',
           required: true,
-          placeholder: "input role name",
+          placeholder: 'input role name',
           option: {},
           visible: false,
           disable: false,
-          prefix: "<UserOutlined />",
-          suffix: ""
+          prefix: '<UserOutlined />',
+          suffix: '',
         },
         {
-          type: "enum",
-          key: "roleType",
-          label: "Role Type",
-          value: "",
+          type: 'enum',
+          key: 'roleType',
+          label: 'Role Type',
+          value: '',
           required: true,
-          placeholder: "input role type",
+          placeholder: 'input role type',
           option: {
-            type: "url",
-            value: "/options/enum/user-roles"
+            type: 'url',
+            value: '/options/enum/user-roles',
           },
           visible: false,
           disable: false,
-          prefix:"",
-          suffix: ""
-        }
-      ]
-    }
+          prefix: '',
+          suffix: '',
+        },
+      ],
+    };
 
-    if(roleId){
-      formInfo.title = "Update Role"
-      formInfo.description = "Update Role"
-      formInfo.id = roleId
+    if (roleId) {
+      formInfo.title = 'Update Role';
+      formInfo.description = 'Update Role';
+      formInfo.id = roleId;
 
-      const roleOne = await this.getRoleById(roleId)
-      for (const field of formInfo.fields){
-        field.value = roleOne[field.key]
+      const roleOne = await this.getRoleById(roleId);
+      for (const field of formInfo.fields) {
+        field.value = roleOne[field.key];
       }
     }
 
-    return formInfo
+    return formInfo;
   }
 }
