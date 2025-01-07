@@ -16,6 +16,7 @@ import { RoleType } from '../../common/enums/user-roles.enum';
 import { ErrorMessages } from '../../common/exceptions/root-error.message';
 import { HeaderTable } from '../../common/types/header-table.type';
 import { FormInfo } from 'src/common/types/form-info.type';
+import { IsUUID } from 'class-validator';
 
 @Injectable()
 export class RolesService {
@@ -308,7 +309,6 @@ export class RolesService {
   }
 
   async formCreateUpdateRole(
-    // formName: string,
     roleId: string = null
   ): Promise<FormInfo>{
     const formInfo: FormInfo = {

@@ -63,7 +63,7 @@ export class RolesController {
   @Get('form/create-update')
   @ApiQuery({ name: 'id', required: false })
   async getFormCreateUpdate(
-    @Query('id') roleId: string,
+    @Query('id', new ParseUUIDPipe({ optional: true })) roleId: string,
   ): Promise<{ data: FormInfo }> {
     const formInfo = await this.rolesService.formCreateUpdateRole(roleId);
     return {
