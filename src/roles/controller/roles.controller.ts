@@ -97,4 +97,12 @@ export class RolesController {
       data: result,
     };
   }
+
+  @Get('/header/info')
+  async getHeaderInfo() {
+    const result = await this.rolesService.getRoleHeader();
+    return {
+      data: result,
+    };
+  }
 }

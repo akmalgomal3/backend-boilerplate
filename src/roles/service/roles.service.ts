@@ -14,6 +14,7 @@ import {
 } from '../../common/dto/pagination.dto';
 import { RoleType } from '../../common/enums/user-roles.enum';
 import { ErrorMessages } from '../../common/exceptions/root-error.message';
+import { HeaderTable } from '../../common/types/header-table.type';
 
 @Injectable()
 export class RolesService {
@@ -241,6 +242,66 @@ export class RolesService {
         error.message ||
           ErrorMessages.roles.getMessage('ERROR_GETTING_BASE_ROLE'),
         error.status || 500,
+      );
+    }
+  }
+
+  async getRoleHeader(): Promise<HeaderTable[]> {
+    try {
+      return [
+        {
+          key: 'roleName',
+          label: 'Role Name',
+          filterable: true,
+          sortable: true,
+          editable: true,
+          searchable: true,
+          type: 'string',
+          option: {},
+          inlineEdit: true,
+        },
+        {
+          key: 'roleType',
+          label: 'Role Type',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'enum',
+          option: {
+            type: 'url',
+            value: '/options/enum/RoleType',
+          },
+          inlineEdit: false,
+        },
+        {
+          key: 'createdAt',
+          label: 'Created At',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: false,
+          type: 'date',
+          option: {},
+          inlineEdit: false,
+        },
+        {
+          key: 'updatedAt',
+          label: 'Last Updated',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: false,
+          type: 'date',
+          option: {},
+          inlineEdit: false,
+        },
+      ];
+    } catch (e) {
+      throw new HttpException(
+        e.message ||
+          ErrorMessages.roles.getMessage('ERROR_GETTING_ROLE_HEADER'),
+        e.status || 500,
       );
     }
   }
