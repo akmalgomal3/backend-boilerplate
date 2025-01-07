@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -17,6 +18,7 @@ import { User } from '../../common/decorators/user.decorator';
 import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AuthorizedRoles } from '../../common/decorators/authorized-roles.decorator';
 import { RoleType } from '../../common/enums/user-roles.enum';
+import { FormInfo } from 'src/common/types/form-info.type';
 
 @ApiBearerAuth()
 @AuthorizedRoles(RoleType.Admin)
@@ -55,6 +57,17 @@ export class RolesController {
     const result = await this.rolesService.getRoleByName(roleName);
     return {
       data: result,
+    };
+  }
+
+  @Get('form/create-update')
+  @ApiQuery({ name: 'id', required: false })
+  async getFormCreateUpdate(
+    @Query('id') roleId: string,
+  ): Promise<{ data: FormInfo }> {
+    const formInfo = await this.rolesService.formCreateUpdateRole(roleId);
+    return {
+      data: formInfo,
     };
   }
 

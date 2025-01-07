@@ -15,6 +15,7 @@ import {
 import { RoleType } from '../../common/enums/user-roles.enum';
 import { ErrorMessages } from '../../common/exceptions/root-error.message';
 import { HeaderTable } from '../../common/types/header-table.type';
+import { FormInfo } from 'src/common/types/form-info.type';
 
 @Injectable()
 export class RolesService {
@@ -304,5 +305,73 @@ export class RolesService {
         e.status || 500,
       );
     }
+  }
+
+  async formCreateUpdateRole(
+    // formName: string,
+    roleId: string = null
+  ): Promise<FormInfo>{
+    const formInfo: FormInfo = {
+      id: null,
+      title: `Create Role`,
+      description: `Create Role`,
+      fields: [
+        {
+          type: "text",
+          key: "roleId",
+          label: "Role Id",
+          value: "",
+          required: true,
+          placeholder: "",
+          option: {},
+          visible: true,
+          disable: true,
+          prefix: "",
+          suffix: ""
+        },
+        {
+          type: "text",
+          key: "roleName",
+          label: "Role Name",
+          value: "",
+          required: true,
+          placeholder: "input role name",
+          option: {},
+          visible: false,
+          disable: false,
+          prefix: "<UserOutlined />",
+          suffix: ""
+        },
+        {
+          type: "enum",
+          key: "roleType",
+          label: "Role Type",
+          value: "",
+          required: true,
+          placeholder: "input role type",
+          option: {
+            type: "url",
+            value: "/options/enum/user-roles"
+          },
+          visible: false,
+          disable: false,
+          prefix:"",
+          suffix: ""
+        }
+      ]
+    }
+
+    if(roleId){
+      formInfo.title = "Update Role"
+      formInfo.description = "Update Role"
+      formInfo.id = roleId
+
+      const roleOne = await this.getRoleById(roleId)
+      for (const field of formInfo.fields){
+        field.value = roleOne[field.key]
+      }
+    }
+
+    return formInfo
   }
 }
