@@ -1,15 +1,26 @@
-import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import * as CryptoJS from 'crypto-js';
 import { ConfigService } from '@nestjs/config';
 import * as geoip from 'geoip-lite';
 import { result } from 'lodash';
 import { ErrorMessages } from '../../../common/exceptions/root-error.message';
+import { DataSource, Repository } from 'typeorm';
+import { Roles } from '../../../roles/entity/roles.entity';
 
 @Injectable()
 export class UtilsService {
   private readonly secretKey: string;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    @Inject('DB_POSTGRES')
+    private dataSource: DataSource,
+  ) {
     this.secretKey = this.configService.get<string>('SECRET_KEY');
   }
 
@@ -159,5 +170,59 @@ export class UtilsService {
     this.validateStrongPassword(decryptedPassword);
 
     return decryptedPassword;
+  }
+
+  async getAllQuery(
+    skip: number,
+    take: number,
+    filters: any[],
+    sorts: any[],
+    searchQuery: any,
+    tableName: string,
+    repository: Repository<any>,
+  ): Promise<[any[], number]> {
+    try {
+      let query = repository.createQueryBuilder(tableName);
+      if (filters.length > 0) {
+        filters.forEach((filter) => {
+          if (filter.start && filter.end) {
+            query = query.andWhere(
+              `${tableName}.${filter.key} BETWEEN :start AND :end`,
+              { start: filter.start, end: filter.end },
+            );
+          } else {
+            query = query.andWhere(
+              `${tableName}.${filter.key} IN (:...values)`,
+              {
+                values: filter.value,
+              },
+            );
+          }
+        });
+      }
+      if (searchQuery) {
+        const { query: searchText, searchBy } = searchQuery;
+        searchBy.forEach((field: any) => {
+          query = query.andWhere(`${tableName}.${field} ILIKE :search`, {
+            search: `%${searchText}%`,
+          });
+        });
+      }
+      if (sorts.length > 0) {
+        sorts.forEach((sort) => {
+          query = query.addOrderBy(
+            `${tableName}.${sort.key}`,
+            sort.direction.toUpperCase(),
+          );
+        });
+      }
+      query = query.skip(skip).take(take);
+
+      const [data, count] = await query.getManyAndCount();
+
+      return [data, count];
+    } catch (e) {
+      throw e;
+    }
   }
 }

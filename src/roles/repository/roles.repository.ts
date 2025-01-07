@@ -3,8 +3,8 @@ import { DataSource, ILike, Repository } from 'typeorm';
 import { CreateRoleDto } from '../dto/create-roles.dto';
 import { UpdateRoleDto } from '../dto/update-roles.dto';
 import { Roles } from '../entity/roles.entity';
-import { RolesQuery } from '../query/roles.query';
 import { RoleType } from '../../common/enums/user-roles.enum';
+import { UtilsService } from '../../libs/utils/services/utils.service';
 
 @Injectable()
 export class RolesRepository {
@@ -13,6 +13,7 @@ export class RolesRepository {
   constructor(
     @Inject('DB_POSTGRES')
     private dataSource: DataSource,
+    private utilsService: UtilsService,
   ) {
     this.repository = this.dataSource.getRepository(Roles);
   }
@@ -25,44 +26,17 @@ export class RolesRepository {
     searchQuery: any,
   ): Promise<[Roles[], number]> {
     try {
-      let query = this.repository.createQueryBuilder('roles');
-      if (filters.length > 0) {
-        filters.forEach((filter) => {
-          if (filter.start && filter.end) {
-            query = query.andWhere(
-              `roles.${filter.key} BETWEEN :start AND :end`,
-              { start: filter.start, end: filter.end },
-            );
-          } else {
-            query = query.andWhere(`roles.${filter.key} IN (:...values)`, {
-              values: filter.value,
-            });
-          }
-        });
-      }
-      if (searchQuery) {
-        const { query: searchText, searchBy } = searchQuery;
-        searchBy.forEach((field: any) => {
-          query = query.andWhere(`roles.${field} ILIKE :search`, {
-            search: `%${searchText}%`,
-          });
-        });
-      }
-      if (sorts.length > 0) {
-        sorts.forEach((sort) => {
-          query = query.addOrderBy(
-            `roles.${sort.key}`,
-            sort.direction.toUpperCase(),
-          );
-        });
-      }
-      query = query.skip(skip).take(take);
-
-      const [roles, count] = await query.getManyAndCount();
-
-      return [roles, count];
-    } catch (error) {
-      throw error;
+      return await this.utilsService.getAllQuery(
+        skip,
+        take,
+        filters,
+        sorts,
+        searchQuery,
+        'roles',
+        this.repository,
+      );
+    } catch (e) {
+      throw e;
     }
   }
 

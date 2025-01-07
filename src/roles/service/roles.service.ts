@@ -16,10 +16,14 @@ import { RoleType } from '../../common/enums/user-roles.enum';
 import { ErrorMessages } from '../../common/exceptions/root-error.message';
 import { HeaderTable } from '../../common/types/header-table.type';
 import { FormInfo } from 'src/common/types/form-info.type';
+import { UtilsService } from '../../libs/utils/services/utils.service';
 
 @Injectable()
 export class RolesService {
-  constructor(private roleRepository: RolesRepository) {}
+  constructor(
+    private roleRepository: RolesRepository,
+    private utilsService: UtilsService,
+  ) {}
 
   async getRoles(dto: PaginationDto): Promise<PaginatedResponseDto<Roles>> {
     try {
