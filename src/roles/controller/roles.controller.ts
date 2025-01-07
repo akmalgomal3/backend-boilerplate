@@ -118,4 +118,15 @@ export class RolesController {
       data: result,
     };
   }
+
+  @Get('enum/role-type')
+  async getRolesType() {
+    const result = Object.values(RoleType).map((value, index) => ({
+      key: index + 1,
+      value,
+    }));
+    return {
+      data: result,
+    };
+  }
 }
