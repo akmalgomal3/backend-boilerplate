@@ -20,15 +20,47 @@ export class RolesRepository {
   async getRoles(
     skip: number,
     take: number,
-    search: string,
+    filters: any[],
+    sorts: any[],
+    searchQuery: any,
   ): Promise<[Roles[], number]> {
     try {
-      const roles = await this.repository.query(
-        RolesQuery.GET_ROLES(skip, take, search),
-      );
-      const count = await this.repository.query(RolesQuery.COUNT_ROLES);
+      let query = this.repository.createQueryBuilder('roles');
+      if (filters.length > 0) {
+        filters.forEach((filter) => {
+          if (filter.start && filter.end) {
+            query = query.andWhere(
+              `roles.${filter.key} BETWEEN :start AND :end`,
+              { start: filter.start, end: filter.end },
+            );
+          } else {
+            query = query.andWhere(`roles.${filter.key} IN (:...values)`, {
+              values: filter.value,
+            });
+          }
+        });
+      }
+      if (searchQuery) {
+        const { query: searchText, searchBy } = searchQuery;
+        searchBy.forEach((field: any) => {
+          query = query.andWhere(`roles.${field} ILIKE :search`, {
+            search: `%${searchText}%`,
+          });
+        });
+      }
+      if (sorts.length > 0) {
+        sorts.forEach((sort) => {
+          query = query.addOrderBy(
+            `roles.${sort.key}`,
+            sort.direction.toUpperCase(),
+          );
+        });
+      }
+      query = query.skip(skip).take(take);
 
-      return [roles, parseInt(count[0].count)];
+      const [roles, count] = await query.getManyAndCount();
+
+      return [roles, count];
     } catch (error) {
       throw error;
     }
