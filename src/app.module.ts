@@ -16,6 +16,7 @@ import { RolesGuard } from './common/guard/roles.guard';
 import { FeaturesModule } from './features/features.module';
 import { MenusModule } from './menus/menus.module';
 import { EmailModule } from './libs/email/email.module';
+import { OptionsModule } from './options/options.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { EmailModule } from './libs/email/email.module';
     FeaturesModule,
     MenusModule,
     EmailModule,
+    OptionsModule,
   ],
   controllers: [],
   providers: [
