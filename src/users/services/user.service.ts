@@ -33,6 +33,7 @@ import { ConfigService } from '@nestjs/config';
 import { ErrorMessages } from '../../common/exceptions/root-error.message';
 import { format } from 'date-fns';
 import { HeaderTable } from '../../common/types/header-table.type';
+import { CreateUserByAdminDto } from '../dto/create-user-by-admin.dto';
 
 @Injectable()
 export class UserService {
@@ -140,7 +141,7 @@ export class UserService {
     }
   }
 
-  async createUser(createUserDto: CreateUserDto) {
+  async createUser(createUserDto: CreateUserDto, adminId?: string) {
     try {
       let roleId: string = createUserDto.roleId;
 
@@ -151,6 +152,7 @@ export class UserService {
         {
           ...createUserDto,
           roleId,
+          createdBy: adminId || createUserDto.createdBy,
         },
         true,
       );
@@ -811,6 +813,72 @@ export class UserService {
         e.message || 'Error getting user auth header',
         e.status || 500,
       );
+    }
+  }
+  
+  async createUserByAdmin(dto: CreateUserByAdminDto, userId: string) {
+    try {
+      const {
+        password,
+        confirmPassword,
+        roleId,
+        email,
+        username,
+        fullName,
+        phoneNumber,
+        birthdate,
+      } = dto
+
+      if (roleId) {
+        const checkRole = await this.rolesService.getRoleById(roleId);
+        if (!checkRole) {
+          throw new BadRequestException(
+            ErrorMessages.roles.getMessage('ROLE_NOT_FOUND'),
+          );
+        }
+      }
+
+      const decryptedPassword = this.utilsService.validateConfirmPassword(
+        password,
+        confirmPassword,
+      )
+
+      await this.validateUsernameEmail(username, email)
+
+      const hashedPassword = await bcrypt.hash(decryptedPassword, 10)
+
+      const [user] = await Promise.all([
+        this.createUser({
+          fullName,
+          birthdate,
+          roleId,
+          email,
+          username,
+          password: hashedPassword,
+          phoneNumber
+        })
+      ])
+
+      const role = await this.rolesService.getRoleById(user.role.roleId);
+
+      return {
+        userId: user.userId,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
+        phoneNumber: user.phoneNumber,
+        birthdate: format(new Date(user.birthdate), 'yyyy-MM-dd'),
+        role: {
+          roleId: role.roleId,
+          roleName: role.roleName,
+          roleType: role.roleType,
+        },
+      };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error creating user by admin',
+        e.status || 500,
+      )
     }
   }
 }

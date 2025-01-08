@@ -26,6 +26,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { DeclineUserAuthDto } from '../dto/decline-user-auth.dto';
 import { GetUserAuthDto } from '../dto/get-unapproved-user.dto';
 import { UpdatePasswordByAdminDto } from '../dto/update-password-by-admin.dto';
+import { CreateUserByAdminDto } from '../dto/create-user-by-admin.dto';
 
 // @ts-ignore
 @Controller('users')
@@ -238,4 +239,18 @@ export class UserController {
       data: result,
     };
   }
+
+  @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
+  @Post('/admin')
+  async createByAdmin(
+    @Body() createUserDto: CreateUserByAdminDto,
+    @User() user: JwtPayload,
+  ) {
+    const result = await this.userService.createUserByAdmin(createUserDto, user.userId);
+    return {
+      data: result,
+    };
+  }
+
 }
