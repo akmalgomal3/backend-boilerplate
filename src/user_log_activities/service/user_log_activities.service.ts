@@ -69,6 +69,7 @@ export class UserLogActivitiesService {
           method,
           page, 
           params,
+          statusCode
         });
       }
 
@@ -384,9 +385,9 @@ export class UserLogActivitiesService {
   mappingDescriptionActivity(
     createDescriptionActivity: CreateDescriptionActivity,
   ) {
-    const { username, method, page, params } = createDescriptionActivity;
+    const { username, method, page, params, statusCode } = createDescriptionActivity;
     const isAuth = page.includes('auth');
-    const action = this.mappingMethodActivity(method, isAuth);
+    const action = this.mappingMethodActivity(method, statusCode, isAuth);
 
     let desc = `${username} ${action} ${page}`;
 
@@ -399,14 +400,16 @@ export class UserLogActivitiesService {
     return desc;
   }
 
-  mappingMethodActivity(method: string, isAuth: boolean) {
+  mappingMethodActivity(method: string, statusCode: string, isAuth: boolean) {
     let action;
     switch (true) {
       case ActivityMethod.GET == method:
-        action = 'viewed';
+        if(statusCode == "200") action = "viewed"
         break;
       case ActivityMethod.POST == method:
-        action = 'created new';
+        if(statusCode == "201") action = 'created new'
+        if(statusCode == "200") action = "viewed"
+
         if (isAuth) {
           action = 'attemped to';
         }
