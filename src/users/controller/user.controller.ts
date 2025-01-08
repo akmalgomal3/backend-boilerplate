@@ -228,4 +228,14 @@ export class UserController {
       data: result,
     };
   }
+
+  @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
+  @Get('/user-auth/header/info')
+  async getHeaderInfo() {
+    const result = await this.userService.getUserAuthHeader();
+    return {
+      data: result,
+    };
+  }
 }

@@ -32,6 +32,7 @@ import { UpdatePasswordByAdminDto } from '../dto/update-password-by-admin.dto';
 import { ConfigService } from '@nestjs/config';
 import { ErrorMessages } from '../../common/exceptions/root-error.message';
 import { format } from 'date-fns';
+import { HeaderTable } from '../../common/types/header-table.type';
 
 @Injectable()
 export class UserService {
@@ -690,6 +691,126 @@ export class UserService {
           `Email already used with status ${userAuthByEmail.requestStatus}, Please use another email or wait for approval or contact admin`,
         );
       }
+    }
+  }
+
+  async getUserAuthHeader(): Promise<HeaderTable[]> {
+    try {
+      return [
+        {
+          key: 'username',
+          label: 'Username',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'text',
+          option: {},
+          inlineEdit: false,
+        },
+        {
+          key: 'fullname',
+          label: 'Full Name',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'text',
+          option: {},
+          inlineEdit: false,
+        },
+        {
+          key: 'requestType',
+          label: 'Request Type',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'text',
+          option: {
+            type: 'url',
+            value: '/options/enum/UserAuthRequestType',
+          },
+          inlineEdit: false,
+        },
+        {
+          key: 'roleName',
+          label: 'Role Name',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'select',
+          option: {
+            type: 'url',
+            value: '/options/data/roles/role_name?pkName=role_id',
+          },
+          inlineEdit: false,
+        },
+        {
+          key: 'roleType',
+          label: 'Role Type',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'select',
+          option: {
+            type: 'url',
+            value: '/options/enum/RoleType',
+          },
+          inlineEdit: false,
+        },
+        {
+          key: 'email',
+          label: 'Email',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'email',
+          option: {},
+          inlineEdit: false,
+        },
+        {
+          key: 'phoneNumber',
+          label: 'Phone Number',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'text',
+          option: {},
+          inlineEdit: false,
+        },
+        {
+          key: 'birthdate',
+          label: 'Birthdate',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'date',
+          option: {},
+          inlineEdit: false,
+        },
+        {
+          key: 'createdAt',
+          label: 'Created At',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: false,
+          type: 'datetime',
+          option: {},
+          inlineEdit: false,
+        },
+      ];
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error getting user auth header',
+        e.status || 500,
+      );
     }
   }
 }
