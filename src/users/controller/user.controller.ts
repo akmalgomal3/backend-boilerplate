@@ -27,6 +27,7 @@ import { DeclineUserAuthDto } from '../dto/decline-user-auth.dto';
 import { GetUserAuthDto } from '../dto/get-unapproved-user.dto';
 import { UpdatePasswordByAdminDto } from '../dto/update-password-by-admin.dto';
 import { CreateUserByAdminDto } from '../dto/create-user-by-admin.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 // @ts-ignore
 @Controller('users')
@@ -53,11 +54,16 @@ export class UserController {
 
   @ApiBearerAuth()
   @AuthorizedRoles(RoleType.Admin)
-  @Get('/user-auth/all')
-  async getUnapprovedUsers(@Query() getUserAuth: GetUserAuthDto) {
-    const result = await this.userService.getUnapprovedUsers(getUserAuth);
+  @Post('/user-auth/all')
+  async getUserAuth(@Body() getUserAuth: PaginationDto) {
+    const result = await this.userService.getUserAuth(getUserAuth);
     return {
-      data: result.data,
+      data: {
+        body: result.data,
+        sort: getUserAuth.sorts || [],
+        filter: getUserAuth.filters || [],
+        search: getUserAuth.search || [],
+      },
       metadata: result.metadata,
     };
   }

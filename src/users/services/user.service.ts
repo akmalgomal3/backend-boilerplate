@@ -233,31 +233,51 @@ export class UserService {
     }
   }
 
-  async getUnapprovedUsers(getUserAuthDto: GetUserAuthDto) {
+  async getUserAuth(getUserAuthDto: PaginationDto) {
     try {
-      const {
-        page = 1,
-        limit: take = 10,
-        sortByDate,
-        search,
-        requestType,
-      } = getUserAuthDto;
-      const skip: number = (page - 1) * take;
-      const [data, total] = await this.userRepository.getUserAuth(
-        take,
+      const { page = 1, limit = 10, filters, sorts, search } = getUserAuthDto;
+      const skip: number = (page - 1) * limit;
+      const filterConditions =
+        filters.length > 0
+          ? filters.map((filter) => ({
+            key: filter.key,
+            value: filter.value,
+            start: filter.start,
+            end: filter.end,
+          }))
+          : [];
+      const sortConditions =
+        sorts.length > 0
+          ? sorts.map((sort) => ({
+            key: sort.key,
+            direction: sort.direction,
+          }))
+          : [];
+      const searchQuery =
+        search.length > 0
+          ? {
+            query: search[0].query,
+            searchBy: search[0].searchBy,
+          }
+          : null;
+
+      const [data, totalItems] = await this.userRepository.getUserAuth(
         skip,
-        search,
-        sortByDate,
-        requestType,
+        limit,
+        filterConditions,
+        sortConditions,
+        searchQuery,
       );
+
+      const totalPages = Math.ceil(totalItems / limit);
 
       return {
         data,
         metadata: {
           page: Number(page),
-          limit: Number(take),
-          total: Number(total),
-          totalPages: Number(Math.ceil(total / take)),
+          limit: Number(limit),
+          totalPages: Number(totalPages),
+          totalItems: Number(totalItems),
         },
       };
     } catch (error) {

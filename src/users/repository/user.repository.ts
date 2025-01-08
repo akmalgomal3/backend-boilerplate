@@ -18,6 +18,7 @@ import { SessionService } from 'src/libs/session/service/session.service';
 import { UserLogActivitiesService } from 'src/user_log_activities/service/user_log_activities.service';
 import { DeviceType } from 'src/common/enums/device-type.enum';
 import { UserQuery } from '../query/user.query';
+import { UtilsService } from '../../libs/utils/services/utils.service';
 
 @Injectable()
 export class UserRepository {
@@ -29,6 +30,7 @@ export class UserRepository {
     private dataSource: DataSource,
     private sessionService: SessionService,
     private userLogActivitiesService: UserLogActivitiesService,
+    private utilsService: UtilsService,
   ) {
     this.repository = this.dataSource.getRepository(Users);
     this.repositoryAuth = this.dataSource.getRepository(UsersAuth);
@@ -288,28 +290,22 @@ export class UserRepository {
   }
 
   async getUserAuth(
-    take: number,
     skip: number,
-    search: string,
-    sortDate: 'DESC' | 'ASC',
-    requestType?: UserAuthRequestType,
+    take: number,
+    filters: any[],
+    sorts: any[],
+    searchQuery: any,
   ): Promise<[UsersAuth[], number]> {
     try {
-      return await this.repositoryAuth.findAndCount({
-        where: {
-          ...(search && {
-            username: Like(`%${search}%`),
-          }),
-          ...(requestType && {
-            requestStatus: requestType,
-          }),
-        },
-        take,
+      return await this.utilsService.getAllQuery(
         skip,
-        order: {
-          createdAt: sortDate,
-        },
-      });
+        take,
+        filters,
+        sorts,
+        searchQuery,
+        'user_auth',
+        this.repositoryAuth,
+      );
     } catch (error) {
       throw new HttpException(
         error.message || 'Error getting unapproved users',
