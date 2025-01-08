@@ -7,10 +7,8 @@ import {
 import * as CryptoJS from 'crypto-js';
 import { ConfigService } from '@nestjs/config';
 import * as geoip from 'geoip-lite';
-import { result } from 'lodash';
 import { ErrorMessages } from '../../../common/exceptions/root-error.message';
 import { DataSource, Repository } from 'typeorm';
-import { Roles } from '../../../roles/entity/roles.entity';
 
 @Injectable()
 export class UtilsService {
@@ -180,9 +178,20 @@ export class UtilsService {
     searchQuery: any,
     tableName: string,
     repository: Repository<any>,
+    joins: { table: string; alias: string; condition: string }[] = [],
   ): Promise<[any[], number]> {
     try {
       let query = repository.createQueryBuilder(tableName);
+
+      joins.forEach((join) => {
+        query = query.leftJoinAndMapMany(
+          `${tableName}.${join.table}`,
+          `${join.table}`,
+          `${join.alias}`,
+          join.condition,
+        );
+      });
+
       if (filters.length > 0) {
         filters.forEach((filter) => {
           if (filter.start && filter.end) {

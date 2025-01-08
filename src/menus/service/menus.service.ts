@@ -1,8 +1,6 @@
 import {
-  BadRequestException,
   forwardRef,
   HttpException,
-  HttpStatus,
   Inject,
   Injectable,
   NotFoundException,
@@ -20,6 +18,11 @@ import { UserService } from 'src/users/services/user.service';
 import { FeaturesService } from 'src/features/service/features.service';
 import { Features } from 'src/features/entity/features.entity';
 import { ErrorMessages } from '../../common/exceptions/root-error.message';
+import { FormInfo } from '../../common/types/form-info.type';
+import {
+  PaginatedResponseDto,
+  PaginationDto,
+} from '../../common/dto/pagination.dto';
 
 @Injectable()
 export class MenusService {
@@ -57,6 +60,60 @@ export class MenusService {
         error.message || ErrorMessages.menus.getMessage('ERROR_GET_ALL_MENU'),
         error.status || 500,
       );
+    }
+  }
+
+  async getRolesNonHierarchy(
+    dto: PaginationDto,
+  ): Promise<PaginatedResponseDto<any>> {
+    try {
+      const { page = 1, limit = 10, filters, sorts, search } = dto;
+      const skip = (page - 1) * limit;
+
+      const filterConditions =
+        filters.length > 0
+          ? filters.map((filter) => ({
+              key: filter.key,
+              value: filter.value,
+              start: filter.start,
+              end: filter.end,
+            }))
+          : [];
+      const sortConditions =
+        sorts.length > 0
+          ? sorts.map((sort) => ({
+              key: sort.key,
+              direction: sort.direction,
+            }))
+          : [];
+      const searchQuery =
+        search.length > 0
+          ? {
+              query: search[0].query,
+              searchBy: search[0].searchBy,
+            }
+          : null;
+      const [data, totalItems] =
+        await this.menusRepository.getMenusNonHierarchy(
+          skip,
+          limit,
+          filterConditions,
+          sortConditions,
+          searchQuery,
+        );
+      const totalPages = Math.ceil(totalItems / limit);
+
+      return {
+        data,
+        metadata: {
+          page: Number(page),
+          limit: Number(limit),
+          totalPages: Number(totalPages),
+          totalItems: Number(totalItems),
+        },
+      };
+    } catch (e) {
+      throw e;
     }
   }
 
@@ -254,7 +311,8 @@ export class MenusService {
         true,
       );
       return {
-        globalFeatures: await this.featuresService.getAccessFeatureNoMenuId(roleId),
+        globalFeatures:
+          await this.featuresService.getAccessFeatureNoMenuId(roleId),
         menus: hierarchicalMenus,
       };
     } catch (error) {
@@ -279,7 +337,9 @@ export class MenusService {
       );
       return {
         globalFeatures:
-          await this.featuresService.getAllFeatureNoMenuIdAccessByRoleId(roleId),
+          await this.featuresService.getAllFeatureNoMenuIdAccessByRoleId(
+            roleId,
+          ),
         menus: hierarchicalMenus,
       };
     } catch (error) {
@@ -405,11 +465,10 @@ export class MenusService {
           menuId,
         );
       } else {
-        features =
-          await this.featuresService.getAllFeatureAccessByMenuRoleId(
-            menuId,
-            roleId, 
-          );
+        features = await this.featuresService.getAllFeatureAccessByMenuRoleId(
+          menuId,
+          roleId,
+        );
       }
 
       return features;
@@ -436,4 +495,249 @@ export class MenusService {
 
     return result;
   };
+
+  async getMenuHeader() {
+    try {
+      return [
+        {
+          key: 'menuName',
+          label: 'Menu Name',
+          filterable: true,
+          sortable: true,
+          editable: true,
+          searchable: true,
+          type: 'text',
+          option: {},
+          inlineEdit: true,
+        },
+        {
+          key: 'menu[0].menuName',
+          label: 'Parent Menu',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'select',
+          option: {
+            type: 'suggestion',
+            value: '/options/data/menus/menu_name?pkName=menu_id&search=',
+          },
+          inlineEdit: false,
+        },
+        {
+          key: 'routePath',
+          label: 'Route Path',
+          filterable: true,
+          sortable: true,
+          editable: true,
+          searchable: true,
+          type: 'text',
+          option: {},
+          inlineEdit: true,
+        },
+        {
+          key: 'icon',
+          label: 'Icon',
+          filterable: true,
+          sortable: true,
+          editable: true,
+          searchable: true,
+          type: 'text',
+          option: {},
+          inlineEdit: true,
+        },
+        {
+          key: 'hierarchyLevel',
+          label: 'Hierarchy Level',
+          filterable: true,
+          sortable: true,
+          editable: true,
+          searchable: true,
+          type: 'number',
+          option: {},
+          inlineEdit: true,
+        },
+        {
+          key: 'description',
+          label: 'Description',
+          filterable: true,
+          sortable: true,
+          editable: true,
+          searchable: true,
+          type: 'textarea',
+          option: {},
+          inlineEdit: true,
+        },
+        {
+          key: 'active',
+          label: 'Active',
+          filterable: true,
+          sortable: true,
+          editable: true,
+          searchable: true,
+          type: 'boolean',
+          option: {},
+          inlineEdit: true,
+        },
+        {
+          key: 'createdAt',
+          label: 'Created At',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: false,
+          type: 'datetime',
+          option: {},
+          inlineEdit: false,
+        },
+        {
+          key: 'updatedAt',
+          label: 'Last Updated',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: false,
+          type: 'datetime',
+          option: {},
+          inlineEdit: false,
+        },
+      ];
+    } catch (e) {
+      throw new HttpException(
+        e.message ||
+          ErrorMessages.menus.getMessage('ERROR_GETTING_MENU_HEADER'),
+        e.status || 500,
+      );
+    }
+  }
+
+  async formCreateUpdateMenu(menuId: string = null): Promise<FormInfo> {
+    const formInfo: FormInfo = {
+      id: null,
+      title: `Create Menu`,
+      description: `Create Menu`,
+      fields: [
+        {
+          type: 'text',
+          key: 'menuId',
+          label: 'Menu Id',
+          value: null,
+          required: true,
+          placeholder: '',
+          option: {},
+          visible: false,
+          disable: true,
+          prefix: '',
+          suffix: '',
+        },
+        {
+          type: 'text',
+          key: 'menuName',
+          label: 'Menu Name',
+          value: null,
+          required: true,
+          placeholder: 'input menu name',
+          option: {},
+          visible: true,
+          disable: false,
+          prefix: '',
+          suffix: '',
+        },
+        {
+          type: 'select',
+          key: 'parentMenuId',
+          label: 'Parent Menu',
+          value: null,
+          required: true,
+          placeholder: 'Input Parent Menu',
+          option: {
+            type: 'suggestion',
+            value: '/options/data/menus/menu_name?pkName=menu_id&search=',
+          },
+          visible: true,
+          disable: false,
+          prefix: '',
+          suffix: '',
+        },
+        {
+          type: 'text',
+          key: 'routePath',
+          label: 'Route Path',
+          value: null,
+          required: true,
+          placeholder: 'input route path',
+          option: {},
+          visible: true,
+          disable: false,
+          prefix: '',
+          suffix: '',
+        },
+        {
+          type: 'text',
+          key: 'icon',
+          label: 'Icon',
+          value: null,
+          required: true,
+          placeholder: 'input icon',
+          option: {},
+          visible: true,
+          disable: false,
+          prefix: '',
+          suffix: '',
+        },
+        {
+          type: 'number',
+          key: 'hierarchyLevel',
+          label: 'Hierarchy Level',
+          value: null,
+          required: true,
+          placeholder: 'input hierarchy level',
+          option: {},
+          visible: true,
+          disable: false,
+          prefix: '',
+          suffix: '',
+        },
+        {
+          type: 'textarea',
+          key: 'description',
+          label: 'Description',
+          value: null,
+          required: true,
+          placeholder: 'input menu description',
+          option: {},
+          visible: true,
+          disable: false,
+          prefix: '',
+          suffix: '',
+        },
+        {
+          type: 'boolean',
+          key: 'active',
+          label: 'Active',
+          value: null,
+          required: true,
+          placeholder: 'input menu active',
+          option: {},
+          visible: true,
+          disable: false,
+          prefix: '',
+          suffix: '',
+        },
+      ],
+    };
+
+    if (menuId) {
+      formInfo.title = 'Update Menu';
+      formInfo.description = 'Update Menu';
+      formInfo.id = menuId;
+
+      const menu = await this.getMenuById(menuId);
+      for (const field of formInfo.fields) {
+        field.value = menu[field.key];
+      }
+    }
+
+    return formInfo;
+  }
 }

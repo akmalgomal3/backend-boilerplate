@@ -40,7 +40,6 @@ export class OptionsService {
     try {
       const enumObj = this.enums[enumName];
 
-      console.log(Object.keys(this.enums).join(', ').toString());
       if (!enumObj) {
         throw new NotFoundException(
           ErrorMessages.options.dynamicMessage(
@@ -50,8 +49,8 @@ export class OptionsService {
         );
       }
 
-      const result = Object.values(enumObj).map((value, index) => ({
-        key: (index + 1).toString(),
+      const result = Object.values(enumObj).map((value) => ({
+        key: null,
         value,
       }));
 

@@ -18,6 +18,8 @@ import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CreateUpdateBulkAccessMenuDto } from '../dto/create_update_access_menu.dto';
 import { AuthorizedRoles } from 'src/common/decorators/authorized-roles.decorator';
 import { RoleType } from 'src/common/enums/user-roles.enum';
+import { FormInfo } from '../../common/types/form-info.type';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiBearerAuth()
 @Controller('menus')
@@ -38,6 +40,20 @@ export class MenusController {
     const result = await this.menusService.getMenus(page, limit, search);
     return {
       data: result.data,
+    };
+  }
+
+  @Post('/get-all')
+  async getMenusNonHierarchy(@Body() paginationDto: PaginationDto) {
+    const result = await this.menusService.getRolesNonHierarchy(paginationDto);
+    return {
+      data: {
+        body: result.data,
+        sort: paginationDto.sorts || [],
+        filter: paginationDto.filters || [],
+        search: paginationDto.search || [],
+      },
+      metadata: result.metadata,
     };
   }
 
@@ -95,6 +111,25 @@ export class MenusController {
   @AuthorizedRoles(RoleType.Admin)
   async deleteMenu(@Param('menuId') menuId: string): Promise<void> {
     return this.menusService.deleteMenu(menuId);
+  }
+
+  @Get('/header/info')
+  async getHeaderInfo() {
+    const result = await this.menusService.getMenuHeader();
+    return {
+      data: result,
+    };
+  }
+
+  @Get('form/create-update')
+  @ApiQuery({ name: 'id', required: false })
+  async getFormCreateUpdate(
+    @Query('id', new ParseUUIDPipe({ optional: true })) menuId: string,
+  ): Promise<{ data: FormInfo }> {
+    const formInfo = await this.menusService.formCreateUpdateMenu(menuId);
+    return {
+      data: formInfo,
+    };
   }
 
   @ApiBearerAuth()
