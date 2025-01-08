@@ -3,10 +3,13 @@ import { catchError, map, Observable, throwError } from "rxjs";
 import { JwtPayload } from "src/common/types/jwt-payload.type";
 import { CreateUserLogActivityByUserDTO } from "src/user_log_activities/dto/create_user_log_activity_by_user.dto";
 import { UserLogActivitiesService } from "src/user_log_activities/service/user_log_activities.service";
+import { UserService } from "src/users/services/user.service";
 @Injectable()
 export class UserLogAcitivitiesInterceptor implements NestInterceptor{
     constructor(
         private readonly userLogActivitiesService: UserLogActivitiesService,
+        private readonly userService: UserService,
+
     ){}
 
     intercept(context: ExecutionContext, next: CallHandler): Observable<any>{
@@ -24,6 +27,12 @@ export class UserLogAcitivitiesInterceptor implements NestInterceptor{
                     user = data?.data || null
                 } else if (path.includes("login") && path.includes("auth")){
                     user = req.body || null
+                }
+
+                if(!user.userId && user.username){
+                    const { userId, username } = await this.userService.getUserByUsername(user.username)
+                    user.userId = userId
+                    user.username = username
                 }
 
                 const userLogActivity :CreateUserLogActivityByUserDTO = {

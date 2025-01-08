@@ -47,7 +47,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         url: request.url,
         path: request?.route?.path,
         statusCode: status.toString(),
-        description: message,
+        description: message || 'Internal server error',
         params: request?.params,
       };
 
