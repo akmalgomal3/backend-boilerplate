@@ -13,6 +13,7 @@ import { MenusQuery } from '../query/menus.query';
 import { AccessMenu } from '../entity/access_menu.entity';
 import { AccessMenuQuery } from '../query/access_menu.query';
 import { ErrorMessages } from 'src/common/exceptions/root-error.message';
+import { UtilsService } from '../../libs/utils/services/utils.service';
 
 @Injectable()
 export class MenusRepository {
@@ -22,6 +23,7 @@ export class MenusRepository {
   constructor(
     @Inject('DB_POSTGRES')
     private dataSource: DataSource,
+    private utilsService: UtilsService,
   ) {
     this.repository = this.dataSource.getRepository(Menu);
     this.repositoryAccessMenu = this.dataSource.getRepository(AccessMenu);
@@ -51,6 +53,35 @@ export class MenusRepository {
         error.message || 'Error get all menu',
         error.status || 500,
       );
+    }
+  }
+
+  async getMenusNonHierarchy(
+    skip: number,
+    take: number,
+    filters: any[],
+    sorts: any[],
+    searchQuery: any,
+  ): Promise<[any[], number]> {
+    try {
+      return await this.utilsService.getAllQuery(
+        skip,
+        take,
+        filters,
+        sorts,
+        searchQuery,
+        'menus',
+        this.repository,
+        [
+          {
+            table: 'menus',
+            alias: 'parent_menus',
+            condition: 'menus.parent_menu_id = parent_menus.menu_id',
+          },
+        ],
+      );
+    } catch (e) {
+      throw e;
     }
   }
 
