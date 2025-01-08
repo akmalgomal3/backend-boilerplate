@@ -1,12 +1,15 @@
 type headerType =
-  | 'string'
-  | 'enum'
-  | 'date'
+  | 'text'
+  | 'checkbox'
   | 'number'
-  | 'boolean'
-  | 'url'
+  | 'date'
+  | 'email'
+  | 'file'
   | 'image'
-  | 'datetime'
+  | 'password'
+  | 'radio'
+  | 'select'
+  | 'datetime';
 
 export type HeaderTable = {
   key: string;
@@ -19,6 +22,6 @@ export type HeaderTable = {
   option: {
     type?: 'url' | 'array' | 'suggestion';
     value?: string;
-  }
+  };
   inlineEdit: boolean;
 };
