@@ -24,9 +24,9 @@ export class UserLogActivitiesRepository {
     }
   }
 
-  async getUserActivitiesByCurrentUser(skip: number, take: number, filter: Partial<UserLogActivities>): Promise<[UserLogActivities[], number]>{
+  async getUserActivitiesByCurrentUser(skip: number, take: number, filter: object, sort: any[] ): Promise<[UserLogActivities[], number]>{
     try {
-      const data = await this.userActivitiesModel.find(filter).sort({ timestamp: -1 }).skip(skip).limit(take).exec();
+      const data = await this.userActivitiesModel.find(filter).sort(sort).skip(skip).limit(take).exec();
       const totalItems = await this.userActivitiesModel.countDocuments(filter).exec()
 
       return [data, totalItems]

@@ -9,8 +9,12 @@ import { CreateUserLogActivityByUserDTO } from '../dto/create_user_log_activity_
 import { UtilsService } from 'src/libs/utils/services/utils.service';
 import { UserActivity } from '../types/user_activitity.type';
 import { GetUserActivityDto } from '../dto/get_user_activity_current.dto';
-import { PaginatedResponseDto } from 'src/common/dto/pagination.dto';
+import { PaginatedResponseDto, PaginationDto } from 'src/common/dto/pagination.dto';
 import { ErrorMessages } from 'src/common/exceptions/root-error.message';
+import { timestamp } from 'rxjs';
+import { FilterDto } from 'src/common/dto/filter.dto';
+import { SearchDto } from 'src/common/dto/search.dto';
+import { SortDto } from 'src/common/dto/sort.dto';
 
 @Injectable()
 export class UserLogActivitiesService {
@@ -43,6 +47,7 @@ export class UserLogActivitiesService {
   ): Promise<UserActivity>{
     try {
       if (!user || !user?.username || !user?.userId) {
+        console.error(ErrorMessages.userLogActivities.getMessage('USER_ID_IS_REQUIRED'))
         return;
       }
 
@@ -64,6 +69,7 @@ export class UserLogActivitiesService {
           method,
           page, 
           params,
+          statusCode
         });
       }
 
@@ -106,7 +112,7 @@ export class UserLogActivitiesService {
     }
   }
 
-  async getUserActivityCurrentUser(userId: string = null, getUserActivityCurrentUserDto: GetUserActivityDto): Promise<PaginatedResponseDto<UserActivity>>{
+  async getUserActivityCurrentUser(userId: string = null, paginationDto: PaginationDto): Promise<PaginatedResponseDto<UserActivity>>{
     try {
       if(!userId){
         throw new BadRequestException(
@@ -114,19 +120,19 @@ export class UserLogActivitiesService {
         );
       }
 
-      const {page = 1, limit = 10 } = getUserActivityCurrentUserDto
+      const {page = 1, limit = 10, filters = [], sorts = [], search = [] } = paginationDto
       const skip = (page - 1) * limit;
 
-      const { activityType, search, startDate, endDate} = getUserActivityCurrentUserDto
-      const filter: any = {
+      let filterBy = this.getFilterQuery(filters, search)
+      filterBy = {
+        ...filterBy,
         ...(userId && { user_id: userId }),
-        ...(search && { description: { $regex: search, $options: 'i' } }),
-        ...(activityType && {activity_type: activityType}),
-        ...((startDate && endDate) && { timestamp: { $gte: new Date(startDate), $lte: new Date(endDate) } }),
         is_deleted: false
-      };
+      }
 
-      const [data, totalItems] = await this.userActivityRepository.getUserActivitiesByCurrentUser(skip, limit, filter);
+      let sortBy: any = sorts.length > 0 ? this.getSortQuery(sorts) : { timestamp: -1 }
+      
+      const [data, totalItems] = await this.userActivityRepository.getUserActivitiesByCurrentUser(skip, limit, filterBy, sortBy);
       const totalPages = Math.ceil(totalItems / limit);
       
       return {
@@ -146,20 +152,13 @@ export class UserLogActivitiesService {
     }
   }
 
-  async getUsersLoggedIn(getUserActivityCurrentUserDto: GetUserActivityDto): Promise<PaginatedResponseDto<UserActivity>>{
+  async getUsersLoggedIn(paginationDto: PaginationDto): Promise<PaginatedResponseDto<UserActivity>>{
     try {
-      const {page = 1, limit = 10, search, statusCode = "200", startDate, endDate } = getUserActivityCurrentUserDto
+      const {page = 1, limit = 10, filters = [], search = [] } = paginationDto
       const skip = (page - 1) * limit;
 
-      console.log(startDate, endDate, "ends");
-      
-      const filter: any = {
-        ...(statusCode && { status_code: statusCode }),
-        ...(search && { username: { $regex: search, $options: 'i' } }), 
-        ...((startDate && endDate) && { timestamp: { $gte: new Date(startDate), $lte: new Date(endDate)} }),
-      };
-
-      const [data, totalItems] = await this.userActivityRepository.getUserActivityLoggedInUser(Number(skip), Number(limit), filter);
+      const filterBy = this.getFilterQuery([...filters, { key: "statusCode", value: ['200']}], search)
+      const [data, totalItems] = await this.userActivityRepository.getUserActivityLoggedInUser(Number(skip), Number(limit), filterBy);
       const totalPages = Math.ceil(totalItems / limit);
 
       return {
@@ -265,12 +264,130 @@ export class UserLogActivitiesService {
     }
   }
 
+  getUserLogActivityHeader(){
+    return [
+      {
+        key: 'username',
+        label: 'username',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'text',
+        option: {},
+        inlineEdit: false,
+      },
+      {
+        key: 'activityType',
+        label: 'Activity Type',
+        filterable: true,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'radiobutton',
+        option: {
+          type: 'url', 
+          value: '/options/enum/ActivityType'
+        },
+        inlineEdit: false,
+      },   
+      {
+        key: 'method',
+        label: 'method',
+        filterable: true,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'checkbox',
+        option: {},
+        inlineEdit: false,
+      },   
+      {
+        key: 'path',
+        label: 'path',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'text',
+        option: {},
+        inlineEdit: false,
+      }, 
+      {
+        key: 'statusCode',
+        label: 'statusCode',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'text',
+        option: {},
+        inlineEdit: false,
+      }, 
+      {
+        key: 'description',
+        label: 'description',
+        filterable: true,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'textarea',
+        option: {},
+        inlineEdit: false,
+      }, 
+      {
+        key: 'deviceType',
+        label: 'deviceType',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'text',
+        option: {},
+        inlineEdit: false,
+      },
+      {
+        key: 'ipAddress',
+        label: 'ipAddress',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'text',
+        option: {},
+        inlineEdit: false,
+      },
+      {
+        key: 'loginTime',
+        label: 'loginTime',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'date',
+        option: {},
+        inlineEdit: false,
+      },
+      {
+        key: 'timestamp',
+        label: 'createdAt',
+        filterable: true,
+        sortable: true,
+        editable: false,
+        searchable: false,
+        type: 'date',
+        option: {},
+        inlineEdit: false,
+      },
+    ]
+  }
+
   mappingDescriptionActivity(
     createDescriptionActivity: CreateDescriptionActivity,
   ) {
-    const { username, method, page, params } = createDescriptionActivity;
+    const { username, method, page, params, statusCode } = createDescriptionActivity;
     const isAuth = page.includes('auth');
-    const action = this.mappingMethodActivity(method, isAuth);
+    const action = this.mappingMethodActivity(method, statusCode, isAuth);
 
     let desc = `${username} ${action} ${page}`;
 
@@ -283,14 +400,16 @@ export class UserLogActivitiesService {
     return desc;
   }
 
-  mappingMethodActivity(method: string, isAuth: boolean) {
+  mappingMethodActivity(method: string, statusCode: string, isAuth: boolean) {
     let action;
     switch (true) {
       case ActivityMethod.GET == method:
-        action = 'viewed';
+        if(statusCode == "200") action = "viewed"
         break;
       case ActivityMethod.POST == method:
-        action = 'created new';
+        if(statusCode == "201") action = 'created new'
+        if(statusCode == "200") action = "viewed"
+
         if (isAuth) {
           action = 'attemped to';
         }
@@ -316,5 +435,52 @@ export class UserLogActivitiesService {
     pathArray = pathArray.filter((segment) => !segment.includes(':'));
 
     return pathArray.join(' ').toLocaleLowerCase();
+  }
+
+  getFilterQuery(filters: FilterDto[], search: SearchDto[]): object {
+    let filterBy = {}
+    filters?.forEach((filter) => {
+      const value = filter.value
+      const keySnakeCase = this.utilsService.snakeCase(filter.key);
+
+      if(value && typeof value === "string"){
+        filterBy[keySnakeCase] = { $regex: value, $options: 'i' }
+      }
+
+      if(value && Array.isArray(value)){
+        filterBy[keySnakeCase] = { $in: value }
+      }
+
+      if(filter.start){
+        filterBy[keySnakeCase] = { $gte: filter.start }
+      }
+
+      if(filter.end){
+        filterBy[keySnakeCase] = {...filterBy[keySnakeCase], $lte: filter.end}
+      }
+    })
+
+    search?.forEach(toSearch => {
+      toSearch?.searchBy?.forEach(column => {
+        const keySnakeCase = this.utilsService.snakeCase(column);
+        filterBy[keySnakeCase] = { $regex: toSearch.query, $options: 'i' }
+      }) 
+    })
+
+    return filterBy
+  }
+
+  getSortQuery(sorts: SortDto[]): object {
+    let sortBy = {}
+    sorts?.forEach(sort => {
+      const direction = sort.direction.toLocaleLowerCase()
+      const keySnakeCase = this.utilsService.snakeCase(sort.key);
+      if(direction === 'asc' || direction === 'desc'){
+        const numberDirection = direction === 'asc' ? 1 : -1
+        sortBy[keySnakeCase] = numberDirection
+      }
+    })
+
+    return sortBy
   }
 }
