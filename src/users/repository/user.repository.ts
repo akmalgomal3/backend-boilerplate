@@ -305,6 +305,13 @@ export class UserRepository {
         searchQuery,
         'user_auth',
         this.repositoryAuth,
+        [
+          {
+            table: 'roles',
+            alias: 'role',
+            condition: 'user_auth.role_id = role.role_id',
+          }
+        ]
       );
     } catch (error) {
       throw new HttpException(

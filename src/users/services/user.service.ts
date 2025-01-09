@@ -272,8 +272,23 @@ export class UserService {
 
       const totalPages = Math.ceil(totalItems / limit);
 
+      const formattedData = data.map((user) => {
+        return {
+          userId: user.userId,
+          username: user.username,
+          fullName: user.fullName,
+          requestType: user.requestStatus,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          birthdate: user.birthdate,
+          createdAt: user.createdAt,
+          roleName: user.role[0]?.roleName,
+          roleType: user.role[0]?.roleType,
+        };
+      })
+
       return {
-        data,
+        data: formattedData,
         metadata: {
           page: Number(page),
           limit: Number(limit),
@@ -743,13 +758,13 @@ export class UserService {
           inlineEdit: false,
         },
         {
-          key: 'requestType',
-          label: 'Request Type',
+          key: 'requestStatus',
+          label: 'Request Status',
           filterable: true,
           sortable: true,
           editable: false,
           searchable: true,
-          type: 'text',
+          type: 'select',
           option: {
             type: 'url',
             value: '/options/enum/UserAuthRequestType',
@@ -757,7 +772,7 @@ export class UserService {
           inlineEdit: false,
         },
         {
-          key: 'roleName',
+          key: 'roleId',
           label: 'Role Name',
           filterable: true,
           sortable: true,
