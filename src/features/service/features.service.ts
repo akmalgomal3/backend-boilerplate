@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   forwardRef,
   HttpException,
   HttpStatus,
@@ -26,6 +25,8 @@ import { MenusRepository } from '../../menus/repository/menus.repository';
 import { MenusService } from 'src/menus/service/menus.service';
 import { Menu } from 'src/menus/entity/menus.entity';
 import { ErrorMessages } from '../../common/exceptions/root-error.message';
+import { HeaderTable } from '../../common/types/header-table.type';
+import { FormInfo } from '../../common/types/form-info.type';
 
 @Injectable()
 export class FeaturesService {
@@ -40,20 +41,59 @@ export class FeaturesService {
 
   async getFeatures(
     dto: PaginationDto,
-    search: string,
   ): Promise<PaginatedResponseDto<Features>> {
     try {
-      const { page = 1, limit = 10 } = dto;
+      const { page = 1, limit = 10, filters, sorts, search } = dto;
       const skip = (page - 1) * limit;
-      const [features, totalItems] = await this.featuresRepository.getFeatures(
+
+      const filterConditions =
+        filters.length > 0
+          ? filters.map((filter) => ({
+              key: filter.key,
+              value: filter.value,
+              start: filter.start,
+              end: filter.end,
+            }))
+          : [];
+      const sortConditions =
+        sorts.length > 0
+          ? sorts.map((sort) => ({
+              key: sort.key,
+              direction: sort.direction,
+            }))
+          : [];
+      const searchQuery =
+        search.length > 0
+          ? {
+              query: search[0].query,
+              searchBy: search[0].searchBy,
+            }
+          : null;
+
+      const [data, totalItems] = await this.featuresRepository.getFeatures(
         skip,
         limit,
-        search,
+        filterConditions,
+        sortConditions,
+        searchQuery,
       );
       const totalPages = Math.ceil(totalItems / limit);
 
+      const mappedData = data.map((feature) => {
+        if (feature['menu'] && feature.menuId) {
+          const menu = feature['menu'].find(
+            (subMenu) => subMenu.menuId === feature.menuId,
+          );
+          if (menu) {
+            feature.menuId = menu.menuName;
+          }
+        }
+        delete feature['menu'];
+        return feature;
+      });
+
       return {
-        data: features,
+        data: mappedData,
         metadata: {
           page: Number(page),
           limit: Number(limit),
@@ -203,49 +243,12 @@ export class FeaturesService {
     userId: string,
   ): Promise<void> {
     try {
-      const isExist = await this.getFeatureById(featureId);
-      if (!isExist) {
-        throw new NotFoundException(
-          ErrorMessages.features.dynamicMessage(
-            ErrorMessages.features.getMessage('ERROR_UPDATE_FEATURE_NOT_FOUND'),
-            { featureId: featureId },
-          ),
-        );
-      }
+      await this.validateFeatureExist(featureId);
       if (updateFeatureDto.featureName != null) {
-        const nameAlreadyAvailable =
-          await this.featuresRepository.getFeatureByName(
-            updateFeatureDto.featureName,
-          );
-
-        if (nameAlreadyAvailable) {
-          throw new HttpException(
-            ErrorMessages.features.dynamicMessage(
-              ErrorMessages.features.getMessage(
-                'ERROR_UPDATE_FEATURE_ALREADY_AVAILABLE',
-              ),
-              { featureName: updateFeatureDto.featureName },
-            ),
-            HttpStatus.CONFLICT,
-          );
-        }
+        await this.validateFeatureNameUnique(updateFeatureDto.featureName);
       }
-
       if (updateFeatureDto.menuId != null) {
-        const isMenuExist = await this.menusRepository.getMenuById(
-          updateFeatureDto.menuId,
-        );
-
-        if (!isMenuExist) {
-          throw new NotFoundException(
-            ErrorMessages.features.dynamicMessage(
-              ErrorMessages.features.getMessage(
-                'ERROR_UPDATE_FEATURE_MENU_NOT_EXIST',
-              ),
-              { menuId: updateFeatureDto.menuId },
-            ),
-          );
-        }
+        await this.validateMenuExist(updateFeatureDto.menuId);
       }
 
       await this.featuresRepository.updateFeature(
@@ -262,6 +265,72 @@ export class FeaturesService {
     }
   }
 
+  async bulkUpdateFeature(
+    updates: { featureId: string; updateFeatureDto: UpdateFeatureDto }[],
+    userId: string,
+  ): Promise<void> {
+    try {
+      for (const { featureId, updateFeatureDto } of updates) {
+        await this.validateFeatureExist(featureId);
+        if (updateFeatureDto.featureName != null) {
+          await this.validateFeatureNameUnique(updateFeatureDto.featureName);
+          if (updateFeatureDto.menuId != null) {
+            await this.validateMenuExist(updateFeatureDto.menuId);
+          }
+        }
+      }
+      await this.featuresRepository.bulkUpdateFeature(updates, userId);
+    } catch (error) {
+      throw new HttpException(
+        error.message ||
+          ErrorMessages.features.getMessage('ERROR_BULK_UPDATE_FEATURE'),
+        error.status || 500,
+      );
+    }
+  }
+
+  async validateFeatureExist(featureId: string): Promise<void> {
+    const isExist = await this.getFeatureById(featureId);
+    if (!isExist) {
+      throw new NotFoundException(
+        ErrorMessages.features.dynamicMessage(
+          ErrorMessages.features.getMessage('ERROR_UPDATE_FEATURE_NOT_FOUND'),
+          { featureId },
+        ),
+      );
+    }
+  }
+
+  async validateFeatureNameUnique(featureName: string): Promise<void> {
+    const nameAlreadyAvailable =
+      await this.featuresRepository.getFeatureByName(featureName);
+    if (nameAlreadyAvailable) {
+      throw new HttpException(
+        ErrorMessages.features.dynamicMessage(
+          ErrorMessages.features.getMessage(
+            'ERROR_UPDATE_FEATURE_ALREADY_AVAILABLE',
+          ),
+          { featureName },
+        ),
+        HttpStatus.CONFLICT,
+      );
+    }
+  }
+
+  async validateMenuExist(menuId: string): Promise<void> {
+    const isMenuExist = await this.menusRepository.getMenuById(menuId);
+    if (!isMenuExist) {
+      throw new NotFoundException(
+        ErrorMessages.features.dynamicMessage(
+          ErrorMessages.features.getMessage(
+            'ERROR_UPDATE_FEATURE_MENU_NOT_EXIST',
+          ),
+          { menuId },
+        ),
+      );
+    }
+  }
+
   async deleteFeature(featureId: string): Promise<void> {
     try {
       await this.getFeatureById(featureId);
@@ -271,6 +340,21 @@ export class FeaturesService {
       throw new HttpException(
         error.message ||
           ErrorMessages.features.getMessage('ERROR_DELETE_FEATURE'),
+        error.status || 500,
+      );
+    }
+  }
+
+  async bulkDeleteFeature(featureIds: string[]): Promise<void> {
+    try {
+      for (const featureId of featureIds) {
+        await this.getFeatureById(featureId);
+      }
+      await this.featuresRepository.bulkDeleteFeature(featureIds);
+    } catch (error) {
+      throw new HttpException(
+        error.message ||
+          ErrorMessages.features.getMessage('ERROR_BULK_DELETE_FEATURE'),
         error.status || 500,
       );
     }
@@ -431,5 +515,178 @@ export class FeaturesService {
     });
 
     return collect;
+  }
+
+  async getFeatureHeader(): Promise<HeaderTable[]> {
+    try {
+      return [
+        {
+          key: 'featureName',
+          label: 'Feature Name',
+          filterable: true,
+          sortable: true,
+          editable: true,
+          searchable: true,
+          type: 'text',
+          option: {},
+          inlineEdit: true,
+        },
+        {
+          key: 'menuId',
+          label: 'Menu Name',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'select',
+          option: {
+            type: 'suggestion',
+            value: '/options/data/menus/menu_name?pkName=menu_id&search=',
+          },
+          inlineEdit: false,
+        },
+        {
+          key: 'description',
+          label: 'Description',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: false,
+          type: 'text',
+          option: {},
+          inlineEdit: false,
+        },
+        {
+          key: 'active',
+          label: 'Active',
+          filterable: true,
+          sortable: true,
+          editable: true,
+          searchable: true,
+          type: 'radio',
+          option: {},
+          inlineEdit: true,
+        },
+        {
+          key: 'createdAt',
+          label: 'Created At',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: false,
+          type: 'datetime',
+          option: {},
+          inlineEdit: false,
+        },
+        {
+          key: 'updatedAt',
+          label: 'Last Updated',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: false,
+          type: 'datetime',
+          option: {},
+          inlineEdit: false,
+        },
+      ];
+    } catch (e) {
+      throw new HttpException(
+        e.message ||
+          ErrorMessages.roles.getMessage('ERROR_GETTING_ROLE_HEADER'),
+        e.status || 500,
+      );
+    }
+  }
+
+  async formCreateUpdateFeature(featureId: string = null): Promise<FormInfo> {
+    const formInfo: FormInfo = {
+      id: null,
+      title: `Create Feature`,
+      description: `Create Feature`,
+      fields: [
+        {
+          type: 'text',
+          key: 'featureId',
+          label: 'Feature Id',
+          value: null,
+          required: true,
+          placeholder: '',
+          option: {},
+          visible: false,
+          disable: true,
+          prefix: '',
+          suffix: '',
+        },
+        {
+          type: 'text',
+          key: 'featureName',
+          label: 'Feature Name',
+          value: null,
+          required: true,
+          placeholder: 'input Feature name',
+          option: {},
+          visible: true,
+          disable: false,
+          prefix: '',
+          suffix: '',
+        },
+        {
+          type: 'select',
+          key: 'menuId',
+          label: 'Menu Name',
+          value: null,
+          required: true,
+          placeholder: 'Input Feature Menu',
+          option: {
+            type: 'suggestion',
+            value: '/options/data/menus/menu_name?pkName=menu_id&search=',
+          },
+          visible: true,
+          disable: false,
+          prefix: '',
+          suffix: '',
+        },
+        {
+          type: 'text',
+          key: 'description',
+          label: 'Feature Description',
+          value: null,
+          required: true,
+          placeholder: 'input Feature Description',
+          option: {},
+          visible: true,
+          disable: false,
+          prefix: '',
+          suffix: '',
+        },
+        {
+          type: 'Active',
+          key: 'active',
+          label: 'Active',
+          value: null,
+          required: true,
+          placeholder: 'input active',
+          option: {},
+          visible: true,
+          disable: false,
+          prefix: '',
+          suffix: '',
+        },
+      ],
+    };
+
+    if (featureId) {
+      formInfo.title = 'Update Feature';
+      formInfo.description = 'Update Feature';
+      formInfo.id = featureId;
+
+      const menu = await this.getFeatureById(featureId);
+      for (const field of formInfo.fields) {
+        field.value = menu[field.key];
+      }
+    }
+
+    return formInfo;
   }
 }

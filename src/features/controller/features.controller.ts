@@ -18,29 +18,26 @@ import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CreateUpdateBulkAccessFeatureDto } from '../dto/create-update-access-feature.dto';
 import { AuthorizedRoles } from '../../common/decorators/authorized-roles.decorator';
 import { RoleType } from '../../common/enums/user-roles.enum';
+import { PaginationDto } from '../../common/dto/pagination.dto';
+import { FormInfo } from '../../common/types/form-info.type';
 
 @ApiBearerAuth()
 @Controller('features')
 export class FeaturesController {
   constructor(private featuresService: FeaturesService) {}
 
-  @ApiQuery({ name: 'page', required: false })
-  @ApiQuery({ name: 'limit', required: false })
-  @ApiQuery({ name: 'search', required: false })
-  @Get()
+  @Post('/get-all')
   @ApiBearerAuth()
   @AuthorizedRoles(RoleType.Admin)
-  async getFeatures(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-    @Query('search') search: string = '',
-  ) {
-    const result = await this.featuresService.getFeatures(
-      { page, limit },
-      search,
-    );
+  async getFeatures(@Body() paginationDto: PaginationDto) {
+    const result = await this.featuresService.getFeatures(paginationDto);
     return {
-      data: result.data,
+      data: {
+        body: result.data,
+        sort: paginationDto.sorts || [],
+        filter: paginationDto.filters || [],
+        search: paginationDto.search || [],
+      },
       metadata: result.metadata,
     };
   }
@@ -83,7 +80,7 @@ export class FeaturesController {
     };
   }
 
-  @Patch(':featureId')
+  @Patch('single-update/:featureId')
   @ApiBearerAuth()
   @AuthorizedRoles(RoleType.Admin)
   async updateFeature(
@@ -98,11 +95,32 @@ export class FeaturesController {
     );
   }
 
-  @Delete(':featureId')
+  @Patch('bulk-update')
+  @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
+  async bulkUpdateFeature(
+    @Body()
+    updates: { featureId: string; updateFeatureDto: UpdateFeatureDto }[],
+    @User() user: JwtPayload,
+  ): Promise<void> {
+    return this.featuresService.bulkUpdateFeature(updates, user.userId);
+  }
+
+  @Delete('single-delete/:featureId')
   @ApiBearerAuth()
   @AuthorizedRoles(RoleType.Admin)
   async deleteFeature(@Param('featureId') featureId: string): Promise<void> {
     return this.featuresService.deleteFeature(featureId);
+  }
+
+  @Delete('bulk-delete')
+  @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
+  async bulkDeleteFeature(
+    @Body() featureIds: { featureId: string }[],
+  ): Promise<void> {
+    const ids = featureIds.map((feature) => feature.featureId);
+    return this.featuresService.bulkDeleteFeature(ids);
   }
 
   @ApiBearerAuth()
@@ -160,6 +178,26 @@ export class FeaturesController {
       await this.featuresService.deleteAccessFeatureByRoleId(roleId);
     return {
       data: result,
+    };
+  }
+
+  @Get('/header/info')
+  async getHeaderInfo() {
+    const result = await this.featuresService.getFeatureHeader();
+    return {
+      data: result,
+    };
+  }
+
+  @Get('form/create-update')
+  @ApiQuery({ name: 'id', required: false })
+  async getFormCreateUpdate(
+    @Query('id', new ParseUUIDPipe({ optional: true })) featureId: string,
+  ): Promise<{ data: FormInfo }> {
+    const formInfo =
+      await this.featuresService.formCreateUpdateFeature(featureId);
+    return {
+      data: formInfo,
     };
   }
 }

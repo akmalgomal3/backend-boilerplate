@@ -24,6 +24,7 @@ import {
   PaginatedResponseDto,
   PaginationDto,
 } from '../../common/dto/pagination.dto';
+import { HeaderTable } from '../../common/types/header-table.type';
 
 @Injectable()
 export class MenusService {
@@ -100,15 +101,15 @@ export class MenusService {
       const totalPages = Math.ceil(totalItems / limit);
 
       const mappedData = data.map((menu) => {
-        if (menu.menus && menu.parentMenuId) {
-          const parentMenu = menu.menus.find(
+        if (menu.menu && menu.parentMenuId) {
+          const parentMenu = menu.menu.find(
             (subMenu) => subMenu.menuId === menu.parentMenuId,
           );
           if (parentMenu) {
             menu.parentMenuId = parentMenu.menuName;
           }
         }
-        delete menu.menus;
+        delete menu.menu;
         return menu;
       });
 
@@ -482,9 +483,6 @@ export class MenusService {
             rootMenus.push(menu);
           } else {
             const parentMenu = menuMap.get(menu.parentMenuId);
-            if (menu.menuName == 'Menu 23') {
-              console.log('23 was here ', parentMenu);
-            }
             if (parentMenu) {
               parentMenu.children.push(menu);
             }
@@ -548,7 +546,7 @@ export class MenusService {
     return result;
   };
 
-  async getMenuHeader() {
+  async getMenuHeader(): Promise<HeaderTable[]> {
     try {
       return [
         {
@@ -616,7 +614,7 @@ export class MenusService {
           sortable: true,
           editable: true,
           searchable: true,
-          type: 'textarea',
+          type: 'text',
           option: {},
           inlineEdit: true,
         },
@@ -627,7 +625,7 @@ export class MenusService {
           sortable: true,
           editable: true,
           searchable: true,
-          type: 'boolean',
+          type: 'radio',
           option: {},
           inlineEdit: true,
         },
