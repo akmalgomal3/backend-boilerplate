@@ -26,6 +26,7 @@ import { MenusRepository } from '../../menus/repository/menus.repository';
 import { MenusService } from 'src/menus/service/menus.service';
 import { Menu } from 'src/menus/entity/menus.entity';
 import { ErrorMessages } from '../../common/exceptions/root-error.message';
+import { HeaderTable } from 'src/common/types/header-table.type';
 
 @Injectable()
 export class FeaturesService {
@@ -392,6 +393,99 @@ export class FeaturesService {
       );
     }
   }
+  
+  getHeaderAccessFeature(){
+    return [
+      {
+        key: 'menuName',
+        label: 'Menu Name',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'text',
+        option: {},
+        inlineEdit: false,
+      },
+      {
+        key: 'featureName',
+        label: 'feature Name',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'text',
+        option: {},
+        inlineEdit: false,
+      },
+      {
+        key: 'active',
+        label: 'active',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'radiobutton',
+        option: {},
+        inlineEdit: false,
+      },
+      {
+        key: 'canAccess',
+        label: 'canAccess',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'radiobutton',
+        option: {},
+        inlineEdit: true,
+      },
+      {
+        key: 'canRead',
+        label: 'canRead',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'radiobutton',
+        option: {},
+        inlineEdit: true,
+      },
+      {
+        key: 'canInsert',
+        label: 'canInsert',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'radiobutton',
+        option: {},
+        inlineEdit: true,
+      },
+      {
+        key: 'canUpdate',
+        label: 'canUpdate',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'radiobutton',
+        option: {},
+        inlineEdit: true,
+      },
+      {
+        key: 'canDelete',
+        label: 'canDelete',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'radiobutton',
+        option: {},
+        inlineEdit: true,
+      },
+    ]
+  }
 
   private collectFeatures(
     menusWithFeature: CreateUpdateAccessFeatureByMenuDto[],
@@ -432,4 +526,5 @@ export class FeaturesService {
 
     return collect;
   }
+  
 }
