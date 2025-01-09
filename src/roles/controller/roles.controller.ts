@@ -86,7 +86,7 @@ export class RolesController {
     };
   }
 
-  @Patch(':roleId')
+  @Patch('single-update/:roleId')
   async updateRole(
     @Param('roleId') roleId: string,
     @Body() updateRoleDto: UpdateRoleDto,
@@ -102,9 +102,28 @@ export class RolesController {
     };
   }
 
-  @Delete(':roleId')
+  @Patch('bulk-update')
+  async bulkUpdateRole(
+    @Body() updates: { roleId: string; updateRoleDto: UpdateRoleDto }[],
+    @User() user: JwtPayload,
+  ) {
+    const result = await this.rolesService.bulkUpdateRole(updates, user.userId);
+    return {
+      data: result,
+    };
+  }
+
+  @Delete('single-delete/:roleId')
   async deleteRole(@Param('roleId') roleId: string) {
     const result = await this.rolesService.deleteRole(roleId);
+    return {
+      data: result,
+    };
+  }
+
+  @Delete('bulk-delete')
+  async bulkDeleteRole(@Body() roleIds: { roleId: string }[]) {
+    const result = await this.rolesService.bulkDeleteRole(roleIds);
     return {
       data: result,
     };
