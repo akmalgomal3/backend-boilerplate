@@ -259,4 +259,13 @@ export class UserController {
     };
   }
 
+  @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
+  @Get('/form/create')
+  async getFormCreate() {
+    const result = await this.userService.formCreateUserByAdmin();
+    return {
+      data: result,
+    };
+  }
 }

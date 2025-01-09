@@ -34,6 +34,7 @@ import { ErrorMessages } from '../../common/exceptions/root-error.message';
 import { format } from 'date-fns';
 import { HeaderTable } from '../../common/types/header-table.type';
 import { CreateUserByAdminDto } from '../dto/create-user-by-admin.dto';
+import { FormInfo } from '../../common/types/form-info.type';
 
 @Injectable()
 export class UserService {
@@ -240,25 +241,25 @@ export class UserService {
       const filterConditions =
         filters.length > 0
           ? filters.map((filter) => ({
-            key: filter.key,
-            value: filter.value,
-            start: filter.start,
-            end: filter.end,
-          }))
+              key: filter.key,
+              value: filter.value,
+              start: filter.start,
+              end: filter.end,
+            }))
           : [];
       const sortConditions =
         sorts.length > 0
           ? sorts.map((sort) => ({
-            key: sort.key,
-            direction: sort.direction,
-          }))
+              key: sort.key,
+              direction: sort.direction,
+            }))
           : [];
       const searchQuery =
         search.length > 0
           ? {
-            query: search[0].query,
-            searchBy: search[0].searchBy,
-          }
+              query: search[0].query,
+              searchBy: search[0].searchBy,
+            }
           : null;
 
       const [data, totalItems] = await this.userRepository.getUserAuth(
@@ -835,7 +836,7 @@ export class UserService {
       );
     }
   }
-  
+
   async createUserByAdmin(dto: CreateUserByAdminDto, userId: string) {
     try {
       const {
@@ -847,7 +848,7 @@ export class UserService {
         fullName,
         phoneNumber,
         birthdate,
-      } = dto
+      } = dto;
 
       if (roleId) {
         const checkRole = await this.rolesService.getRoleById(roleId);
@@ -861,11 +862,11 @@ export class UserService {
       const decryptedPassword = this.utilsService.validateConfirmPassword(
         password,
         confirmPassword,
-      )
+      );
 
-      await this.validateUsernameEmail(username, email)
+      await this.validateUsernameEmail(username, email);
 
-      const hashedPassword = await bcrypt.hash(decryptedPassword, 10)
+      const hashedPassword = await bcrypt.hash(decryptedPassword, 10);
 
       const [user] = await Promise.all([
         this.createUser({
@@ -875,9 +876,9 @@ export class UserService {
           email,
           username,
           password: hashedPassword,
-          phoneNumber
-        })
-      ])
+          phoneNumber,
+        }),
+      ]);
 
       const role = await this.rolesService.getRoleById(user.role.roleId);
 
@@ -898,7 +899,133 @@ export class UserService {
       throw new HttpException(
         e.message || 'Error creating user by admin',
         e.status || 500,
-      )
+      );
+    }
+  }
+
+  async formCreateUserByAdmin() {
+    try {
+      const formInfo: FormInfo = {
+        id: null,
+        title: 'Create User',
+        description: 'Create a new user by admin',
+        fields: [
+          {
+            type: 'text',
+            key: 'username',
+            label: 'Username',
+            value: '',
+            required: true,
+            placeholder: 'Input username',
+            option: {},
+            visible: true,
+            disable: false,
+            prefix: '<UserOutlined />',
+            suffix: '',
+          },
+          {
+            type: 'text',
+            key: 'fullName',
+            label: 'Full Name',
+            value: '',
+            required: true,
+            placeholder: 'Input full name',
+            option: {},
+            visible: true,
+            disable: false,
+            prefix: '<UserOutlined />',
+            suffix: '',
+          },
+          {
+            type: 'password',
+            key: 'password',
+            label: 'Password',
+            value: '',
+            required: true,
+            placeholder: 'Input password',
+            option: {},
+            visible: true,
+            disable: false,
+            prefix: '',
+            suffix: '',
+          },
+          {
+            type: 'password',
+            key: 'confirmPassword',
+            label: 'Confirm Password',
+            value: '',
+            required: true,
+            placeholder: 'Input confirm password',
+            option: {},
+            visible: true,
+            disable: true,
+            prefix: '',
+            suffix: '',
+          },
+          {
+            type: 'email',
+            key: 'email',
+            label: 'Email',
+            value: '',
+            required: true,
+            placeholder: 'Input email',
+            option: {},
+            visible: true,
+            disable: false,
+            prefix: '',
+            suffix: '',
+          },
+          {
+            type: 'text',
+            key: 'phoneNumber',
+            label: 'Phone Number',
+            value: '',
+            required: true,
+            placeholder: 'Input phone number',
+            option: {},
+            visible: true,
+            disable: false,
+            prefix: '',
+            suffix: '',
+          },
+          {
+            type: 'select',
+            key: 'roleId',
+            label: 'Role Name',
+            value: '',
+            required: true,
+            placeholder: 'Input Role',
+            option: {
+              type: 'url',
+              value: '/options/data/roles/role_name?pkName=role_id',
+            },
+            visible: true,
+            disable: false,
+            prefix: '',
+            suffix: '',
+          },
+          {
+            type: 'date',
+            key: 'birthdate',
+            label: 'Birthdate',
+            value: '',
+            required: true,
+            placeholder: 'Input birthdate',
+            option: {},
+            visible: true,
+            disable: false,
+            prefix: '',
+            suffix: '',
+          }
+        ],
+      };
+
+      return formInfo;
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error form create user auth',
+        e.status || 500,
+      );
     }
   }
 }
