@@ -347,7 +347,7 @@ export class RolesService {
           required: true,
           placeholder: '',
           option: {},
-          visible: true,
+          visible: false,
           disable: true,
           prefix: '',
           suffix: '',

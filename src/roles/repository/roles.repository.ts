@@ -26,7 +26,7 @@ export class RolesRepository {
     searchQuery: any,
   ): Promise<[Roles[], number]> {
     try {
-      return await this.utilsService.getAllQuery(
+      const result = await this.utilsService.getAllQuery(
         skip,
         take,
         filters,
@@ -35,6 +35,8 @@ export class RolesRepository {
         'roles',
         this.repository,
       );
+      console.log(result);
+      return result;
     } catch (e) {
       throw e;
     }
