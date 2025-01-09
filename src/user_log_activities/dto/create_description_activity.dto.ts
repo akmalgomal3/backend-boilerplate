@@ -3,4 +3,5 @@ export class CreateDescriptionActivity {
     method: string
     page: string
     params?: Object
+    statusCode: string
 }
