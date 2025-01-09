@@ -394,7 +394,7 @@ export class FeaturesService {
     }
   }
   
-  getHeaderAccessFeature(){
+  getAccessFeatureHeader(){
     return [
       {
         key: 'menuName',

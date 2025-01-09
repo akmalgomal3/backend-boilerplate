@@ -105,6 +105,14 @@ export class FeaturesController {
     return this.featuresService.deleteFeature(featureId);
   }
 
+  @Get('/accessMenu/header/info')
+  async getAccessMenuHeader() {
+    const result = this.featuresService.getAccessFeatureHeader();
+    return {
+      data: result,
+    };
+  }
+
   @ApiBearerAuth()
   @AuthorizedRoles(RoleType.Admin)
   @Get('/accessFeature/create/body/:roleId')
