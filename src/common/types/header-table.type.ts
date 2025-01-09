@@ -21,7 +21,7 @@ export type HeaderTable = {
   type: headerType;
   option: {
     type?: 'url' | 'array' | 'suggestion';
-    value?: string;
+    value?: string | string[];
   };
   inlineEdit: boolean;
 };
