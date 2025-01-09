@@ -32,5 +32,8 @@ export class RolesErrorMessage extends BaseErrorMessages {
 
     // Base Role
     ERROR_GETTING_BASE_ROLE: 'Error getting base role',
+
+    // Bulk Update
+    ERROR_BULK_UPDATE_ROLE: 'Error bulk update role',
   };
 }

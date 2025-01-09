@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DataSource, Like, QueryRunner, Repository } from 'typeorm';
+import { DataSource, In, Like, QueryRunner, Repository } from 'typeorm';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { Users } from '../entity/user.entity';
@@ -18,6 +18,8 @@ import { SessionService } from 'src/libs/session/service/session.service';
 import { UserLogActivitiesService } from 'src/user_log_activities/service/user_log_activities.service';
 import { DeviceType } from 'src/common/enums/device-type.enum';
 import { UserQuery } from '../query/user.query';
+import { UtilsService } from '../../libs/utils/services/utils.service';
+import { BulkUpdateUserDto } from '../dto/bulk-update-user.dto';
 
 @Injectable()
 export class UserRepository {
@@ -29,6 +31,7 @@ export class UserRepository {
     private dataSource: DataSource,
     private sessionService: SessionService,
     private userLogActivitiesService: UserLogActivitiesService,
+    private utilsService: UtilsService,
   ) {
     this.repository = this.dataSource.getRepository(Users);
     this.repositoryAuth = this.dataSource.getRepository(UsersAuth);
@@ -133,6 +136,36 @@ export class UserRepository {
     } catch (error) {
       throw new HttpException(
         error.message || 'Error getting user by username',
+        error.status || 500,
+      );
+    }
+  }
+
+  async getUserByIds(userIds: string[]): Promise<Users[]> {
+    try {
+      const users = await this.repository.findBy({
+        userId: In(userIds),
+      });
+
+      return users;
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error getting user by ids',
+        error.status || 500,
+      );
+    }
+  }
+
+  async getUserByUsernames(usernames: string[]): Promise<Users[]> {
+    try {
+      const users = await this.repository.findBy({
+        username: In(usernames),
+      });
+
+      return users;
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error getting user by usernames',
         error.status || 500,
       );
     }
@@ -288,28 +321,29 @@ export class UserRepository {
   }
 
   async getUserAuth(
-    take: number,
     skip: number,
-    search: string,
-    sortDate: 'DESC' | 'ASC',
-    requestType?: UserAuthRequestType,
+    take: number,
+    filters: any[],
+    sorts: any[],
+    searchQuery: any,
   ): Promise<[UsersAuth[], number]> {
     try {
-      return await this.repositoryAuth.findAndCount({
-        where: {
-          ...(search && {
-            username: Like(`%${search}%`),
-          }),
-          ...(requestType && {
-            requestStatus: requestType,
-          }),
-        },
-        take,
+      return await this.utilsService.getAllQuery(
         skip,
-        order: {
-          createdAt: sortDate,
-        },
-      });
+        take,
+        filters,
+        sorts,
+        searchQuery,
+        'user_auth',
+        this.repositoryAuth,
+        [
+          {
+            table: 'roles',
+            alias: 'role',
+            condition: 'user_auth.role_id = role.role_id',
+          },
+        ],
+      );
     } catch (error) {
       throw new HttpException(
         error.message || 'Error getting unapproved users',
@@ -567,6 +601,48 @@ export class UserRepository {
         error.message || 'Error updating user',
         error.status || 500,
       );
+    }
+  }
+
+  async bulkUpdateUser(userData: BulkUpdateUserDto) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    try {
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      const repository = queryRunner.manager.getRepository(Users);
+
+      for (const user of userData.users) {
+        await repository.update(
+          {
+            userId: user.userId,
+          },
+          {
+            role: {
+              roleId: user.roleId,
+            },
+            username: user.username,
+            fullName: user.fullName,
+            birthdate: user.birthdate,
+            updatedBy: user.updatedBy,
+            updatedAt: new Date(),
+          },
+        );
+      }
+
+      await queryRunner.commitTransaction();
+
+      return {
+        message: 'Bulk update success',
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new HttpException(
+        error.message || 'Error approving user',
+        error.status || 500,
+      );
+    } finally {
+      await queryRunner.release();
     }
   }
 
