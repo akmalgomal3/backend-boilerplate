@@ -27,7 +27,7 @@ import { PaginationDto } from '../../common/dto/pagination.dto';
 export class RolesController {
   constructor(private rolesService: RolesService) {}
 
-  @Post()
+  @Post('/get-all')
   async getRoles(@Body() paginationDto: PaginationDto) {
     const result = await this.rolesService.getRoles(paginationDto);
     return {
@@ -113,17 +113,6 @@ export class RolesController {
   @Get('/header/info')
   async getHeaderInfo() {
     const result = await this.rolesService.getRoleHeader();
-    return {
-      data: result,
-    };
-  }
-
-  @Get('enum/role-type')
-  async getRolesType() {
-    const result = Object.values(RoleType).map((value, index) => ({
-      key: index + 1,
-      value,
-    }));
     return {
       data: result,
     };
