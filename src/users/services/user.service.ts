@@ -32,6 +32,7 @@ import { format } from 'date-fns';
 import { HeaderTable } from '../../common/types/header-table.type';
 import { CreateUserByAdminDto } from '../dto/create-user-by-admin.dto';
 import { FormInfo } from '../../common/types/form-info.type';
+import { BulkUpdateUserDto } from '../dto/bulk-update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -85,7 +86,7 @@ export class UserService {
         ...user,
         roleId: user.role?.roleId,
         roleName: user.role?.roleName,
-        roleType: user.role?.roleType
+        roleType: user.role?.roleType,
       };
     } catch (error) {
       throw error;
@@ -384,6 +385,82 @@ export class UserService {
       return updateUser;
     } catch (e) {
       throw e;
+    }
+  }
+
+  async bulkUpdateUser(usersData: BulkUpdateUserDto, updaterId: string) {
+    try {
+      const { users } = usersData;
+
+      const validUsers = await this.validateBulkUpdateUser(
+        usersData,
+        updaterId,
+      );
+
+      const updateUsers = await this.userRepository.bulkUpdateUser({
+        users: validUsers,
+      });
+
+      return updateUsers;
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error bulk update user',
+        e.status || 500,
+      );
+    }
+  }
+
+  async validateBulkUpdateUser(
+    usersData: BulkUpdateUserDto,
+    updaterId: string,
+  ) {
+    try {
+      const { users } = usersData;
+      const userIds = users.map((user) => user.userId);
+      const usernames = users
+        .filter((user) => user.username)
+        .map((user) => user.username);
+      const roleIds = users
+        .filter((user) => user.roleId)
+        .map((user) => user.roleId);
+
+      // validate user id
+      const validUserIds = await this.userRepository.getUserByIds(userIds);
+      if (validUserIds.length !== userIds.length) {
+        throw new BadRequestException(
+          ErrorMessages.users.getMessage('INVALID_USER_ID'),
+        );
+      }
+
+      // validate username
+      const validateUsername =
+        await this.userRepository.getUserByUsernames(usernames);
+      if (validateUsername.length > 0) {
+        throw new BadRequestException(
+          ErrorMessages.users.getMessage('USERNAME_ALREADY_USED'),
+        );
+      }
+
+      return users.map((user) => {
+        const validUser = validUserIds.find(
+          (validUser) => validUser.userId === user.userId,
+        );
+        return {
+          userId: user.userId || validUser.userId,
+          username: user.username || validUser.username,
+          roleId: user.roleId || validUser?.role?.roleId,
+          fullName: user.fullName || validUser.fullName,
+          birthdate:
+            user.birthdate ||
+            format(new Date(validUser.birthdate), 'yyyy-MM-dd'),
+          updatedBy: updaterId,
+        };
+      });
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error validate bulk update user',
+        e.status || 500,
+      );
     }
   }
 
@@ -1296,7 +1373,7 @@ export class UserService {
         }
       }
 
-      return formInfo
+      return formInfo;
     } catch (e) {
       throw new HttpException(
         e.message || 'Error form create user auth',

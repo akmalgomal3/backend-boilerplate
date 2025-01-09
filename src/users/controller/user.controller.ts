@@ -29,6 +29,7 @@ import { GetUserAuthDto } from '../dto/get-unapproved-user.dto';
 import { UpdatePasswordByAdminDto } from '../dto/update-password-by-admin.dto';
 import { CreateUserByAdminDto } from '../dto/create-user-by-admin.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { BulkUpdateUserDto } from '../dto/bulk-update-user.dto';
 
 // @ts-ignore
 @Controller('users')
@@ -290,6 +291,22 @@ export class UserController {
     @Query('id', new ParseUUIDPipe({ optional: true })) userId: string,
   ) {
     const result = await this.userService.formCreateUpdateUser(userId);
+    return {
+      data: result,
+    };
+  }
+
+  @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
+  @Patch('/user/bulk')
+  async bulkUpdateUser(
+    @Body() updateUserDto: BulkUpdateUserDto,
+    @User() user: JwtPayload,
+  ) {
+    const result = await this.userService.bulkUpdateUser(
+      updateUserDto,
+      user.userId,
+    );
     return {
       data: result,
     };
