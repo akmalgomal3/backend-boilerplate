@@ -1,11 +1,12 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { OptionsService } from '../service/options.service';
-import { ApiQuery } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 
 @Controller('options')
 export class OptionsController {
   constructor(private readonly optionsService: OptionsService) {}
 
+  @ApiBearerAuth()
   @ApiQuery({ name: 'search', required: false })
   @Get('data/:tableName/:columnName')
   async getOptionTable(
@@ -25,6 +26,7 @@ export class OptionsController {
     };
   }
 
+  @ApiBearerAuth()
   @Get('enum/:enumName')
   async getEnum(@Param('enumName') enumName: string) {
     const result = await this.optionsService.getEnum(enumName);
