@@ -4,6 +4,7 @@ import { RoleType } from '../../common/enums/user-roles.enum';
 import { UserAuthRequestType } from '../../common/enums/request-type.enum';
 import { DeviceType } from '../../common/enums/device-type.enum';
 import { ErrorMessages } from '../../common/exceptions/root-error.message';
+import { ActivityType } from 'src/user_log_activities/enum/user_log_activities.enum';
 
 @Injectable()
 export class OptionsService {
@@ -13,6 +14,7 @@ export class OptionsService {
     RoleType,
     UserAuthRequestType,
     DeviceType,
+    ActivityType
   };
 
   async getOptionTable(
