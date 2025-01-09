@@ -185,7 +185,7 @@ export class UtilsService {
 
       joins.forEach((join) => {
         query = query.leftJoinAndMapMany(
-          `${tableName}.${join.table}`,
+          `${tableName}.${join.alias}`,
           `${join.table}`,
           `${join.alias}`,
           join.condition,
