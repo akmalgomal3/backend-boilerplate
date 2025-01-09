@@ -1,9 +1,6 @@
 import {
   BadRequestException,
-  forwardRef,
   HttpException,
-  HttpStatus,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -76,15 +73,20 @@ export class UserService {
     }
   }
 
-  async getUser(userId: string): Promise<Users> {
+  async getUser(userId: string) {
     try {
-      const result = await this.userRepository.getUserById(userId);
-      if (!result) {
+      const user = await this.userRepository.getUserById(userId);
+      if (!user) {
         throw new NotFoundException(
           ErrorMessages.users.getMessage('USER_NOT_FOUND'),
         );
       }
-      return result;
+      return {
+        ...user,
+        roleId: user.role?.roleId,
+        roleName: user.role?.roleName,
+        roleType: user.role?.roleType
+      };
     } catch (error) {
       throw error;
     }
@@ -285,7 +287,7 @@ export class UserService {
           roleName: user.role[0]?.roleName,
           roleType: user.role[0]?.roleType,
         };
-      })
+      });
 
       return {
         data: formattedData,
@@ -852,6 +854,112 @@ export class UserService {
     }
   }
 
+  async getUserHeader(): Promise<HeaderTable[]> {
+    try {
+      return [
+        {
+          key: 'username',
+          label: 'Username',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'text',
+          option: {},
+          inlineEdit: false,
+        },
+        {
+          key: 'fullname',
+          label: 'Full Name',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'text',
+          option: {},
+          inlineEdit: false,
+        },
+        {
+          key: 'roleId',
+          label: 'Role Name',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'select',
+          option: {
+            type: 'url',
+            value: '/options/data/roles/role_name?pkName=role_id',
+          },
+          inlineEdit: false,
+        },
+        {
+          key: 'roleType',
+          label: 'Role Type',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'select',
+          option: {
+            type: 'url',
+            value: '/options/enum/RoleType',
+          },
+          inlineEdit: false,
+        },
+        {
+          key: 'email',
+          label: 'Email',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'email',
+          option: {},
+          inlineEdit: false,
+        },
+        {
+          key: 'phoneNumber',
+          label: 'Phone Number',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'text',
+          option: {},
+          inlineEdit: false,
+        },
+        {
+          key: 'birthdate',
+          label: 'Birthdate',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'date',
+          option: {},
+          inlineEdit: false,
+        },
+        {
+          key: 'createdAt',
+          label: 'Created At',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: false,
+          type: 'datetime',
+          option: {},
+          inlineEdit: false,
+        },
+      ];
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error getting user auth header',
+        e.status || 500,
+      );
+    }
+  }
+
   async createUserByAdmin(dto: CreateUserByAdminDto, userId: string) {
     try {
       const {
@@ -1004,6 +1112,35 @@ export class UserService {
             suffix: '',
           },
           {
+            type: 'date',
+            key: 'birthdate',
+            label: 'Birthdate',
+            value: '',
+            required: true,
+            placeholder: 'Input birthdate',
+            option: {},
+            visible: true,
+            disable: false,
+            prefix: '',
+            suffix: '',
+          },
+          {
+            type: 'select',
+            key: 'requestStatus',
+            label: 'Request Status',
+            value: '',
+            required: true,
+            placeholder: 'Select request status',
+            option: {
+              type: 'url',
+              value: '/options/enum/UserAuthRequestType',
+            },
+            visible: true,
+            disable: false,
+            prefix: '',
+            suffix: '',
+          },
+          {
             type: 'select',
             key: 'roleId',
             label: 'Role Name',
@@ -1014,6 +1151,103 @@ export class UserService {
               type: 'url',
               value: '/options/data/roles/role_name?pkName=role_id',
             },
+            visible: true,
+            disable: false,
+            prefix: '',
+            suffix: '',
+          },
+        ],
+      };
+
+      return formInfo;
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error form create user auth',
+        e.status || 500,
+      );
+    }
+  }
+
+  async formCreateUpdateUser(userId: string = null) {
+    try {
+      const formInfo: FormInfo = {
+        id: null,
+        title: 'Create User',
+        description: 'Create a new user by admin',
+        fields: [
+          {
+            type: 'text',
+            key: 'username',
+            label: 'Username',
+            value: '',
+            required: true,
+            placeholder: 'Input username',
+            option: {},
+            visible: true,
+            disable: false,
+            prefix: '<UserOutlined />',
+            suffix: '',
+          },
+          {
+            type: 'text',
+            key: 'fullName',
+            label: 'Full Name',
+            value: '',
+            required: true,
+            placeholder: 'Input full name',
+            option: {},
+            visible: true,
+            disable: false,
+            prefix: '<UserOutlined />',
+            suffix: '',
+          },
+          {
+            type: 'password',
+            key: 'password',
+            label: 'Password',
+            value: '',
+            required: true,
+            placeholder: 'Input password',
+            option: {},
+            visible: true,
+            disable: false,
+            prefix: '',
+            suffix: '',
+          },
+          {
+            type: 'password',
+            key: 'confirmPassword',
+            label: 'Confirm Password',
+            value: '',
+            required: true,
+            placeholder: 'Input confirm password',
+            option: {},
+            visible: true,
+            disable: true,
+            prefix: '',
+            suffix: '',
+          },
+          {
+            type: 'email',
+            key: 'email',
+            label: 'Email',
+            value: '',
+            required: true,
+            placeholder: 'Input email',
+            option: {},
+            visible: true,
+            disable: false,
+            prefix: '',
+            suffix: '',
+          },
+          {
+            type: 'text',
+            key: 'phoneNumber',
+            label: 'Phone Number',
+            value: '',
+            required: true,
+            placeholder: 'Input phone number',
+            option: {},
             visible: true,
             disable: false,
             prefix: '',
@@ -1031,11 +1265,38 @@ export class UserService {
             disable: false,
             prefix: '',
             suffix: '',
-          }
+          },
+          {
+            type: 'select',
+            key: 'roleId',
+            label: 'Role Name',
+            value: '',
+            required: true,
+            placeholder: 'Input Role',
+            option: {
+              type: 'url',
+              value: '/options/data/roles/role_name?pkName=role_id',
+            },
+            visible: true,
+            disable: false,
+            prefix: '',
+            suffix: '',
+          },
         ],
       };
 
-      return formInfo;
+      if (userId) {
+        formInfo.title = 'Update User';
+        formInfo.description = 'Update user by admin';
+        formInfo.id = userId;
+
+        const user = await this.getUser(userId);
+        for (const field of formInfo.fields) {
+          field.value = user[field.key];
+        }
+      }
+
+      return formInfo
     } catch (e) {
       throw new HttpException(
         e.message || 'Error form create user auth',

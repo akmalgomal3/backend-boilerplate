@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -52,6 +53,7 @@ export class UserController {
     return { data: result };
   }
 
+  @HttpCode(200)
   @ApiBearerAuth()
   @AuthorizedRoles(RoleType.Admin)
   @Post('/user-auth/all')
@@ -191,9 +193,7 @@ export class UserController {
   @ApiBearerAuth()
   @AuthorizedRoles(RoleType.Admin)
   @Delete('/:userId')
-  async deleteUser(
-    @Param('userId', ParseUUIDPipe) userId: string
-  ) {
+  async deleteUser(@Param('userId', ParseUUIDPipe) userId: string) {
     await this.userService.hardDeleteUserByUserId(userId);
     return {
       data: null,
@@ -239,8 +239,18 @@ export class UserController {
   @ApiBearerAuth()
   @AuthorizedRoles(RoleType.Admin)
   @Get('/user-auth/header/info')
-  async getHeaderInfo() {
+  async getUserAuthHeader() {
     const result = await this.userService.getUserAuthHeader();
+    return {
+      data: result,
+    };
+  }
+
+  @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
+  @Get('/user/header/info')
+  async getUserHeaderInfo() {
+    const result = await this.userService.getUserHeader();
     return {
       data: result,
     };
@@ -253,7 +263,10 @@ export class UserController {
     @Body() createUserDto: CreateUserByAdminDto,
     @User() user: JwtPayload,
   ) {
-    const result = await this.userService.createUserByAdmin(createUserDto, user.userId);
+    const result = await this.userService.createUserByAdmin(
+      createUserDto,
+      user.userId,
+    );
     return {
       data: result,
     };
@@ -261,9 +274,22 @@ export class UserController {
 
   @ApiBearerAuth()
   @AuthorizedRoles(RoleType.Admin)
-  @Get('/form/create')
+  @Get('/form/user_auth/create')
   async getFormCreate() {
     const result = await this.userService.formCreateUserByAdmin();
+    return {
+      data: result,
+    };
+  }
+
+  @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
+  @ApiQuery({ name: 'id', required: false })
+  @Get('/form/user/create-update')
+  async getFormCreateUpdate(
+    @Query('id', new ParseUUIDPipe({ optional: true })) userId: string,
+  ) {
+    const result = await this.userService.formCreateUpdateUser(userId);
     return {
       data: result,
     };
