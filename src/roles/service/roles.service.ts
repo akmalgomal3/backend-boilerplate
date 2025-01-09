@@ -179,52 +179,7 @@ export class RolesService {
     userId: string,
   ): Promise<void> {
     try {
-      const isExist = await this.getRoleById(roleId);
-
-      if (!isExist) {
-        throw new NotFoundException(
-          ErrorMessages.roles.dynamicMessage(
-            ErrorMessages.roles.getMessage('ERROR_UPDATE_ROLE_NOT_FOUND'),
-            { roleId: roleId },
-          ),
-        );
-      }
-
-      const isAlreadyAvailable = await this.roleRepository.getRoleByName(
-        updateRoleDto.roleName,
-      );
-
-      if (isAlreadyAvailable) {
-        throw new HttpException(
-          ErrorMessages.roles.dynamicMessage(
-            ErrorMessages.roles.getMessage(
-              'ERROR_UPDATE_ROLE_ALREADY_AVAILABLE',
-            ),
-            { roleName: updateRoleDto.roleName },
-          ),
-          HttpStatus.CONFLICT,
-        );
-      }
-
-      const validRoles = [
-        RoleType.Executive,
-        RoleType.Admin,
-        RoleType.Operator,
-      ];
-
-      if (
-        updateRoleDto.roleType &&
-        !validRoles.includes(updateRoleDto.roleType)
-      ) {
-        throw new HttpException(
-          ErrorMessages.roles.dynamicMessage(
-            ErrorMessages.roles.getMessage('ERROR_UPDATE_ROLE_TYPE_INVALID'),
-            { roleType: updateRoleDto.roleType },
-          ),
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
+      await this.validateRoleUpdate(roleId, updateRoleDto);
       await this.roleRepository.updateRole(roleId, {
         ...updateRoleDto,
         updatedBy: userId,
@@ -233,6 +188,75 @@ export class RolesService {
       throw new HttpException(
         error.message || ErrorMessages.roles.getMessage('ERROR_UPDATE_ROLE'),
         error.status || 500,
+      );
+    }
+  }
+
+  async bulkUpdateRole(
+    updates: { roleId: string; updateRoleDto: UpdateRoleDto }[],
+    userId: string,
+  ): Promise<void> {
+    try {
+      for (const { roleId, updateRoleDto } of updates) {
+        await this.validateRoleUpdate(roleId, updateRoleDto);
+      }
+
+      await this.roleRepository.bulkUpdateRoles(updates, userId);
+    } catch (error) {
+      throw new HttpException(
+        error.message ||
+          ErrorMessages.roles.getMessage('ERROR_BULK_UPDATE_ROLE'),
+        error.status || 500,
+      );
+    }
+  }
+
+  private async validateRoleUpdate(
+    roleId: string,
+    updateRoleDto: UpdateRoleDto,
+  ): Promise<void> {
+    await this.ensureRoleExists(roleId);
+    if (updateRoleDto.roleName) {
+      await this.ensureRoleNameIsUnique(updateRoleDto.roleName);
+    }
+    this.ensureValidRoleType(updateRoleDto.roleType);
+  }
+
+  private async ensureRoleExists(roleId: string): Promise<void> {
+    const isExist = await this.getRoleById(roleId);
+    if (!isExist) {
+      throw new NotFoundException(
+        ErrorMessages.roles.dynamicMessage(
+          ErrorMessages.roles.getMessage('ERROR_UPDATE_ROLE_NOT_FOUND'),
+          { roleId },
+        ),
+      );
+    }
+  }
+
+  private async ensureRoleNameIsUnique(roleName: string): Promise<void> {
+    const isAlreadyAvailable =
+      await this.roleRepository.getRoleByName(roleName);
+    if (isAlreadyAvailable) {
+      throw new HttpException(
+        ErrorMessages.roles.dynamicMessage(
+          ErrorMessages.roles.getMessage('ERROR_UPDATE_ROLE_ALREADY_AVAILABLE'),
+          { roleName },
+        ),
+        HttpStatus.CONFLICT,
+      );
+    }
+  }
+
+  private ensureValidRoleType(roleType?: RoleType): void {
+    const validRoles = [RoleType.Executive, RoleType.Admin, RoleType.Operator];
+    if (roleType && !validRoles.includes(roleType)) {
+      throw new HttpException(
+        ErrorMessages.roles.dynamicMessage(
+          ErrorMessages.roles.getMessage('ERROR_UPDATE_ROLE_TYPE_INVALID'),
+          { roleType },
+        ),
+        HttpStatus.BAD_REQUEST,
       );
     }
   }
@@ -254,6 +278,38 @@ export class RolesService {
     } catch (error) {
       throw new HttpException(
         error.message || ErrorMessages.roles.getMessage('ERROR_DELETE_ROLE'),
+        error.status || 500,
+      );
+    }
+  }
+
+  async bulkDeleteRole(roleIds: { roleId: string }[]): Promise<void> {
+    try {
+      const nonExistentRoles = [];
+
+      for (const { roleId } of roleIds) {
+        const isExist = await this.getRoleById(roleId);
+        if (!isExist) {
+          nonExistentRoles.push(roleId);
+        }
+      }
+
+      if (nonExistentRoles.length > 0) {
+        throw new NotFoundException(
+          ErrorMessages.roles.dynamicMessage(
+            ErrorMessages.roles.getMessage('ERROR_DELETE_ROLE_NOT_EXIST'),
+            { roleIds: nonExistentRoles.join(', ') },
+          ),
+        );
+      }
+
+      await this.roleRepository.bulkDeleteRoles(
+        roleIds.map(({ roleId }) => roleId),
+      );
+    } catch (error) {
+      throw new HttpException(
+        error.message ||
+          ErrorMessages.roles.getMessage('ERROR_BULK_DELETE_ROLE'),
         error.status || 500,
       );
     }
