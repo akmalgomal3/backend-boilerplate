@@ -1,7 +1,7 @@
 import { HttpException, Inject, Injectable } from '@nestjs/common';
 import {
   DataSource,
-  ILike,
+  ILike, In,
   IsNull,
   Not,
   QueryRunner,
@@ -13,6 +13,7 @@ import { Features } from '../entity/features.entity';
 import { CreateUpdateAccessFeatureDto } from '../dto/create-update-access-feature.dto';
 import { AccessFeature } from '../entity/access_feature.entity';
 import { AccessFeatureQuery } from '../query/access_feature.query';
+import { UtilsService } from '../../libs/utils/services/utils.service';
 
 @Injectable()
 export class FeaturesRepository {
@@ -22,6 +23,7 @@ export class FeaturesRepository {
   constructor(
     @Inject('DB_POSTGRES')
     private dataSource: DataSource,
+    private utilsService: UtilsService,
   ) {
     this.repository = this.dataSource.getRepository(Features);
     this.accessFeatureRepository = this.dataSource.getRepository(AccessFeature);
@@ -30,16 +32,27 @@ export class FeaturesRepository {
   async getFeatures(
     skip: number,
     take: number,
-    search: string,
+    filters: any[],
+    sorts: any[],
+    searchQuery: any,
   ): Promise<[Features[], number]> {
     try {
-      const [features, count] = await this.repository.findAndCount({
-        where: { featureName: ILike(`%${search}%`) },
+      return await this.utilsService.getAllQuery(
         skip,
         take,
-      });
-
-      return [features, count];
+        filters,
+        sorts,
+        searchQuery,
+        'features',
+        this.repository,
+        [
+          {
+            table: 'menus',
+            alias: 'menu',
+            condition: 'features.menu_id = menu.menu_id',
+          },
+        ],
+      );
     } catch (error) {
       throw new HttpException(
         error.message || 'Error get all features',
@@ -173,6 +186,41 @@ export class FeaturesRepository {
     }
   }
 
+  async bulkUpdateFeature(
+    updates: { featureId: string; updateFeatureDto: UpdateFeatureDto }[],
+    userId: string,
+  ): Promise<void> {
+    const queryRunner = this.repository.manager.connection.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      for (const { featureId, updateFeatureDto } of updates) {
+        const updateData = {
+          featureName: updateFeatureDto.featureName || undefined,
+          menuId: updateFeatureDto.menuId || undefined,
+          description: updateFeatureDto.description || undefined,
+          active: updateFeatureDto.active ?? undefined,
+          updatedBy: userId,
+          updatedAt: new Date(),
+        };
+
+        await queryRunner.manager.update(Features, { featureId }, updateData);
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new HttpException(
+        error.message || 'Error bulk update feature',
+        error.status || 500,
+      );
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   async deleteFeature(featureId: string): Promise<void> {
     const queryRunner = this.repository.manager.connection.createQueryRunner();
 
@@ -186,6 +234,29 @@ export class FeaturesRepository {
       await queryRunner.rollbackTransaction();
       throw new HttpException(
         error.message || 'Error delete feature by feature id',
+        error.status || 500,
+      );
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async bulkDeleteFeature(featureIds: string[]): Promise<void> {
+    const queryRunner = this.repository.manager.connection.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      await queryRunner.manager.delete(Features, {
+        featureId: In(featureIds),
+      });
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new HttpException(
+        error.message || 'Error bulk delete feature by feature id',
         error.status || 500,
       );
     } finally {

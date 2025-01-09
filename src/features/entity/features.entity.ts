@@ -46,4 +46,3 @@ export class Features {
   @OneToMany(() => AccessFeature, (accessFeature) => accessFeature.feature)
   accessFeature: AccessFeature[];
 }
-    
