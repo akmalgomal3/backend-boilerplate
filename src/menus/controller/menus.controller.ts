@@ -45,7 +45,7 @@ export class MenusController {
 
   @Post('/get-all')
   async getMenusNonHierarchy(@Body() paginationDto: PaginationDto) {
-    const result = await this.menusService.getRolesNonHierarchy(paginationDto);
+    const result = await this.menusService.getMenusNonHierarchy(paginationDto);
     return {
       data: {
         body: result.data,

@@ -62,7 +62,7 @@ export class MenusService {
     }
   }
 
-  async getRolesNonHierarchy(
+  async getMenusNonHierarchy(
     dto: PaginationDto,
   ): Promise<PaginatedResponseDto<any>> {
     try {
@@ -82,15 +82,15 @@ export class MenusService {
         );
 
       const mappedData = data.map((menu) => {
-        if (menu.menu && menu.parentMenuId) {
-          const parentMenu = menu.menu.find(
+        if (menu.parentMenu && menu.parentMenuId) {
+          const parentMenu = menu.parentMenu.find(
             (subMenu) => subMenu.menuId === menu.parentMenuId,
           );
           if (parentMenu) {
             menu.parentMenuId = parentMenu.menuName;
           }
         }
-        delete menu.menu;
+        delete menu.parentMenu;
         return menu;
       });
 
