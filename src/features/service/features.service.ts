@@ -27,6 +27,7 @@ import { Menu } from 'src/menus/entity/menus.entity';
 import { ErrorMessages } from '../../common/exceptions/root-error.message';
 import { HeaderTable } from '../../common/types/header-table.type';
 import { FormInfo } from '../../common/types/form-info.type';
+import { UtilsService } from '../../libs/utils/services/utils.service';
 
 @Injectable()
 export class FeaturesService {
@@ -37,6 +38,7 @@ export class FeaturesService {
     private menuService: MenusService,
     private usersService: UserService,
     private rolesService: RolesService,
+    private utilsService: UtilsService,
   ) {}
 
   async getFeatures(
@@ -46,29 +48,9 @@ export class FeaturesService {
       const { page = 1, limit = 10, filters, sorts, search } = dto;
       const skip = (page - 1) * limit;
 
-      const filterConditions =
-        filters.length > 0
-          ? filters.map((filter) => ({
-              key: filter.key,
-              value: filter.value,
-              start: filter.start,
-              end: filter.end,
-            }))
-          : [];
-      const sortConditions =
-        sorts.length > 0
-          ? sorts.map((sort) => ({
-              key: sort.key,
-              direction: sort.direction,
-            }))
-          : [];
-      const searchQuery =
-        search.length > 0
-          ? {
-              query: search[0].query,
-              searchBy: search[0].searchBy,
-            }
-          : null;
+      const filterConditions = this.utilsService.buildFilterConditions(filters);
+      const sortConditions = this.utilsService.buildSortConditions(sorts);
+      const searchQuery = this.utilsService.buildSearchQuery(search);
 
       const [data, totalItems] = await this.featuresRepository.getFeatures(
         skip,
@@ -77,7 +59,6 @@ export class FeaturesService {
         sortConditions,
         searchQuery,
       );
-      const totalPages = Math.ceil(totalItems / limit);
 
       const mappedData = data.map((feature) => {
         if (feature['menu'] && feature.menuId) {
@@ -94,12 +75,11 @@ export class FeaturesService {
 
       return {
         data: mappedData,
-        metadata: {
-          page: Number(page),
-          limit: Number(limit),
-          totalPages: Number(totalPages),
-          totalItems: Number(totalItems),
-        },
+        metadata: this.utilsService.calculatePagination(
+          totalItems,
+          limit,
+          page,
+        ),
       };
     } catch (error) {
       throw new HttpException(
