@@ -51,17 +51,38 @@ export class UserService {
     dto: PaginationDto,
   ): Promise<PaginatedResponseDto<Partial<Users>>> {
     try {
-      const { page = 1, limit = 10 } = dto;
-      const skip = (page - 1) * limit;
+      const { page = 1, limit = 10, filters, sorts, search } = dto;
+      const skip: number = (page - 1) * limit;
+      const filterConditions = this.utilsService.buildFilterConditions(filters);
+      const sortConditions = this.utilsService.buildSortConditions(sorts);
+      const searchQuery = this.utilsService.buildSearchQuery(search);
 
       const [data, totalItems] = await this.userRepository.getUsers(
         skip,
         limit,
+        filterConditions,
+        sortConditions,
+        searchQuery,
       );
       const totalPages = Math.ceil(totalItems / limit);
 
+      const formattedData = data.map((user) => {
+        return {
+          userId: user.userId,
+          username: user.username,
+          fullName: user.fullName,
+          requestType: user.requestStatus,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          birthdate: user.birthdate,
+          createdAt: user.createdAt,
+          roleName: user.role[0]?.roleName,
+          roleType: user.role[0]?.roleType,
+        };
+      });
+
       return {
-        data,
+        data: formattedData,
         metadata: {
           page: Number(page),
           limit: Number(limit),
@@ -241,29 +262,9 @@ export class UserService {
     try {
       const { page = 1, limit = 10, filters, sorts, search } = getUserAuthDto;
       const skip: number = (page - 1) * limit;
-      const filterConditions =
-        filters.length > 0
-          ? filters.map((filter) => ({
-              key: filter.key,
-              value: filter.value,
-              start: filter.start,
-              end: filter.end,
-            }))
-          : [];
-      const sortConditions =
-        sorts.length > 0
-          ? sorts.map((sort) => ({
-              key: sort.key,
-              direction: sort.direction,
-            }))
-          : [];
-      const searchQuery =
-        search.length > 0
-          ? {
-              query: search[0].query,
-              searchBy: search[0].searchBy,
-            }
-          : null;
+      const filterConditions = this.utilsService.buildFilterConditions(filters);
+      const sortConditions = this.utilsService.buildSortConditions(sorts);
+      const searchQuery = this.utilsService.buildSearchQuery(search);
 
       const [data, totalItems] = await this.userRepository.getUserAuth(
         skip,
