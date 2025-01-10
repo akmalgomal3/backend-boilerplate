@@ -37,27 +37,35 @@ export class UserRepository {
     this.repositoryAuth = this.dataSource.getRepository(UsersAuth);
   }
 
-  async getUsers(skip: number, take: number): Promise<[Users[], number]> {
+  async getUsers(
+    skip: number,
+    take: number,
+    filters: any[],
+    sorts: any[],
+    searchQuery: any,
+  ): Promise<[UsersAuth[], number]> {
     try {
-      const result = await this.repository.findAndCount({
-        select: {
-          userId: true,
-          username: true,
-          email: true,
-          fullName: true,
-          phoneNumber: true,
-          role: { roleId: true, roleName: true, roleType: true },
-        },
-        relations: { role: true },
+      return await this.utilsService.getAllQuery(
         skip,
         take,
-        order: {
-          username: 'DESC',
-        },
-      });
-      return result;
+        filters,
+        sorts,
+        searchQuery,
+        'users',
+        this.repository,
+        [
+          {
+            table: 'roles',
+            alias: 'role',
+            condition: 'users.role_id = role.role_id',
+          },
+        ],
+      );
     } catch (error) {
-      throw error;
+      throw new HttpException(
+        error.message || 'Error getting unapproved users',
+        error.status || 500,
+      );
     }
   }
 

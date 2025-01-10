@@ -38,11 +38,17 @@ export class UserController {
   constructor(private userService: UserService) {}
 
   @ApiBearerAuth()
-  @Get('/')
-  async getUsers(@Query('page') page: number, @Query('limit') limit: number) {
-    const result = await this.userService.getUsers({ page, limit });
+  @HttpCode(200)
+  @Post('/')
+  async getUsers(@Body() getUsers: PaginationDto) {
+    const result = await this.userService.getUsers(getUsers);
     return {
-      data: result.data,
+      data: {
+        body: result.data,
+        sort: getUsers.sorts || [],
+        filter: getUsers.filters || [],
+        search: getUsers.search || [],
+      },
       metadata: result.metadata,
     };
   }
