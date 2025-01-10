@@ -30,29 +30,10 @@ export class RolesService {
       const { page = 1, limit = 10, filters, sorts, search } = dto;
       const skip = (page - 1) * limit;
 
-      const filterConditions =
-        filters.length > 0
-          ? filters.map((filter) => ({
-              key: filter.key,
-              value: filter.value,
-              start: filter.start,
-              end: filter.end,
-            }))
-          : [];
-      const sortConditions =
-        sorts.length > 0
-          ? sorts.map((sort) => ({
-              key: sort.key,
-              direction: sort.direction,
-            }))
-          : [];
-      const searchQuery =
-        search.length > 0
-          ? {
-              query: search[0].query,
-              searchBy: search[0].searchBy,
-            }
-          : null;
+      const filterConditions = this.utilsService.buildFilterConditions(filters);
+      const sortConditions = this.utilsService.buildSortConditions(sorts);
+      const searchQuery = this.utilsService.buildSearchQuery(search);
+
       const [data, totalItems] = await this.roleRepository.getRoles(
         skip,
         limit,
@@ -60,16 +41,14 @@ export class RolesService {
         sortConditions,
         searchQuery,
       );
-      const totalPages = Math.ceil(totalItems / limit);
 
       return {
         data,
-        metadata: {
-          page: Number(page),
-          limit: Number(limit),
-          totalPages: Number(totalPages),
-          totalItems: Number(totalItems),
-        },
+        metadata: this.utilsService.calculatePagination(
+          totalItems,
+          limit,
+          page,
+        ),
       };
     } catch (error) {
       throw new HttpException(

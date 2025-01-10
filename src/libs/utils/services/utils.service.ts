@@ -8,7 +8,7 @@ import * as CryptoJS from 'crypto-js';
 import { ConfigService } from '@nestjs/config';
 import * as geoip from 'geoip-lite';
 import { ErrorMessages } from '../../../common/exceptions/root-error.message';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 
 @Injectable()
 export class UtilsService {
@@ -170,6 +170,72 @@ export class UtilsService {
     return decryptedPassword;
   }
 
+  private applyJoins(
+    query: SelectQueryBuilder<any>,
+    tableName: string,
+    joins: { table: string; alias: string; condition: string }[],
+  ): SelectQueryBuilder<any> {
+    joins.forEach((join) => {
+      query = query.leftJoinAndMapMany(
+        `${tableName}.${join.alias}`,
+        `${join.table}`,
+        `${join.alias}`,
+        join.condition,
+      );
+    });
+    return query;
+  }
+
+  private applyFilters(
+    query: SelectQueryBuilder<any>,
+    tableName: string,
+    filters: any[],
+  ): SelectQueryBuilder<any> {
+    filters.forEach((filter) => {
+      if (filter.start && filter.end) {
+        query = query.andWhere(
+          `${tableName}.${filter.key} BETWEEN :start AND :end`,
+          { start: filter.start, end: filter.end },
+        );
+      } else {
+        query = query.andWhere(`${tableName}.${filter.key} IN (:...values)`, {
+          values: filter.value,
+        });
+      }
+    });
+    return query;
+  }
+
+  private applySearchQuery(
+    query: SelectQueryBuilder<any>,
+    tableName: string,
+    searchQuery: any,
+  ): SelectQueryBuilder<any> {
+    if (searchQuery) {
+      const { query: searchText, searchBy } = searchQuery;
+      searchBy.forEach((field: any) => {
+        query = query.andWhere(`${tableName}.${field} ILIKE :search`, {
+          search: `%${searchText}%`,
+        });
+      });
+    }
+    return query;
+  }
+
+  private applySorts(
+    query: SelectQueryBuilder<any>,
+    tableName: string,
+    sorts: any[],
+  ): SelectQueryBuilder<any> {
+    sorts.forEach((sort) => {
+      query = query.addOrderBy(
+        `${tableName}.${sort.key}`,
+        sort.direction.toUpperCase(),
+      );
+    });
+    return query;
+  }
+
   async getAllQuery(
     skip: number,
     take: number,
@@ -183,55 +249,56 @@ export class UtilsService {
     try {
       let query = repository.createQueryBuilder(tableName);
 
-      joins.forEach((join) => {
-        query = query.leftJoinAndMapMany(
-          `${tableName}.${join.alias}`,
-          `${join.table}`,
-          `${join.alias}`,
-          join.condition,
-        );
-      });
+      query = this.applyJoins(query, tableName, joins);
+      query = this.applyFilters(query, tableName, filters);
+      query = this.applySearchQuery(query, tableName, searchQuery);
+      query = this.applySorts(query, tableName, sorts);
 
-      if (filters.length > 0) {
-        filters.forEach((filter) => {
-          if (filter.start && filter.end) {
-            query = query.andWhere(
-              `${tableName}.${filter.key} BETWEEN :start AND :end`,
-              { start: filter.start, end: filter.end },
-            );
-          } else {
-            query = query.andWhere(
-              `${tableName}.${filter.key} IN (:...values)`,
-              {
-                values: filter.value,
-              },
-            );
-          }
-        });
-      }
-      if (searchQuery) {
-        const { query: searchText, searchBy } = searchQuery;
-        searchBy.forEach((field: any) => {
-          query = query.andWhere(`${tableName}.${field} ILIKE :search`, {
-            search: `%${searchText}%`,
-          });
-        });
-      }
-      if (sorts.length > 0) {
-        sorts.forEach((sort) => {
-          query = query.addOrderBy(
-            `${tableName}.${sort.key}`,
-            sort.direction.toUpperCase(),
-          );
-        });
-      }
       query = query.skip(skip).take(take);
 
       const [data, count] = await query.getManyAndCount();
-
       return [data, count];
     } catch (e) {
       throw e;
     }
+  }
+
+  buildFilterConditions(filters: any[]): any[] {
+    return filters.length > 0
+      ? filters.map((filter) => ({
+          key: filter.key,
+          value: filter.value,
+          start: filter.start,
+          end: filter.end,
+        }))
+      : [];
+  }
+
+  buildSortConditions(sorts: any[]): any[] {
+    return sorts.length > 0
+      ? sorts.map((sort) => ({
+          key: sort.key,
+          direction: sort.direction,
+        }))
+      : [];
+  }
+
+  buildSearchQuery(search: any[]): any | null {
+    return search.length > 0
+      ? {
+          query: search[0].query,
+          searchBy: search[0].searchBy,
+        }
+      : null;
+  }
+
+  calculatePagination(totalItems: number, limit: number, page: number) {
+    const totalPages = Math.ceil(totalItems / limit);
+    return {
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Number(totalPages),
+      totalItems: Number(totalItems),
+    };
   }
 }

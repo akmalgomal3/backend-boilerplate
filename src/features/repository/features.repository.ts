@@ -1,9 +1,9 @@
 import { HttpException, Inject, Injectable } from '@nestjs/common';
 import {
   DataSource,
-  ILike, In,
+  ILike,
+  In,
   IsNull,
-  Not,
   QueryRunner,
   Repository,
 } from 'typeorm';

@@ -25,6 +25,7 @@ import {
   PaginationDto,
 } from '../../common/dto/pagination.dto';
 import { HeaderTable } from '../../common/types/header-table.type';
+import { UtilsService } from '../../libs/utils/services/utils.service';
 
 @Injectable()
 export class MenusService {
@@ -34,6 +35,7 @@ export class MenusService {
     private featuresService: FeaturesService,
     private roleService: RolesService,
     private userService: UserService,
+    private utilsService: UtilsService,
   ) {}
 
   async getMenus(
@@ -67,29 +69,9 @@ export class MenusService {
       const { page = 1, limit = 10, filters, sorts, search } = dto;
       const skip = (page - 1) * limit;
 
-      const filterConditions =
-        filters.length > 0
-          ? filters.map((filter) => ({
-              key: filter.key,
-              value: filter.value,
-              start: filter.start,
-              end: filter.end,
-            }))
-          : [];
-      const sortConditions =
-        sorts.length > 0
-          ? sorts.map((sort) => ({
-              key: sort.key,
-              direction: sort.direction,
-            }))
-          : [];
-      const searchQuery =
-        search.length > 0
-          ? {
-              query: search[0].query,
-              searchBy: search[0].searchBy,
-            }
-          : null;
+      const filterConditions = this.utilsService.buildFilterConditions(filters);
+      const sortConditions = this.utilsService.buildSortConditions(sorts);
+      const searchQuery = this.utilsService.buildSearchQuery(search);
       const [data, totalItems] =
         await this.menusRepository.getMenusNonHierarchy(
           skip,
@@ -98,7 +80,6 @@ export class MenusService {
           sortConditions,
           searchQuery,
         );
-      const totalPages = Math.ceil(totalItems / limit);
 
       const mappedData = data.map((menu) => {
         if (menu.menu && menu.parentMenuId) {
@@ -115,12 +96,11 @@ export class MenusService {
 
       return {
         data: mappedData,
-        metadata: {
-          page: Number(page),
-          limit: Number(limit),
-          totalPages: Number(totalPages),
-          totalItems: Number(totalItems),
-        },
+        metadata: this.utilsService.calculatePagination(
+          totalItems,
+          limit,
+          page,
+        ),
       };
     } catch (e) {
       throw e;
