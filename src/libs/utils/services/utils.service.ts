@@ -192,13 +192,16 @@ export class UtilsService {
     filters: any[],
   ): SelectQueryBuilder<any> {
     filters.forEach((filter) => {
+      const filterKey = filter.key.includes('.')
+        ? filter.key
+        : `${tableName}.${filter.key}`;
       if (filter.start && filter.end) {
-        query = query.andWhere(
-          `${tableName}.${filter.key} BETWEEN :start AND :end`,
-          { start: filter.start, end: filter.end },
-        );
+        query = query.andWhere(`${filterKey} BETWEEN :start AND :end`, {
+          start: filter.start,
+          end: filter.end,
+        });
       } else {
-        query = query.andWhere(`${tableName}.${filter.key} IN (:...values)`, {
+        query = query.andWhere(`${filterKey} IN (:...values)`, {
           values: filter.value,
         });
       }
@@ -214,7 +217,10 @@ export class UtilsService {
     if (searchQuery) {
       const { query: searchText, searchBy } = searchQuery;
       searchBy.forEach((field: any) => {
-        query = query.andWhere(`${tableName}.${field} ILIKE :search`, {
+        const searchField = field.includes('.')
+          ? field
+          : `${tableName}.${field}`;
+        query = query.andWhere(`${searchField} ILIKE :search`, {
           search: `%${searchText}%`,
         });
       });
@@ -228,10 +234,10 @@ export class UtilsService {
     sorts: any[],
   ): SelectQueryBuilder<any> {
     sorts.forEach((sort) => {
-      query = query.addOrderBy(
-        `${tableName}.${sort.key}`,
-        sort.direction.toUpperCase(),
-      );
+      const sortKey = sort.key.includes('.')
+        ? sort.key
+        : `${tableName}.${sort.key}`;
+      query = query.addOrderBy(sortKey, sort.direction.toUpperCase());
     });
     return query;
   }

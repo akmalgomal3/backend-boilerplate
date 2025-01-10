@@ -82,8 +82,8 @@ export class MenusRepository {
         [
           {
             table: 'menus',
-            alias: 'menu',
-            condition: 'menus.parent_menu_id = menu.menu_id',
+            alias: 'parentMenu',
+            condition: 'menus.parent_menu_id = parentMenu.menu_id',
           },
         ],
       );
