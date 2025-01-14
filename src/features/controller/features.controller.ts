@@ -123,6 +123,14 @@ export class FeaturesController {
     return this.featuresService.bulkDeleteFeature(ids);
   }
 
+  @Get('/accessFeature/header/info')
+  async getAccessFeatureHeader() {
+    const result = this.featuresService.getAccessFeatureHeader();
+    return {
+      data: result,
+    };
+  }
+
   @ApiBearerAuth()
   @AuthorizedRoles(RoleType.Admin)
   @Get('/accessFeature/create/body/:roleId')
