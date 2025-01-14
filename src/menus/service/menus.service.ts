@@ -24,6 +24,8 @@ import {
   PaginatedResponseDto,
   PaginationDto,
 } from '../../common/dto/pagination.dto';
+import { HeaderTable } from '../../common/types/header-table.type';
+import { UtilsService } from '../../libs/utils/services/utils.service';
 
 @Injectable()
 export class MenusService {
@@ -33,6 +35,7 @@ export class MenusService {
     private featuresService: FeaturesService,
     private roleService: RolesService,
     private userService: UserService,
+    private utilsService: UtilsService,
   ) {}
 
   async getMenus(
@@ -59,36 +62,16 @@ export class MenusService {
     }
   }
 
-  async getRolesNonHierarchy(
+  async getMenusNonHierarchy(
     dto: PaginationDto,
   ): Promise<PaginatedResponseDto<any>> {
     try {
       const { page = 1, limit = 10, filters, sorts, search } = dto;
       const skip = (page - 1) * limit;
 
-      const filterConditions =
-        filters.length > 0
-          ? filters.map((filter) => ({
-              key: filter.key,
-              value: filter.value,
-              start: filter.start,
-              end: filter.end,
-            }))
-          : [];
-      const sortConditions =
-        sorts.length > 0
-          ? sorts.map((sort) => ({
-              key: sort.key,
-              direction: sort.direction,
-            }))
-          : [];
-      const searchQuery =
-        search.length > 0
-          ? {
-              query: search[0].query,
-              searchBy: search[0].searchBy,
-            }
-          : null;
+      const filterConditions = this.utilsService.buildFilterConditions(filters);
+      const sortConditions = this.utilsService.buildSortConditions(sorts);
+      const searchQuery = this.utilsService.buildSearchQuery(search);
       const [data, totalItems] =
         await this.menusRepository.getMenusNonHierarchy(
           skip,
@@ -97,29 +80,27 @@ export class MenusService {
           sortConditions,
           searchQuery,
         );
-      const totalPages = Math.ceil(totalItems / limit);
 
       const mappedData = data.map((menu) => {
-        if (menu.menus && menu.parentMenuId) {
-          const parentMenu = menu.menus.find(
+        if (menu.parentMenu && menu.parentMenuId) {
+          const parentMenu = menu.parentMenu.find(
             (subMenu) => subMenu.menuId === menu.parentMenuId,
           );
           if (parentMenu) {
             menu.parentMenuId = parentMenu.menuName;
           }
         }
-        delete menu.menus;
+        delete menu.parentMenu;
         return menu;
       });
 
       return {
         data: mappedData,
-        metadata: {
-          page: Number(page),
-          limit: Number(limit),
-          totalPages: Number(totalPages),
-          totalItems: Number(totalItems),
-        },
+        metadata: this.utilsService.calculatePagination(
+          totalItems,
+          limit,
+          page,
+        ),
       };
     } catch (e) {
       throw e;
@@ -482,9 +463,6 @@ export class MenusService {
             rootMenus.push(menu);
           } else {
             const parentMenu = menuMap.get(menu.parentMenuId);
-            if (menu.menuName == 'Menu 23') {
-              console.log('23 was here ', parentMenu);
-            }
             if (parentMenu) {
               parentMenu.children.push(menu);
             }
@@ -548,7 +526,7 @@ export class MenusService {
     return result;
   };
 
-  async getMenuHeader() {
+  async getMenuHeader(): Promise<HeaderTable[]> {
     try {
       return [
         {
@@ -616,7 +594,7 @@ export class MenusService {
           sortable: true,
           editable: true,
           searchable: true,
-          type: 'textarea',
+          type: 'text',
           option: {},
           inlineEdit: true,
         },
@@ -627,7 +605,7 @@ export class MenusService {
           sortable: true,
           editable: true,
           searchable: true,
-          type: 'boolean',
+          type: 'radio',
           option: {},
           inlineEdit: true,
         },
