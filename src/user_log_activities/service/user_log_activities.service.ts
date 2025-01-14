@@ -15,6 +15,7 @@ import { timestamp } from 'rxjs';
 import { FilterDto } from 'src/common/dto/filter.dto';
 import { SearchDto } from 'src/common/dto/search.dto';
 import { SortDto } from 'src/common/dto/sort.dto';
+import { HeaderTable } from 'src/common/types/header-table.type';
 
 @Injectable()
 export class UserLogActivitiesService {
@@ -264,7 +265,7 @@ export class UserLogActivitiesService {
     }
   }
 
-  getUserLogActivityHeader(){
+  getUserLogActivityHeader(): HeaderTable[] {
     return [
       {
         key: 'username',
@@ -284,7 +285,7 @@ export class UserLogActivitiesService {
         sortable: false,
         editable: false,
         searchable: false,
-        type: 'radiobutton',
+        type: 'radio',
         option: {
           type: 'url', 
           value: '/options/enum/ActivityType'
@@ -299,7 +300,31 @@ export class UserLogActivitiesService {
         editable: false,
         searchable: false,
         type: 'checkbox',
-        option: {},
+        option: {
+          type: 'array', 
+          value: [
+            {
+              key: null, 
+              value: "GET"
+            }, 
+            {
+              key: null, 
+              value: "POST"
+            }, 
+            {
+              key: null, 
+              value: "PATCH"
+            }, 
+            {
+              key: null, 
+              value: "PUT"
+            }, 
+            {
+              key: null, 
+              value: "DELETE"
+            }
+          ]
+        },
         inlineEdit: false,
       },   
       {
@@ -315,7 +340,7 @@ export class UserLogActivitiesService {
       }, 
       {
         key: 'statusCode',
-        label: 'statusCode',
+        label: 'status Code',
         filterable: false,
         sortable: false,
         editable: false,
@@ -326,7 +351,7 @@ export class UserLogActivitiesService {
       }, 
       {
         key: 'description',
-        label: 'description',
+        label: 'Description',
         filterable: true,
         sortable: false,
         editable: false,
@@ -336,8 +361,31 @@ export class UserLogActivitiesService {
         inlineEdit: false,
       }, 
       {
-        key: 'deviceType',
-        label: 'deviceType',
+        key: 'device.type',
+        label: 'Device Type',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'text',
+        option: {
+          type: 'array', 
+          value: [
+            {
+              key: null, 
+              value: "Web"
+            },
+            {
+              key: null, 
+              value: "Mobile"
+            }
+          ]
+        },
+        inlineEdit: false,
+      },
+      {
+        key: 'device.info.ipAddress',
+        label: 'Ip Address',
         filterable: false,
         sortable: false,
         editable: false,
@@ -347,19 +395,8 @@ export class UserLogActivitiesService {
         inlineEdit: false,
       },
       {
-        key: 'ipAddress',
-        label: 'ipAddress',
-        filterable: false,
-        sortable: false,
-        editable: false,
-        searchable: false,
-        type: 'text',
-        option: {},
-        inlineEdit: false,
-      },
-      {
-        key: 'loginTime',
-        label: 'loginTime',
+        key: 'authDetails.loginTime',
+        label: 'Login Time',
         filterable: false,
         sortable: false,
         editable: false,
@@ -370,7 +407,7 @@ export class UserLogActivitiesService {
       },
       {
         key: 'timestamp',
-        label: 'createdAt',
+        label: 'Created At',
         filterable: true,
         sortable: true,
         editable: false,
