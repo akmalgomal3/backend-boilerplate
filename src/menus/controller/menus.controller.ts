@@ -149,6 +149,14 @@ export class MenusController {
     };
   }
 
+  @Get('/accessMenu/header/info')
+  async getAccessMenuHeader() {
+    const result = this.menusService.getAccessMenuHeader();
+    return {
+      data: result,
+    };
+  }
+
   @ApiBearerAuth()
   @Get('/accessMenu/user')
   async getAccessMenuByCurrentUser(@User() user: JwtPayload) {
