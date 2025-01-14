@@ -113,14 +113,6 @@ export class FeaturesController {
     return this.featuresService.deleteFeature(featureId);
   }
 
-  @Get('/accessMenu/header/info')
-  async getAccessMenuHeader() {
-    const result = this.featuresService.getAccessFeatureHeader();
-    return {
-      data: result,
-    };
-  }
-
   @Delete('bulk-delete')
   @ApiBearerAuth()
   @AuthorizedRoles(RoleType.Admin)
@@ -129,6 +121,14 @@ export class FeaturesController {
   ): Promise<void> {
     const ids = featureIds.map((feature) => feature.featureId);
     return this.featuresService.bulkDeleteFeature(ids);
+  }
+
+  @Get('/accessFeature/header/info')
+  async getAccessFeatureHeader() {
+    const result = this.featuresService.getAccessFeatureHeader();
+    return {
+      data: result,
+    };
   }
 
   @ApiBearerAuth()
