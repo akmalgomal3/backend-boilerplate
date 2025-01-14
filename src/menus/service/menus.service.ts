@@ -641,6 +641,66 @@ export class MenusService {
     }
   }
 
+  getAccessMenuHeader(){
+    return [
+      {
+        key: 'menuName',
+        label: 'Menu Name',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'text',
+        option: {},
+        inlineEdit: false,
+      },
+      {
+        key: 'children',
+        label: 'Sub Menu',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'text',
+        option: {},
+        inlineEdit: false,
+      },
+      {
+        key: 'routePath',
+        label: 'routePath',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'text',
+        option: {},
+        inlineEdit: false,
+      },
+      {
+        key: 'icon',
+        label: 'icon',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'text',
+        option: {},
+        inlineEdit: false,
+      },
+      {
+        key: 'selected',
+        label: 'selected',
+        filterable: false,
+        sortable: false,
+        editable: false,
+        searchable: false,
+        type: 'radiobutton',
+        option: {},
+        inlineEdit: true,
+      },
+    ]
+  }
+
   async formCreateUpdateMenu(menuId: string = null): Promise<FormInfo> {
     const formInfo: FormInfo = {
       id: null,
