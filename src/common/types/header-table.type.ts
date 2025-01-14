@@ -9,7 +9,8 @@ type headerType =
   | 'password'
   | 'radio'
   | 'select'
-  | 'datetime';
+  | 'datetime'
+  | 'textarea'
 
 export type HeaderTable = {
   key: string;
@@ -21,7 +22,7 @@ export type HeaderTable = {
   type: headerType;
   option: {
     type?: 'url' | 'array' | 'suggestion';
-    value?: string | string[];
+    value?: string | object[];
   };
   inlineEdit: boolean;
 };
