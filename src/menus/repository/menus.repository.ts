@@ -1,8 +1,15 @@
-import { HttpException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   DataSource,
   EntityNotFoundError,
   ILike,
+  In,
   QueryRunner,
   Repository,
 } from 'typeorm';
@@ -75,8 +82,8 @@ export class MenusRepository {
         [
           {
             table: 'menus',
-            alias: 'parent_menus',
-            condition: 'menus.parent_menu_id = parent_menus.menu_id',
+            alias: 'parentMenu',
+            condition: 'menus.parent_menu_id = parentMenu.menu_id',
           },
         ],
       );
@@ -144,7 +151,6 @@ export class MenusRepository {
         active: dto.active ?? true,
         createdBy: userId,
         createdAt: new Date(),
-        updatedAt: new Date(),
       });
 
       const savedMenu = await queryRunner.manager.save(newMenu);
@@ -199,6 +205,120 @@ export class MenusRepository {
     }
   }
 
+  async bulkUpdateMenu(
+    updates: { menuId: string; updateMenuDto: UpdateMenuDto }[],
+    userId: string,
+  ) {
+    const queryRunner = this.repository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const menuIds = updates.map(({ menuId }) => menuId);
+      const menuMap = await this.getExistingMenus(menuIds);
+
+      for (const { menuId, updateMenuDto } of updates) {
+        await this.validateMenuExistence(menuId, updateMenuDto);
+        await this.validateBulkCircularDependency(
+          menuId,
+          updateMenuDto.parentMenuId,
+          menuMap,
+        );
+        const updateData = {
+          menuName: updateMenuDto.menuName || undefined,
+          parentMenuId: updateMenuDto.parentMenuId || undefined,
+          routePath: updateMenuDto.routePath || undefined,
+          icon: updateMenuDto.icon || undefined,
+          hierarchyLevel: updateMenuDto.hierarchyLevel || undefined,
+          description: updateMenuDto.description || undefined,
+          active: updateMenuDto.active ?? undefined,
+          updatedBy: userId,
+          updatedAt: new Date(),
+        };
+
+        await queryRunner.manager.update(Menu, { menuId }, updateData);
+
+        if (updateMenuDto.parentMenuId != null) {
+          const updatedMenu = menuMap.get(menuId);
+          updatedMenu.parentMenuId = updateMenuDto.parentMenuId;
+          menuMap.set(menuId, updatedMenu);
+        }
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new HttpException(
+        error.message || 'Error bulk update menus',
+        error.status || 500,
+      );
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async getExistingMenus(menuIds: string[]): Promise<Map<string, Menu>> {
+    const existingMenus = await this.repository.find({
+      where: { menuId: In(menuIds) },
+    });
+
+    return new Map(existingMenus.map((menu) => [menu.menuId, menu]));
+  }
+
+  async validateMenuExistence(
+    menuId: string,
+    updateMenuDto: UpdateMenuDto,
+  ): Promise<void> {
+    const isExist = await this.repository.findOne({ where: { menuId } });
+
+    if (!isExist) {
+      throw new NotFoundException(
+        ErrorMessages.menus.dynamicMessage(
+          ErrorMessages.menus.getMessage('ERROR_UPDATE_MENU_NOT_FOUND'),
+          { menuId },
+        ),
+      );
+    }
+
+    if (updateMenuDto.parentMenuId != null) {
+      const isParentExist = await this.repository.findOne({
+        where: { menuId: updateMenuDto.parentMenuId },
+      });
+
+      if (!isParentExist) {
+        throw new NotFoundException(
+          ErrorMessages.menus.dynamicMessage(
+            ErrorMessages.menus.getMessage(
+              'ERROR_UPDATE_MENU_PARENT_NOT_FOUND',
+            ),
+            { menuId: updateMenuDto.parentMenuId },
+          ),
+        );
+      }
+    }
+  }
+
+  async validateBulkCircularDependency(
+    menuId: string,
+    parentMenuId: string,
+    menuMap: Map<string, Menu>,
+  ): Promise<void> {
+    let currentMenuId = parentMenuId;
+
+    while (currentMenuId) {
+      if (currentMenuId === menuId) {
+        throw new BadRequestException('Circular dependency detected');
+      }
+
+      const currentMenu = menuMap.get(currentMenuId);
+      if (!currentMenu) {
+        break;
+      }
+
+      currentMenuId = currentMenu.parentMenuId;
+    }
+  }
+
   async deleteMenu(menuId: string[]): Promise<void> {
     const queryRunner = this.repository.manager.connection.createQueryRunner();
 
@@ -206,7 +326,7 @@ export class MenusRepository {
     await queryRunner.startTransaction();
 
     try {
-      await queryRunner.manager.delete(Menu, { menuId });
+      await queryRunner.manager.delete(Menu, { menuId: In(menuId) });
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();

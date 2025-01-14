@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -26,6 +27,9 @@ import { Public } from '../../common/decorators/public.decorator';
 import { DeclineUserAuthDto } from '../dto/decline-user-auth.dto';
 import { GetUserAuthDto } from '../dto/get-unapproved-user.dto';
 import { UpdatePasswordByAdminDto } from '../dto/update-password-by-admin.dto';
+import { CreateUserByAdminDto } from '../dto/create-user-by-admin.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
+import { BulkUpdateUserDto } from '../dto/bulk-update-user.dto';
 
 // @ts-ignore
 @Controller('users')
@@ -34,11 +38,17 @@ export class UserController {
   constructor(private userService: UserService) {}
 
   @ApiBearerAuth()
-  @Get('/')
-  async getUsers(@Query('page') page: number, @Query('limit') limit: number) {
-    const result = await this.userService.getUsers({ page, limit });
+  @HttpCode(200)
+  @Post('/')
+  async getUsers(@Body() getUsers: PaginationDto) {
+    const result = await this.userService.getUsers(getUsers);
     return {
-      data: result.data,
+      data: {
+        body: result.data,
+        sort: getUsers.sorts || [],
+        filter: getUsers.filters || [],
+        search: getUsers.search || [],
+      },
       metadata: result.metadata,
     };
   }
@@ -50,13 +60,19 @@ export class UserController {
     return { data: result };
   }
 
+  @HttpCode(200)
   @ApiBearerAuth()
   @AuthorizedRoles(RoleType.Admin)
-  @Get('/user-auth/all')
-  async getUnapprovedUsers(@Query() getUserAuth: GetUserAuthDto) {
-    const result = await this.userService.getUnapprovedUsers(getUserAuth);
+  @Post('/user-auth/all')
+  async getUserAuth(@Body() getUserAuth: PaginationDto) {
+    const result = await this.userService.getUserAuth(getUserAuth);
     return {
-      data: result.data,
+      data: {
+        body: result.data,
+        sort: getUserAuth.sorts || [],
+        filter: getUserAuth.filters || [],
+        search: getUserAuth.search || [],
+      },
       metadata: result.metadata,
     };
   }
@@ -184,9 +200,7 @@ export class UserController {
   @ApiBearerAuth()
   @AuthorizedRoles(RoleType.Admin)
   @Delete('/:userId')
-  async deleteUser(
-    @Param('userId', ParseUUIDPipe) userId: string
-  ) {
+  async deleteUser(@Param('userId', ParseUUIDPipe) userId: string) {
     await this.userService.hardDeleteUserByUserId(userId);
     return {
       data: null,
@@ -224,6 +238,81 @@ export class UserController {
   async verifyUpdateEmail(@Query('token') token: string) {
     const result = await this.userService.updateEmailByToken(token);
 
+    return {
+      data: result,
+    };
+  }
+
+  @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
+  @Get('/user-auth/header/info')
+  async getUserAuthHeader() {
+    const result = await this.userService.getUserAuthHeader();
+    return {
+      data: result,
+    };
+  }
+
+  @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
+  @Get('/user/header/info')
+  async getUserHeaderInfo() {
+    const result = await this.userService.getUserHeader();
+    return {
+      data: result,
+    };
+  }
+
+  @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
+  @Post('/admin')
+  async createByAdmin(
+    @Body() createUserDto: CreateUserByAdminDto,
+    @User() user: JwtPayload,
+  ) {
+    const result = await this.userService.createUserByAdmin(
+      createUserDto,
+      user.userId,
+    );
+    return {
+      data: result,
+    };
+  }
+
+  @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
+  @Get('/form/user_auth/create')
+  async getFormCreate() {
+    const result = await this.userService.formCreateUserByAdmin();
+    return {
+      data: result,
+    };
+  }
+
+  @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
+  @ApiQuery({ name: 'id', required: false })
+  @Get('/form/user/create-update')
+  async getFormCreateUpdate(
+    @Query('id', new ParseUUIDPipe({ optional: true })) userId: string,
+  ) {
+    const result = await this.userService.formCreateUpdateUser(userId);
+    return {
+      data: result,
+    };
+  }
+
+  @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
+  @Patch('/user/bulk')
+  async bulkUpdateUser(
+    @Body() updateUserDto: BulkUpdateUserDto,
+    @User() user: JwtPayload,
+  ) {
+    const result = await this.userService.bulkUpdateUser(
+      updateUserDto,
+      user.userId,
+    );
     return {
       data: result,
     };

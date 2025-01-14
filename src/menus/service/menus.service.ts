@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   forwardRef,
   HttpException,
   Inject,
@@ -23,6 +24,8 @@ import {
   PaginatedResponseDto,
   PaginationDto,
 } from '../../common/dto/pagination.dto';
+import { HeaderTable } from '../../common/types/header-table.type';
+import { UtilsService } from '../../libs/utils/services/utils.service';
 
 @Injectable()
 export class MenusService {
@@ -32,6 +35,7 @@ export class MenusService {
     private featuresService: FeaturesService,
     private roleService: RolesService,
     private userService: UserService,
+    private utilsService: UtilsService,
   ) {}
 
   async getMenus(
@@ -41,12 +45,7 @@ export class MenusService {
   ): Promise<{ data: { globalFeatures: Features[]; menus: Menu[] } }> {
     try {
       const skip = (page - 1) * limit;
-      const [menus, totalItems] = await this.menusRepository.getMenus(
-        skip,
-        limit,
-        search,
-      );
-      const totalPages = Math.ceil(totalItems / limit);
+      const [menus] = await this.menusRepository.getMenus(skip, limit, search);
       const hierarchicalMenus = await this.buildMenuHierarchy(menus, null);
 
       return {
@@ -63,36 +62,16 @@ export class MenusService {
     }
   }
 
-  async getRolesNonHierarchy(
+  async getMenusNonHierarchy(
     dto: PaginationDto,
   ): Promise<PaginatedResponseDto<any>> {
     try {
       const { page = 1, limit = 10, filters, sorts, search } = dto;
       const skip = (page - 1) * limit;
 
-      const filterConditions =
-        filters.length > 0
-          ? filters.map((filter) => ({
-              key: filter.key,
-              value: filter.value,
-              start: filter.start,
-              end: filter.end,
-            }))
-          : [];
-      const sortConditions =
-        sorts.length > 0
-          ? sorts.map((sort) => ({
-              key: sort.key,
-              direction: sort.direction,
-            }))
-          : [];
-      const searchQuery =
-        search.length > 0
-          ? {
-              query: search[0].query,
-              searchBy: search[0].searchBy,
-            }
-          : null;
+      const filterConditions = this.utilsService.buildFilterConditions(filters);
+      const sortConditions = this.utilsService.buildSortConditions(sorts);
+      const searchQuery = this.utilsService.buildSearchQuery(search);
       const [data, totalItems] =
         await this.menusRepository.getMenusNonHierarchy(
           skip,
@@ -101,16 +80,27 @@ export class MenusService {
           sortConditions,
           searchQuery,
         );
-      const totalPages = Math.ceil(totalItems / limit);
+
+      const mappedData = data.map((menu) => {
+        if (menu.parentMenu && menu.parentMenuId) {
+          const parentMenu = menu.parentMenu.find(
+            (subMenu) => subMenu.menuId === menu.parentMenuId,
+          );
+          if (parentMenu) {
+            menu.parentMenuId = parentMenu.menuName;
+          }
+        }
+        delete menu.parentMenu;
+        return menu;
+      });
 
       return {
-        data,
-        metadata: {
-          page: Number(page),
-          limit: Number(limit),
-          totalPages: Number(totalPages),
-          totalItems: Number(totalItems),
-        },
+        data: mappedData,
+        metadata: this.utilsService.calculatePagination(
+          totalItems,
+          limit,
+          page,
+        ),
       };
     } catch (e) {
       throw e;
@@ -172,7 +162,6 @@ export class MenusService {
           createMenuDto.parentMenuId,
         );
 
-        console.log(isParentExist);
         if (isParentExist == null) {
           throw new NotFoundException(
             ErrorMessages.menus.dynamicMessage(
@@ -232,12 +221,31 @@ export class MenusService {
             ),
           );
         }
+        await this.validateCircularDependency(
+          updateMenuDto.parentMenuId,
+          menuId,
+        );
       }
 
       await this.menusRepository.updateMenu(menuId, updateMenuDto, userId);
     } catch (error) {
       throw new HttpException(
         error.message || ErrorMessages.menus.getMessage('ERROR_UPDATE_MENU'),
+        error.status || 500,
+      );
+    }
+  }
+
+  async bulkUpdateMenu(
+    updates: { menuId: string; updateMenuDto: UpdateMenuDto }[],
+    userId: string,
+  ) {
+    try {
+      await this.menusRepository.bulkUpdateMenu(updates, userId);
+    } catch (error) {
+      throw new HttpException(
+        error.message ||
+          ErrorMessages.menus.getMessage('ERROR_BULK_UPDATE_MENU'),
         error.status || 500,
       );
     }
@@ -255,6 +263,29 @@ export class MenusService {
       );
 
       await this.menusRepository.deleteMenu(menuIdsWillDelete);
+    } catch (error) {
+      throw new HttpException(
+        error.message || ErrorMessages.menus.getMessage('ERROR_DELETE_MENU'),
+        error.status || 500,
+      );
+    }
+  }
+
+  async bulkDeleteMenu(menuIds: { menuId: string }[]) {
+    try {
+      for (const { menuId } of menuIds) {
+        await this.getMenuById(menuId);
+      }
+
+      const allMenus = await this.getMenus(1, 100000);
+
+      const menuIdsWillDelete = new Set<string>();
+      for (const { menuId } of menuIds) {
+        const childIds = this.getAllMenuChildId(allMenus.data['menus'], menuId);
+        childIds.forEach((id) => menuIdsWillDelete.add(id));
+      }
+
+      await this.menusRepository.deleteMenu(Array.from(menuIdsWillDelete));
     } catch (error) {
       throw new HttpException(
         error.message || ErrorMessages.menus.getMessage('ERROR_DELETE_MENU'),
@@ -440,7 +471,6 @@ export class MenusService {
           rootMenus.push(menu);
         }
       }
-
       return rootMenus;
     } catch (error) {
       throw new HttpException(
@@ -496,7 +526,7 @@ export class MenusService {
     return result;
   };
 
-  async getMenuHeader() {
+  async getMenuHeader(): Promise<HeaderTable[]> {
     try {
       return [
         {
@@ -511,7 +541,7 @@ export class MenusService {
           inlineEdit: true,
         },
         {
-          key: 'menu[0].menuName',
+          key: 'parentMenuId',
           label: 'Parent Menu',
           filterable: true,
           sortable: true,
@@ -564,7 +594,7 @@ export class MenusService {
           sortable: true,
           editable: true,
           searchable: true,
-          type: 'textarea',
+          type: 'text',
           option: {},
           inlineEdit: true,
         },
@@ -575,7 +605,7 @@ export class MenusService {
           sortable: true,
           editable: true,
           searchable: true,
-          type: 'boolean',
+          type: 'radio',
           option: {},
           inlineEdit: true,
         },
@@ -799,5 +829,26 @@ export class MenusService {
     }
 
     return formInfo;
+  }
+
+  private async validateCircularDependency(
+    parentMenuId: string,
+    currentMenuId: string,
+  ): Promise<void> {
+    let parent = await this.menusRepository.getMenuById(parentMenuId);
+
+    while (parent) {
+      if (parent.menuId === currentMenuId) {
+        throw new BadRequestException(
+          ErrorMessages.menus.dynamicMessage(
+            ErrorMessages.menus.getMessage('ERROR_CIRCULAR_DEPENDENCY'),
+            { currentMenuId: currentMenuId },
+          ),
+        );
+      }
+      parent = parent.parentMenuId
+        ? await this.menusRepository.getMenuById(parent.parentMenuId)
+        : null;
+    }
   }
 }

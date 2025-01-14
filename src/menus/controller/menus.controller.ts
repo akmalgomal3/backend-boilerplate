@@ -45,7 +45,7 @@ export class MenusController {
 
   @Post('/get-all')
   async getMenusNonHierarchy(@Body() paginationDto: PaginationDto) {
-    const result = await this.menusService.getRolesNonHierarchy(paginationDto);
+    const result = await this.menusService.getMenusNonHierarchy(paginationDto);
     return {
       data: {
         body: result.data,
@@ -95,7 +95,7 @@ export class MenusController {
     };
   }
 
-  @Patch(':menuId')
+  @Patch('single-update/:menuId')
   @ApiBearerAuth()
   @AuthorizedRoles(RoleType.Admin)
   async updateMenu(
@@ -106,11 +106,28 @@ export class MenusController {
     return this.menusService.updateMenu(menuId, updateMenuDto, user.userId);
   }
 
-  @Delete(':menuId')
+  @Patch('bulk-update')
+  @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
+  async bulkUpdateMenu(
+    @Body() updates: { menuId: string; updateMenuDto: UpdateMenuDto }[],
+    @User() user: JwtPayload,
+  ): Promise<void> {
+    return this.menusService.bulkUpdateMenu(updates, user.userId);
+  }
+
+  @Delete('single-delete/:menuId')
   @ApiBearerAuth()
   @AuthorizedRoles(RoleType.Admin)
   async deleteMenu(@Param('menuId') menuId: string): Promise<void> {
     return this.menusService.deleteMenu(menuId);
+  }
+
+  @Delete('bulk-delete')
+  @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
+  async bulkDeleteMenu(@Body() menuIds: { menuId: string }[]): Promise<void> {
+    return this.menusService.bulkDeleteMenu(menuIds);
   }
 
   @Get('/header/info')

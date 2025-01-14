@@ -13,5 +13,6 @@ export class UsersErrorMessage extends BaseErrorMessages {
     PASSWORD_NOT_MATCH: 'Password does not match',
     SAME_OLD_PASSWORD: 'New password must be different from old password',
     USERNAME_ALREADY_USED: 'Username already registered, please use another username',
+    INVALID_USER_ID: 'Invalid user id',
   };
 }
