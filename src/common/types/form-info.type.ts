@@ -9,7 +9,7 @@ type FieldInfo = {
     type: string, 
     key: string, 
     label: string, 
-    value: string, 
+    value: string | object, 
     required: boolean, 
     placeholder: string, 
     option: {

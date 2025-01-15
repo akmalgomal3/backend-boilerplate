@@ -1220,9 +1220,9 @@ export class UserService {
           },
           {
             type: 'select',
-            key: 'roleId',
+            key: 'role',
             label: 'Role Name',
-            value: '',
+            value: {},
             required: true,
             placeholder: 'Input Role',
             option: {
@@ -1346,9 +1346,9 @@ export class UserService {
           },
           {
             type: 'select',
-            key: 'roleId',
+            key: 'role',
             label: 'Role Name',
-            value: '',
+            value: {},
             required: true,
             placeholder: 'Input Role',
             option: {
@@ -1370,7 +1370,7 @@ export class UserService {
 
         const user = await this.getUser(userId);
         for (const field of formInfo.fields) {
-          field.value = user[field.key];
+          field.value = field.key != "role" ? user[field.key] : {key: user.roleId, value: user.roleName};
         }
       }
 
