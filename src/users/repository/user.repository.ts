@@ -20,6 +20,7 @@ import { DeviceType } from 'src/common/enums/device-type.enum';
 import { UserQuery } from '../query/user.query';
 import { UtilsService } from '../../libs/utils/services/utils.service';
 import { BulkUpdateUserDto } from '../dto/bulk-update-user.dto';
+import { BulkDeleteUserDto } from '../dto/bulk-delete-user.dto';
 
 @Injectable()
 export class UserRepository {
@@ -151,8 +152,13 @@ export class UserRepository {
 
   async getUserByIds(userIds: string[]): Promise<Users[]> {
     try {
-      const users = await this.repository.findBy({
-        userId: In(userIds),
+      const users = await this.repository.find({
+        where: {
+          userId: In(userIds)
+        }, 
+        relations: {
+          role: true
+        }
       });
 
       return users;
@@ -214,6 +220,23 @@ export class UserRepository {
     } catch (error) {
       throw new HttpException(
         error.message || 'Error getting user by email',
+        error.status || 500,
+      );
+    }
+  }
+
+  async getUserAuthByUsernames(usernames: string[]){
+    try {
+      const userAuths = await this.repositoryAuth.find({
+        where: {
+          username: In(usernames)
+        }
+      })
+
+      return userAuths
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error getting user auth by usernames',
         error.status || 500,
       );
     }
@@ -559,7 +582,7 @@ export class UserRepository {
         },
         {
           role: {
-            roleId: updateUserDto.roleId,
+            roleId: updateUserDto.role.key,
           },
           username: updateUserDto.username,
           fullName: updateUserDto.fullName,
@@ -592,7 +615,7 @@ export class UserRepository {
         },
         {
           role: {
-            roleId: updateUserDto.roleId,
+            roleId: updateUserDto.role.key,
           },
           username: updateUserDto.username,
           fullName: updateUserDto.fullName,
@@ -627,7 +650,7 @@ export class UserRepository {
           },
           {
             role: {
-              roleId: user.roleId,
+              roleId: user.role.key,
             },
             username: user.username,
             fullName: user.fullName,
@@ -676,11 +699,11 @@ export class UserRepository {
       await queryRunner.connect();
       await queryRunner.startTransaction();
 
-      await this.deleteTrxUserByUserId(queryRunner, userId);
+      await this.deleteTrxUserByUserId(queryRunner, [userId]);
 
       const userAuth = await this.getUserAuthByUsername(username);
       if (userAuth && userAuth?.userId) {
-        await this.deleteTrxUserAuthById(queryRunner, userAuth?.userId);
+        await this.deleteTrxUserAuthById(queryRunner, [userAuth?.userId]);
       }
 
       await Promise.all([
@@ -711,13 +734,52 @@ export class UserRepository {
     }
   }
 
+  async bulkHardDeleteUser(userIds: string[], userAuthIds: string[]){
+    const queryRunner = this.dataSource.createQueryRunner();
+    try {
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      await this.deleteTrxUserByUserId(queryRunner, userIds);
+      await this.deleteTrxUserAuthById(queryRunner, userAuthIds);
+      
+      await Promise.all([
+        userIds?.forEach(userId => {
+          this.sessionService.deleteSession(
+            `session:${userId}:${DeviceType.WEB}`,
+          ),
+          this.sessionService.deleteSession(
+            `refresh:${userId}:${DeviceType.WEB}`,
+          ),
+          this.sessionService.deleteSession(
+            `session:${userId}:${DeviceType.MOBILE}`,
+          ),
+          this.sessionService.deleteSession(
+            `refresh:${userId}:${DeviceType.MOBILE}`,
+          )
+        }),
+        await this.userLogActivitiesService.bulkDeleteUserActivityByUserId(userIds),
+      ]);
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction()
+      throw new HttpException(
+        error.message || 'Error bulk hard delete user',
+        error.status || 500,
+      );
+    }finally{
+      await queryRunner.release();
+    }
+  }
+
   async deleteTrxUserAuthById(
     trx: QueryRunner,
-    userAuthId: string,
+    userAuthIds: string[],
   ): Promise<void> {
     try {
       await trx.manager.delete(UsersAuth, {
-        userId: userAuthId,
+        userId: In(userAuthIds),
       });
     } catch (error) {
       throw new HttpException(
@@ -727,10 +789,13 @@ export class UserRepository {
     }
   }
 
-  async deleteTrxUserByUserId(trx: QueryRunner, userId: string): Promise<void> {
+  async deleteTrxUserByUserId(
+    trx: QueryRunner, 
+    userIds: string[]
+  ): Promise<void> {
     try {
       await trx.manager.delete(Users, {
-        userId,
+        userId: In(userIds),
       });
     } catch (error) {
       throw new HttpException(

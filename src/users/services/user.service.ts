@@ -33,6 +33,7 @@ import { HeaderTable } from '../../common/types/header-table.type';
 import { CreateUserByAdminDto } from '../dto/create-user-by-admin.dto';
 import { FormInfo } from '../../common/types/form-info.type';
 import { BulkUpdateUserDto } from '../dto/bulk-update-user.dto';
+import { BulkDeleteUserDto } from '../dto/bulk-delete-user.dto';
 
 @Injectable()
 export class UserService {
@@ -356,12 +357,12 @@ export class UserService {
         await this.validateUsernameEmail(updateUserDto.username);
       }
 
-      if (updateUserDto.roleId) {
-        await this.rolesService.getRoleById(updateUserDto.roleId);
+      if (updateUserDto.role) {
+        await this.rolesService.getRoleById(updateUserDto.role.key);
       }
 
       updateUserDto = {
-        roleId: updateUserDto.roleId ?? getUserUpdated.role?.roleId,
+        role: updateUserDto.role ?? {key: getUserUpdated.role.roleId, value: getUserUpdated.role.roleName},
         username: updateUserDto.username ?? getUserUpdated.username,
         fullName: updateUserDto.fullName ?? getUserUpdated.fullName,
         birthdate:
@@ -419,11 +420,11 @@ export class UserService {
       const { users } = usersData;
       const userIds = users.map((user) => user.userId);
       const usernames = users
-        .filter((user) => user.username)
-        .map((user) => user.username);
+        .filter((user) => user?.username)
+        .map((user) => user?.username);
       const roleIds = users
-        .filter((user) => user.roleId)
-        .map((user) => user.roleId);
+        .filter((user) => user?.role?.key)
+        .map((user) => user?.role?.key);
 
       // validate user id
       const validUserIds = await this.userRepository.getUserByIds(userIds);
@@ -449,7 +450,7 @@ export class UserService {
         return {
           userId: user.userId || validUser.userId,
           username: user.username || validUser.username,
-          roleId: user.roleId || validUser?.role?.roleId,
+          role: user.role || { key: validUser?.role?.roleId, value: validUser?.role?.roleName },
           fullName: user.fullName || validUser.fullName,
           birthdate:
             user.birthdate ||
@@ -743,6 +744,31 @@ export class UserService {
     } catch (e) {
       throw new HttpException(
         e.message || 'Error hard delete user',
+        e.status || 500,
+      );
+    }
+  }
+
+  async bulkDeleteUser(bulkDeleteDto: BulkDeleteUserDto): Promise<void>{
+    try {
+      const { users } = bulkDeleteDto
+
+      const userIds = users.map((user) => user.userId);
+      const validUserIds = await this.userRepository.getUserByIds(userIds);
+      if (validUserIds.length !== userIds.length) {
+        throw new BadRequestException(
+          ErrorMessages.users.getMessage('INVALID_USER_ID'),
+        );
+      }
+
+      const usernames = validUserIds.map(user => user.username)
+      const userAuths = await this.userRepository.getUserAuthByUsernames(usernames)
+      const userAuthIds = userAuths.map(userAuth => userAuth.userId)
+
+      await this.userRepository.bulkHardDeleteUser(userIds, userAuthIds)
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error bulk hard delete user',
         e.status || 500,
       );
     }
@@ -1043,7 +1069,7 @@ export class UserService {
       const {
         password,
         confirmPassword,
-        roleId,
+        role,
         email,
         username,
         fullName,
@@ -1051,13 +1077,16 @@ export class UserService {
         birthdate,
       } = dto;
 
-      if (roleId) {
-        const checkRole = await this.rolesService.getRoleById(roleId);
+      if (role) {
+        const checkRole = role.key ? await this.rolesService.getRoleById(role.key) : null;
         if (!checkRole) {
-          throw new BadRequestException(
-            ErrorMessages.roles.getMessage('ROLE_NOT_FOUND'),
+          throw new NotFoundException(
+            ErrorMessages.roles.dynamicMessage(
+              ErrorMessages.roles.getMessage('ERROR_GET_ROLE_BY_ID_NOT_FOUND'),
+              { roleId: role.key },
+            ),
           );
-        }
+        } 
       }
 
       const decryptedPassword = this.utilsService.validateConfirmPassword(
@@ -1073,7 +1102,7 @@ export class UserService {
         this.createUser({
           fullName,
           birthdate,
-          roleId,
+          roleId: role.key,
           email,
           username,
           password: hashedPassword,
@@ -1081,7 +1110,7 @@ export class UserService {
         }),
       ]);
 
-      const role = await this.rolesService.getRoleById(user.role.roleId);
+      const roleOne = await this.rolesService.getRoleById(user.role.roleId);
 
       return {
         userId: user.userId,
@@ -1091,14 +1120,14 @@ export class UserService {
         phoneNumber: user.phoneNumber,
         birthdate: format(new Date(user.birthdate), 'yyyy-MM-dd'),
         role: {
-          roleId: role.roleId,
-          roleName: role.roleName,
-          roleType: role.roleType,
+          roleId: roleOne.roleId,
+          roleName: roleOne.roleName,
+          roleType: roleOne.roleType,
         },
       };
     } catch (e) {
       throw new HttpException(
-        e.message || 'Error creating user by admin',
+        e.message || 'Error creating user by admin', 
         e.status || 500,
       );
     }
