@@ -17,6 +17,7 @@ import { ErrorMessages } from '../../common/exceptions/root-error.message';
 import { HeaderTable } from '../../common/types/header-table.type';
 import { FormInfo } from 'src/common/types/form-info.type';
 import { UtilsService } from '../../libs/utils/services/utils.service';
+import { BulkUpdateRoleDto } from '../dto/bulk-update-roles.dto';
 
 @Injectable()
 export class RolesService {
@@ -157,7 +158,7 @@ export class RolesService {
     userId: string,
   ): Promise<void> {
     try {
-      await this.validateRoleUpdate(roleId, updateRoleDto);
+      await this.validateRoleUpdate({ roleId, ...updateRoleDto });
       await this.roleRepository.updateRole(roleId, {
         ...updateRoleDto,
         updatedBy: userId,
@@ -171,15 +172,15 @@ export class RolesService {
   }
 
   async bulkUpdateRole(
-    updates: { roleId: string; updateRoleDto: UpdateRoleDto }[],
+    bulkUpdateRolesDto: BulkUpdateRoleDto[],
     userId: string,
   ): Promise<void> {
     try {
-      for (const { roleId, updateRoleDto } of updates) {
-        await this.validateRoleUpdate(roleId, updateRoleDto);
+      for (const dto of bulkUpdateRolesDto) {
+        await this.validateRoleUpdate(dto);
       }
 
-      await this.roleRepository.bulkUpdateRoles(updates, userId);
+      await this.roleRepository.bulkUpdateRoles(bulkUpdateRolesDto, userId);
     } catch (error) {
       throw new HttpException(
         error.message ||
@@ -189,15 +190,12 @@ export class RolesService {
     }
   }
 
-  private async validateRoleUpdate(
-    roleId: string,
-    updateRoleDto: UpdateRoleDto,
-  ): Promise<void> {
-    await this.ensureRoleExists(roleId);
-    if (updateRoleDto.roleName) {
-      await this.ensureRoleNameIsUnique(updateRoleDto.roleName);
+  private async validateRoleUpdate(dto: BulkUpdateRoleDto): Promise<void> {
+    await this.ensureRoleExists(dto.roleId);
+    if (dto.roleName) {
+      await this.ensureRoleNameIsUnique(dto.roleName);
     }
-    this.ensureValidRoleType(updateRoleDto.roleType);
+    this.ensureValidRoleType(dto.roleType);
   }
 
   private async ensureRoleExists(roleId: string): Promise<void> {

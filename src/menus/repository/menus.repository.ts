@@ -21,6 +21,7 @@ import { AccessMenu } from '../entity/access_menu.entity';
 import { AccessMenuQuery } from '../query/access_menu.query';
 import { ErrorMessages } from 'src/common/exceptions/root-error.message';
 import { UtilsService } from '../../libs/utils/services/utils.service';
+import { BulkUpdateMenuDto } from '../dto/bulk-update-menu.dto';
 
 @Injectable()
 export class MenusRepository {
@@ -205,19 +206,15 @@ export class MenusRepository {
     }
   }
 
-  async bulkUpdateMenu(
-    updates: { menuId: string; updateMenuDto: UpdateMenuDto }[],
-    userId: string,
-  ) {
+  async bulkUpdateMenu(updates: BulkUpdateMenuDto[], userId: string) {
     const queryRunner = this.repository.manager.connection.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      const menuIds = updates.map(({ menuId }) => menuId);
-      const menuMap = await this.getExistingMenus(menuIds);
+      const menuMap = await this.getExistingMenus();
 
-      for (const { menuId, updateMenuDto } of updates) {
+      for (const { menuId, ...updateMenuDto } of updates) {
         await this.validateMenuExistence(menuId, updateMenuDto);
         await this.validateBulkCircularDependency(
           menuId,
@@ -257,10 +254,8 @@ export class MenusRepository {
     }
   }
 
-  async getExistingMenus(menuIds: string[]): Promise<Map<string, Menu>> {
-    const existingMenus = await this.repository.find({
-      where: { menuId: In(menuIds) },
-    });
+  async getExistingMenus(): Promise<Map<string, Menu>> {
+    const existingMenus = await this.repository.find();
 
     return new Map(existingMenus.map((menu) => [menu.menuId, menu]));
   }

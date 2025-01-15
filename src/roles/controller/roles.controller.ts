@@ -20,6 +20,7 @@ import { AuthorizedRoles } from '../../common/decorators/authorized-roles.decora
 import { RoleType } from '../../common/enums/user-roles.enum';
 import { FormInfo } from 'src/common/types/form-info.type';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { BulkUpdateRoleDto } from '../dto/bulk-update-roles.dto';
 
 @ApiBearerAuth()
 @AuthorizedRoles(RoleType.Admin)
@@ -104,10 +105,13 @@ export class RolesController {
 
   @Patch('bulk-update')
   async bulkUpdateRole(
-    @Body() updates: { roleId: string; updateRoleDto: UpdateRoleDto }[],
+    @Body() bulkUpdateRolesDto: BulkUpdateRoleDto[],
     @User() user: JwtPayload,
   ) {
-    const result = await this.rolesService.bulkUpdateRole(updates, user.userId);
+    const result = await this.rolesService.bulkUpdateRole(
+      bulkUpdateRolesDto,
+      user.userId,
+    );
     return {
       data: result,
     };
