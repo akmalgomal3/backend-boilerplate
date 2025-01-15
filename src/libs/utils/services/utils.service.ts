@@ -176,7 +176,7 @@ export class UtilsService {
     joins: { table: string; alias: string; condition: string }[],
   ): SelectQueryBuilder<any> {
     joins.forEach((join) => {
-      query = query.leftJoinAndMapMany(
+      query = query.leftJoinAndMapOne(
         `${tableName}.${join.alias}`,
         `${join.table}`,
         `${join.alias}`,
@@ -191,6 +191,7 @@ export class UtilsService {
     tableName: string,
     filters: any[],
   ): SelectQueryBuilder<any> {
+    const parameters: any[] = [];
     filters.forEach((filter) => {
       const filterKey = filter.key.includes('.')
         ? filter.key
@@ -201,9 +202,11 @@ export class UtilsService {
           end: filter.end,
         });
       } else {
-        query = query.andWhere(`${filterKey} IN (:...values)`, {
-          values: filter.value,
+        const paramKey = `values_${parameters.length}`;
+        query = query.andWhere(`${filterKey} IN (:...${paramKey})`, {
+          [paramKey]: filter.value,
         });
+        parameters.push(...filter.value);
       }
     });
     return query;

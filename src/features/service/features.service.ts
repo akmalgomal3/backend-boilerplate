@@ -28,6 +28,7 @@ import { ErrorMessages } from '../../common/exceptions/root-error.message';
 import { HeaderTable } from '../../common/types/header-table.type';
 import { FormInfo } from '../../common/types/form-info.type';
 import { UtilsService } from '../../libs/utils/services/utils.service';
+import { BulkUpdateFeatureDto } from '../dto/bulk-update-features.dto';
 
 @Injectable()
 export class FeaturesService {
@@ -246,11 +247,11 @@ export class FeaturesService {
   }
 
   async bulkUpdateFeature(
-    updates: { featureId: string; updateFeatureDto: UpdateFeatureDto }[],
+    updates: BulkUpdateFeatureDto[],
     userId: string,
   ): Promise<void> {
     try {
-      for (const { featureId, updateFeatureDto } of updates) {
+      for (const { featureId, ...updateFeatureDto } of updates) {
         await this.validateFeatureExist(featureId);
         if (updateFeatureDto.featureName != null) {
           await this.validateFeatureNameUnique(updateFeatureDto.featureName);
