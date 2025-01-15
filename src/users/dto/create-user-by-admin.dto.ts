@@ -51,8 +51,8 @@ export class CreateUserByAdminDto {
 
   @ApiProperty({type: OptionDTO})
   @IsObject()
-  @IsOptional()
-  role?: OptionDTO;
+  @IsNotEmpty()
+  role: OptionDTO;
 
   @ApiProperty({ example: '1996-11-10' })
   @IsNotEmpty()

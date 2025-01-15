@@ -77,8 +77,7 @@ export class UserService {
           phoneNumber: user.phoneNumber,
           birthdate: user.birthdate,
           createdAt: user.createdAt,
-          roleName: user.role[0]?.roleName,
-          roleType: user.role[0]?.roleType,
+          role: user.role
         };
       });
 
@@ -287,8 +286,7 @@ export class UserService {
           phoneNumber: user.phoneNumber,
           birthdate: user.birthdate,
           createdAt: user.createdAt,
-          roleName: user.role[0]?.roleName,
-          roleType: user.role[0]?.roleType,
+          role: user.role
         };
       });
 
@@ -878,34 +876,6 @@ export class UserService {
           inlineEdit: false,
         },
         {
-          key: 'roleId',
-          label: 'Role Name',
-          filterable: true,
-          sortable: true,
-          editable: false,
-          searchable: true,
-          type: 'select',
-          option: {
-            type: 'url',
-            value: '/options/data/roles/role_name?pkName=role_id',
-          },
-          inlineEdit: false,
-        },
-        {
-          key: 'roleType',
-          label: 'Role Type',
-          filterable: true,
-          sortable: true,
-          editable: false,
-          searchable: true,
-          type: 'select',
-          option: {
-            type: 'url',
-            value: '/options/enum/RoleType',
-          },
-          inlineEdit: false,
-        },
-        {
           key: 'email',
           label: 'Email',
           filterable: true,
@@ -947,6 +917,34 @@ export class UserService {
           searchable: false,
           type: 'datetime',
           option: {},
+          inlineEdit: false,
+        },
+        {
+          key: 'role.roleName',
+          label: 'Role Name',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'select',
+          option: {
+            type: 'url',
+            value: '/options/data/roles/role_name?pkName=role_id',
+          },
+          inlineEdit: false,
+        },
+        {
+          key: 'role.roleType',
+          label: 'Role Type',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'select',
+          option: {
+            type: 'url',
+            value: '/options/enum/RoleType',
+          },
           inlineEdit: false,
         },
       ];
@@ -984,34 +982,6 @@ export class UserService {
           inlineEdit: false,
         },
         {
-          key: 'roleId',
-          label: 'Role Name',
-          filterable: true,
-          sortable: true,
-          editable: false,
-          searchable: true,
-          type: 'select',
-          option: {
-            type: 'url',
-            value: '/options/data/roles/role_name?pkName=role_id',
-          },
-          inlineEdit: false,
-        },
-        {
-          key: 'roleType',
-          label: 'Role Type',
-          filterable: true,
-          sortable: true,
-          editable: false,
-          searchable: true,
-          type: 'select',
-          option: {
-            type: 'url',
-            value: '/options/enum/RoleType',
-          },
-          inlineEdit: false,
-        },
-        {
           key: 'email',
           label: 'Email',
           filterable: true,
@@ -1053,6 +1023,34 @@ export class UserService {
           searchable: false,
           type: 'datetime',
           option: {},
+          inlineEdit: false,
+        },
+        {
+          key: 'role.roleName',
+          label: 'Role Name',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'select',
+          option: {
+            type: 'url',
+            value: '/options/data/roles/role_name?pkName=role_id',
+          },
+          inlineEdit: false,
+        },
+        {
+          key: 'role.roleType',
+          label: 'Role Type',
+          filterable: true,
+          sortable: true,
+          editable: false,
+          searchable: true,
+          type: 'select',
+          option: {
+            type: 'url',
+            value: '/options/enum/RoleType',
+          },
           inlineEdit: false,
         },
       ];
