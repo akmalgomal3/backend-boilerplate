@@ -26,6 +26,7 @@ import {
 } from '../../common/dto/pagination.dto';
 import { HeaderTable } from '../../common/types/header-table.type';
 import { UtilsService } from '../../libs/utils/services/utils.service';
+import { BulkUpdateMenuDto } from '../dto/bulk-update-menu.dto';
 
 @Injectable()
 export class MenusService {
@@ -236,10 +237,7 @@ export class MenusService {
     }
   }
 
-  async bulkUpdateMenu(
-    updates: { menuId: string; updateMenuDto: UpdateMenuDto }[],
-    userId: string,
-  ) {
+  async bulkUpdateMenu(updates: BulkUpdateMenuDto[], userId: string) {
     try {
       await this.menusRepository.bulkUpdateMenu(updates, userId);
     } catch (error) {

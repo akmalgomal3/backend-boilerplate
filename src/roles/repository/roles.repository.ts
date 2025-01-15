@@ -5,6 +5,7 @@ import { UpdateRoleDto } from '../dto/update-roles.dto';
 import { Roles } from '../entity/roles.entity';
 import { RoleType } from '../../common/enums/user-roles.enum';
 import { UtilsService } from '../../libs/utils/services/utils.service';
+import { BulkUpdateRoleDto } from '../dto/bulk-update-roles.dto';
 
 @Injectable()
 export class RolesRepository {
@@ -166,7 +167,7 @@ export class RolesRepository {
   }
 
   async bulkUpdateRoles(
-    updates: { roleId: string; updateRoleDto: UpdateRoleDto }[],
+    dtos: BulkUpdateRoleDto[],
     userId: string,
   ): Promise<void> {
     const queryRunner = this.repository.manager.connection.createQueryRunner();
@@ -175,15 +176,19 @@ export class RolesRepository {
     await queryRunner.startTransaction();
 
     try {
-      for (const { roleId, updateRoleDto } of updates) {
+      for (const dto of dtos) {
         const updateData = {
-          roleName: updateRoleDto.roleName || undefined,
-          roleType: updateRoleDto.roleType || undefined,
+          roleName: dto.roleName || undefined,
+          roleType: dto.roleType || undefined,
           updatedBy: userId,
           updatedAt: new Date(),
         };
 
-        await queryRunner.manager.update(Roles, { roleId }, updateData);
+        await queryRunner.manager.update(
+          Roles,
+          { roleId: dto.roleId },
+          updateData,
+        );
       }
 
       await queryRunner.commitTransaction();

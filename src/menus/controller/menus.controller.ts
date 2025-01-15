@@ -20,6 +20,7 @@ import { AuthorizedRoles } from 'src/common/decorators/authorized-roles.decorato
 import { RoleType } from 'src/common/enums/user-roles.enum';
 import { FormInfo } from '../../common/types/form-info.type';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { BulkUpdateMenuDto } from '../dto/bulk-update-menu.dto';
 
 @ApiBearerAuth()
 @Controller('menus')
@@ -110,7 +111,7 @@ export class MenusController {
   @ApiBearerAuth()
   @AuthorizedRoles(RoleType.Admin)
   async bulkUpdateMenu(
-    @Body() updates: { menuId: string; updateMenuDto: UpdateMenuDto }[],
+    @Body() updates: BulkUpdateMenuDto[],
     @User() user: JwtPayload,
   ): Promise<void> {
     return this.menusService.bulkUpdateMenu(updates, user.userId);

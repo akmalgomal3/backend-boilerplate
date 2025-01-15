@@ -20,6 +20,7 @@ import { AuthorizedRoles } from '../../common/decorators/authorized-roles.decora
 import { RoleType } from '../../common/enums/user-roles.enum';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { FormInfo } from '../../common/types/form-info.type';
+import { BulkUpdateFeatureDto } from '../dto/bulk-update-features.dto';
 
 @ApiBearerAuth()
 @Controller('features')
@@ -100,7 +101,7 @@ export class FeaturesController {
   @AuthorizedRoles(RoleType.Admin)
   async bulkUpdateFeature(
     @Body()
-    updates: { featureId: string; updateFeatureDto: UpdateFeatureDto }[],
+    updates: BulkUpdateFeatureDto[],
     @User() user: JwtPayload,
   ): Promise<void> {
     return this.featuresService.bulkUpdateFeature(updates, user.userId);

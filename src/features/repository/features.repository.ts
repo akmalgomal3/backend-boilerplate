@@ -14,6 +14,7 @@ import { CreateUpdateAccessFeatureDto } from '../dto/create-update-access-featur
 import { AccessFeature } from '../entity/access_feature.entity';
 import { AccessFeatureQuery } from '../query/access_feature.query';
 import { UtilsService } from '../../libs/utils/services/utils.service';
+import { BulkUpdateFeatureDto } from '../dto/bulk-update-features.dto';
 
 @Injectable()
 export class FeaturesRepository {
@@ -187,7 +188,7 @@ export class FeaturesRepository {
   }
 
   async bulkUpdateFeature(
-    updates: { featureId: string; updateFeatureDto: UpdateFeatureDto }[],
+    updates: BulkUpdateFeatureDto[],
     userId: string,
   ): Promise<void> {
     const queryRunner = this.repository.manager.connection.createQueryRunner();
@@ -196,7 +197,7 @@ export class FeaturesRepository {
     await queryRunner.startTransaction();
 
     try {
-      for (const { featureId, updateFeatureDto } of updates) {
+      for (const { featureId, ...updateFeatureDto } of updates) {
         const updateData = {
           featureName: updateFeatureDto.featureName || undefined,
           menuId: updateFeatureDto.menuId || undefined,
