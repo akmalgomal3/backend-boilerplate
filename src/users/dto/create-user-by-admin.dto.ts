@@ -2,10 +2,12 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEmail,
   IsNotEmpty,
+  IsObject,
   IsOptional,
   IsString,
   Matches,
 } from 'class-validator';
+import { OptionDTO } from 'src/common/dto/option.dto';
 
 export class CreateUserByAdminDto {
   @ApiProperty({ example: 'kurniawan101' })
@@ -47,10 +49,10 @@ export class CreateUserByAdminDto {
   })
   phoneNumber: string;
 
-  @ApiProperty({ example: '019b18cb-7b7a-4f8d-bea1-342b241bc717' })
-  @IsString()
-  @IsOptional()
-  roleId?: string;
+  @ApiProperty({type: OptionDTO})
+  @IsObject()
+  @IsNotEmpty()
+  role: OptionDTO;
 
   @ApiProperty({ example: '1996-11-10' })
   @IsNotEmpty()

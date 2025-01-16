@@ -62,8 +62,7 @@ export class RolesService {
   async getRoleById(roleId: string): Promise<Roles> {
     try {
       const role = await this.roleRepository.getRoleById(roleId);
-
-      if (!role) {
+      if (!role || !roleId) {
         throw new NotFoundException(
           ErrorMessages.roles.dynamicMessage(
             ErrorMessages.roles.getMessage('ERROR_GET_ROLE_BY_ID_NOT_FOUND'),

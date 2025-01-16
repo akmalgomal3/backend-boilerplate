@@ -162,7 +162,7 @@ export class UserLogActivitiesRepository {
     }
   }
 
-  async softDeleteUserActivityByFilter(filter: Partial<UserLogActivities>): Promise<number> {
+  async softDeleteUserActivityByFilter(filter: any): Promise<number> {
     try {
       const result = await this.userActivitiesModel.updateMany(filter, { $set: {is_deleted: true}}).exec();
       return result.modifiedCount || 0;
