@@ -30,6 +30,7 @@ import { UpdatePasswordByAdminDto } from '../dto/update-password-by-admin.dto';
 import { CreateUserByAdminDto } from '../dto/create-user-by-admin.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { BulkUpdateUserDto } from '../dto/bulk-update-user.dto';
+import { BulkDeleteUserDto } from '../dto/bulk-delete-user.dto';
 
 // @ts-ignore
 @Controller('users')
@@ -315,6 +316,18 @@ export class UserController {
     );
     return {
       data: result,
+    };
+  }
+
+  @ApiBearerAuth()
+  @AuthorizedRoles(RoleType.Admin)
+  @Delete('/user/bulk')
+  async bulkDeleteUser(
+    @Body() bulkDeleteUserDto: BulkDeleteUserDto
+  ) {
+    await this.userService.bulkDeleteUser(bulkDeleteUserDto);
+    return {
+      data: null,
     };
   }
 }

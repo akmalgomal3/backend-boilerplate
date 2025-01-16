@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsEmpty } from "class-validator";
+import { OptionDTO } from "src/common/dto/option.dto";
 
 export class UpdateUserDto {
     userId?: string
@@ -14,8 +15,8 @@ export class UpdateUserDto {
     readonly birthdate?: string | null;
 
 
-    @ApiProperty({ example: '5ce865a6-e419-4f77-9b0f-0377900f4342' })
-    readonly roleId?: string | null;
+    @ApiProperty({ example: {key: '5ce865a6-e419-4f77-9b0f-0377900f4342', value: "Admin"}})
+    readonly role?: OptionDTO;
 
     updatedBy?: string
 }

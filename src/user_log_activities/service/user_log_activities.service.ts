@@ -265,6 +265,25 @@ export class UserLogActivitiesService {
     }
   }
 
+  async bulkDeleteUserActivityByUserId(
+    userIds: string[],
+  ): Promise<{ deletedNumber: number }> {
+    try {
+      const filter = {
+        ...(userIds && { user_id: {$in: userIds } }),
+        is_deleted: false
+      };
+
+      const deletedCount = await this.userActivityRepository.softDeleteUserActivityByFilter(filter);
+      return { deletedNumber: deletedCount };
+    } catch (e) {
+      throw new HttpException(
+        e.message || 'Error bulk delete user log activity by user id',
+        e.status || 500,
+      );
+    }
+  }
+
   getUserLogActivityHeader(): HeaderTable[] {
     return [
       {
